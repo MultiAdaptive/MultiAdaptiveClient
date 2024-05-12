@@ -41,10 +41,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
+	"domiconexec/accounts"
+	"domiconexec/common"
+	"domiconexec/event"
+	"domiconexec/log"
 	pcsc "github.com/gballet/go-libpcsclite"
 )
 

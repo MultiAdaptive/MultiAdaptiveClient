@@ -21,8 +21,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
+	"domiconexec/common"
+	"domiconexec/crypto"
 )
 
 func TestMakeTopics(t *testing.T) {

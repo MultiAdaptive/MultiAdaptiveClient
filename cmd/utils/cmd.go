@@ -30,16 +30,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/internal/debug"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/rlp"
+	"domiconexec/common"
+	"domiconexec/eth/ethconfig"
+	"domiconexec/ethdb"
+	"domiconexec/internal/debug"
+	"domiconexec/log"
+	"domiconexec/node"
+	"domiconexec/rlp"
 	"github.com/urfave/cli/v2"
 )
 
@@ -135,110 +132,6 @@ func monitorFreeDiskSpace(sigc chan os.Signal, path string, freeDiskSpaceCritica
 		}
 		time.Sleep(30 * time.Second)
 	}
-}
-
-// ExportChain exports a blockchain into the specified file, truncating any data
-// already present in the file.
-func ExportChain(blockchain *core.BlockChain, fn string) error {
-	log.Info("Exporting blockchain", "file", fn)
-
-	// Open the file handle and potentially wrap with a gzip stream
-	fh, err := os.OpenFile(fn, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
-	if err != nil {
-		return err
-	}
-	defer fh.Close()
-
-	var writer io.Writer = fh
-	if strings.HasSuffix(fn, ".gz") {
-		writer = gzip.NewWriter(writer)
-		defer writer.(*gzip.Writer).Close()
-	}
-	//// Iterate over the blocks and export them
-	//if err := blockchain.Export(writer); err != nil {
-	//	return err
-	//}
-	//log.Info("Exported blockchain", "file", fn)
-
-	return nil
-}
-
-// ImportPreimages imports a batch of exported hash preimages into the database.
-// It's a part of the deprecated functionality, should be removed in the future.
-func ImportPreimages(db ethdb.Database, fn string) error {
-	log.Info("Importing preimages", "file", fn)
-
-	// Open the file handle and potentially unwrap the gzip stream
-	fh, err := os.Open(fn)
-	if err != nil {
-		return err
-	}
-	defer fh.Close()
-
-	var reader io.Reader = bufio.NewReader(fh)
-	if strings.HasSuffix(fn, ".gz") {
-		if reader, err = gzip.NewReader(reader); err != nil {
-			return err
-		}
-	}
-	stream := rlp.NewStream(reader, 0)
-
-	// Import the preimages in batches to prevent disk thrashing
-	preimages := make(map[common.Hash][]byte)
-
-	for {
-		// Read the next entry and ensure it's not junk
-		var blob []byte
-
-		if err := stream.Decode(&blob); err != nil {
-			if err == io.EOF {
-				break
-			}
-			return err
-		}
-		// Accumulate the preimages and flush when enough ws gathered
-		preimages[crypto.Keccak256Hash(blob)] = common.CopyBytes(blob)
-		if len(preimages) > 1024 {
-			rawdb.WritePreimages(db, preimages)
-			preimages = make(map[common.Hash][]byte)
-		}
-	}
-	// Flush the last batch preimage data
-	if len(preimages) > 0 {
-		rawdb.WritePreimages(db, preimages)
-	}
-	return nil
-}
-
-// ExportPreimages exports all known hash preimages into the specified file,
-// truncating any data already present in the file.
-// It's a part of the deprecated functionality, should be removed in the future.
-func ExportPreimages(db ethdb.Database, fn string) error {
-	log.Info("Exporting preimages", "file", fn)
-
-	// Open the file handle and potentially wrap with a gzip stream
-	fh, err := os.OpenFile(fn, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
-	if err != nil {
-		return err
-	}
-	defer fh.Close()
-
-	var writer io.Writer = fh
-	if strings.HasSuffix(fn, ".gz") {
-		writer = gzip.NewWriter(writer)
-		defer writer.(*gzip.Writer).Close()
-	}
-	// Iterate over the preimages and export them
-	it := db.NewIterator([]byte("secure-key-"), nil)
-	defer it.Release()
-
-	for it.Next() {
-		if err := rlp.Encode(writer, it.Value()); err != nil {
-			return err
-		}
-	}
-	log.Info("Exported preimages", "file", fn)
-	return nil
 }
 
 // exportHeader is used in the export/import flow. When we do an export,

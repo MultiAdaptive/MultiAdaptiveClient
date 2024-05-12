@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
+	"domiconexec/common"
 )
 
 // Genesis hashes to enforce below configs on.
@@ -29,6 +29,8 @@ var (
 	HoleskyGenesisHash = common.HexToHash("0xb5f7f912443c940f21fd611f12828d75b534364ed9e95ca4e307729a4661bde4")
 	SepoliaGenesisHash = common.HexToHash("0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9")
 	GoerliGenesisHash  = common.HexToHash("0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")
+	///TODO fix this genesis hash
+	DomiconGenesisHash = common.HexToHash("")
 )
 
 const (
@@ -60,6 +62,32 @@ func newUint64(val uint64) *uint64 { return &val }
 
 var (
 	MainnetTerminalTotalDifficulty, _ = new(big.Int).SetString("58_750_000_000_000_000_000_000", 0)
+
+	DomiconnetConfig = &ChainConfig{
+		ChainID:                       big.NewInt(1987),
+		HomesteadBlock:                big.NewInt(0),
+		DAOForkBlock:                  nil,
+		DAOForkSupport:                false,
+		EIP150Block:                   big.NewInt(0),
+		EIP155Block:                   big.NewInt(0),
+		EIP158Block:                   big.NewInt(0),
+		ByzantiumBlock:                big.NewInt(0),
+		ConstantinopleBlock:           big.NewInt(0),
+		PetersburgBlock:               big.NewInt(0),
+		IstanbulBlock:                 big.NewInt(0),
+		MuirGlacierBlock:              big.NewInt(0),
+		BerlinBlock:                   big.NewInt(0),
+		LondonBlock:                   big.NewInt(0),
+		ArrowGlacierBlock:             big.NewInt(0),
+		GrayGlacierBlock:              big.NewInt(0),
+		MergeNetsplitBlock:            big.NewInt(0),
+		ShanghaiTime:                  newUint64(chaosnetRegolithTime),
+		CancunTime:                    nil,
+		PragueTime:                    nil,
+		VerkleTime:                    nil,
+		TerminalTotalDifficulty:       nil,
+		TerminalTotalDifficultyPassed: true,
+	}
 
 	// MainnetChainConfig is the chain parameters to run a node on the main network.
 	MainnetChainConfig = &ChainConfig{
@@ -255,43 +283,8 @@ var (
 		TerminalTotalDifficultyPassed: false,
 	}
 
-	// NonActivatedConfig defines the chain configuration without activating
-	// any protocol change (EIPs).
-	NonActivatedConfig = &ChainConfig{
-		ChainID:                       big.NewInt(1),
-		HomesteadBlock:                nil,
-		DAOForkBlock:                  nil,
-		DAOForkSupport:                false,
-		EIP150Block:                   nil,
-		EIP155Block:                   nil,
-		EIP158Block:                   nil,
-		ByzantiumBlock:                nil,
-		ConstantinopleBlock:           nil,
-		PetersburgBlock:               nil,
-		IstanbulBlock:                 nil,
-		MuirGlacierBlock:              nil,
-		BerlinBlock:                   nil,
-		LondonBlock:                   nil,
-		ArrowGlacierBlock:             nil,
-		GrayGlacierBlock:              nil,
-		MergeNetsplitBlock:            nil,
-		ShanghaiTime:                  nil,
-		CancunTime:                    nil,
-		PragueTime:                    nil,
-		VerkleTime:                    nil,
-		TerminalTotalDifficulty:       nil,
-		TerminalTotalDifficultyPassed: false,
-	}
 	TestRules = TestChainConfig.Rules(new(big.Int), false, 0)
 
-	// This is an Optimism chain config with bedrock starting a block 5, introduced for historical endpoint testing, largely based on the clique config
-	OptimismTestConfig = func() *ChainConfig {
-		conf := *AllCliqueProtocolChanges // copy the config
-		conf.TerminalTotalDifficultyPassed = true
-		conf.BedrockBlock = big.NewInt(5)
-		conf.Optimism = &OptimismConfig{EIP1559Elasticity: 50, EIP1559Denominator: 10}
-		return &conf
-	}()
 )
 
 // NetworkNames are user friendly names to use in the chain spec banner.
@@ -354,9 +347,18 @@ type ChainConfig struct {
 	IsDevMode bool          `json:"isDev,omitempty"`
 
 	// Optimism config, nil if not active
-	Optimism *OptimismConfig `json:"optimism,omitempty"`
+	//Optimism *OptimismConfig `json:"optimism,omitempty"`
+	L1Conf       *L1Config
 }
 
+type L1Config struct {
+	GenesisBlockNumber      uint64 `json:"genesisBlockNumber"`
+	DomiconCommitmentAddress string `json:"domiconCommitemtAddress"`
+}
+
+func (l1 *L1Config) String() string {
+	return "domicon"
+}
 
 // OptimismConfig is the optimism config.
 type OptimismConfig struct {
@@ -381,8 +383,10 @@ func (c *ChainConfig) Description() string {
 	}
 	banner += fmt.Sprintf("Chain ID:  %v (%s)\n", c.ChainID, network)
 	switch {
-	case c.Optimism != nil:
-		banner += "Consensus: Optimism\n"
+	//case c.Optimism != nil:
+	//	banner += "Consensus: Optimism\n"
+	case c.L1Conf != nil:
+		banner += "Consensus: Domicon\n"
 	default:
 		banner += "Consensus: unknown\n"
 	}
@@ -567,27 +571,6 @@ func (c *ChainConfig) IsCanyon(time uint64) bool {
 	return isTimestampForked(c.CanyonTime, time)
 }
 
-// IsOptimism returns whether the node is an optimism node or not.
-func (c *ChainConfig) IsOptimism() bool {
-	return c.Optimism != nil
-}
-
-// IsOptimismBedrock returns true iff this is an optimism node & bedrock is active
-func (c *ChainConfig) IsOptimismBedrock(num *big.Int) bool {
-	return c.IsOptimism() && c.IsBedrock(num)
-}
-
-func (c *ChainConfig) IsOptimismRegolith(time uint64) bool {
-	return c.IsOptimism() && c.IsRegolith(time)
-}
-func (c *ChainConfig) IsOptimismCanyon(time uint64) bool {
-	return c.IsOptimism() && c.IsCanyon(time)
-}
-
-// IsOptimismPreBedrock returns true iff this is an optimism node & bedrock is not yet active
-func (c *ChainConfig) IsOptimismPreBedrock(num *big.Int) bool {
-	return c.IsOptimism() && !c.IsBedrock(num)
-}
 
 // CheckCompatible checks whether scheduled fork transitions have been imported
 // with a mismatching chain configuration.
@@ -887,8 +870,7 @@ type Rules struct {
 	IsBerlin, IsLondon                                      bool
 	IsMerge, IsShanghai, IsCancun, IsPrague                 bool
 	IsVerkle                                                bool
-	IsOptimismBedrock, IsOptimismRegolith                   bool
-	IsOptimismCanyon                                        bool
+
 }
 
 // Rules ensures c's ChainID is not nil.
@@ -914,9 +896,5 @@ func (c *ChainConfig) Rules(num *big.Int, isMerge bool, timestamp uint64) Rules 
 		IsCancun:         c.IsCancun(num, timestamp),
 		IsPrague:         c.IsPrague(num, timestamp),
 		IsVerkle:         c.IsVerkle(num, timestamp),
-		// Optimism
-		IsOptimismBedrock:  c.IsOptimismBedrock(num),
-		IsOptimismRegolith: c.IsOptimismRegolith(timestamp),
-		IsOptimismCanyon:   c.IsOptimismCanyon(timestamp),
 	}
 }

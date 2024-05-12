@@ -25,7 +25,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
+	"domiconexec/log"
 	natpmp "github.com/jackpal/go-nat-pmp"
 )
 

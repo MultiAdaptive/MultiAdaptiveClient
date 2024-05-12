@@ -16,7 +16,7 @@
 
 package pathdb
 
-import "github.com/ethereum/go-ethereum/metrics"
+import "domiconexec/metrics"
 
 var (
 	cleanHitMeter   = metrics.NewRegisteredMeter("pathdb/clean/hit", nil)

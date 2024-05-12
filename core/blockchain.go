@@ -1,15 +1,22 @@
 package core
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie"
-	"github.com/ethereum/go-ethereum/trie/triedb/hashdb"
-	"github.com/ethereum/go-ethereum/trie/triedb/pathdb"
+	"domiconexec/common"
+	"domiconexec/core/types"
+	"domiconexec/ethdb"
+	"domiconexec/ethdb/db"
+	"domiconexec/params"
+	"gorm.io/gorm"
+	"math/big"
+	"strconv"
+
+	//"domiconexec/state"
+	"domiconexec/trie"
+	"domiconexec/trie/triedb/hashdb"
+	"domiconexec/trie/triedb/pathdb"
+	"sync/atomic"
 	"time"
-	"github.com/ethereum/go-ethereum/core/rawdb"
+	"domiconexec/core/rawdb"
 )
 
 const (
@@ -70,28 +77,55 @@ func DefaultCacheConfigWithScheme(scheme string) *CacheConfig {
 	return &config
 }
 
-
 type BlockChain struct {
-	chainConfig *params.ChainConfig // Chain & network configuration
-	cacheConfig *CacheConfig        // Cache configuration for pruning
-	db            ethdb.Database    // Low level persistent database to store final content in
-	triedb        *trie.Database                   // The database handler for maintaining trie nodes.
+	chainConfig       *params.ChainConfig // Chain & network configuration
+	cacheConfig       *CacheConfig        // Cache configuration for pruning
+	db                ethdb.Database    // Low level persistent database to store final content in
+	triedb            *trie.Database    // The database handler for maintaining trie nodes.
+	sqlDb             *gorm.DB
+	genesisBlock      *types.Block
+	currentBlock      atomic.Pointer[types.Block] // Current head of the chain
+
+	//cfg Config
+	//state          state.State
+}
+
+func NewBlockChain(db ethdb.Database,cacheConfig *CacheConfig,genesis *Genesis,sqlDb *gorm.DB) *BlockChain {
+	if cacheConfig == nil {
+		cacheConfig = defaultCacheConfig
+	}
+	triedb := trie.NewDatabase(db, cacheConfig.triedbConfig())
+
+	bc := &BlockChain{
+		cacheConfig: cacheConfig,
+		db: db,
+		triedb: triedb,
+		sqlDb:sqlDb,
+	}
+
+	//bc.genesisBlock = genesis
+	bc.currentBlock.Store(nil)
+	return bc
 }
 
 // CurrentBlock retrieves the current head block of the canonical chain. The
 // block is retrieved from the blockchain's internal cache.
-func (bc *BlockChain) CurrentBlock() *types.Header {
-	//return bc.currentBlock.Load()
-	return nil
+func (bc *BlockChain) CurrentBlock() *types.Block {
+	return bc.currentBlock.Load()
+	//return nil
+}
+
+func (bc *BlockChain) SetCurrentBlock(block *types.Block)  {
+	bc.currentBlock.Store(block)
 }
 
 // Config retrieves the chain's fork configuration.
 func (bc *BlockChain) Config() *params.ChainConfig { return bc.chainConfig }
 
-//TODO finish this
+
 // Genesis retrieves the chain's genesis block.
 func (bc *BlockChain) Genesis() *types.Block {
-	return nil
+	return bc.genesisBlock
 }
 
 // CurrentHeader retrieves the current head header of the canonical chain. The
@@ -106,6 +140,17 @@ func (bc *BlockChain) TrieDB() *trie.Database {
 	return bc.triedb
 }
 
-func (bc *BlockChain) GetBlock(hash common.Hash, number uint64) *types.Block  {
-	return nil
+func (bc *BlockChain) GetBlock(hash common.Hash, number uint64) *types.Header  {
+	res := db.GetBlockByNum(bc.sqlDb,number)
+	timeData,_ := strconv.ParseUint(res.ReceivedAt,10,64)
+	header := types.Header{
+		ParentHash: common.HexToHash(res.ParentHash),
+		Number: new(big.Int).SetInt64(res.BlockNum),
+		Time: timeData,
+	}
+	return &header
+}
+
+func (bc *BlockChain) SqlDB() *gorm.DB{
+	return bc.sqlDb
 }

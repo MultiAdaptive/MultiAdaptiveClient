@@ -21,17 +21,17 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state/pruner"
-	"github.com/ethereum/go-ethereum/core/state/snapshot"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/internal/flags"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
+	"domiconexec/cmd/utils"
+	"domiconexec/common"
+	"domiconexec/core/rawdb"
+	"domiconexec/core/state/pruner"
+	"domiconexec/core/state/snapshot"
+	"domiconexec/core/types"
+	"domiconexec/crypto"
+	"domiconexec/internal/flags"
+	"domiconexec/log"
+	"domiconexec/rlp"
+	"domiconexec/trie"
 	cli "github.com/urfave/cli/v2"
 )
 
@@ -137,7 +137,8 @@ func pruneState(ctx *cli.Context) error {
 	stack, _ := makeConfigNode(ctx)
 	defer stack.Close()
 
-	chaindb := utils.MakeChainDatabase(ctx, stack, false)
+	chaindb := utils.
+		MakeChainDatabase(ctx, stack, false)
 	defer chaindb.Close()
 
 	if rawdb.ReadStateScheme(chaindb) != rawdb.HashScheme {

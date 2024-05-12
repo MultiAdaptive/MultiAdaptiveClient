@@ -24,11 +24,11 @@ import (
 	"math/big"
 	"unsafe"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	"domiconexec/common"
+	"domiconexec/common/hexutil"
+	"domiconexec/crypto"
+	"domiconexec/params"
+	"domiconexec/rlp"
 )
 
 //go:generate go run github.com/fjl/gencodec -type Receipt -field-override receiptMarshaling -out gen_receipt_json.go
@@ -84,11 +84,11 @@ type Receipt struct {
 	BlockNumber      *big.Int    `json:"blockNumber,omitempty"`
 	TransactionIndex uint        `json:"transactionIndex"`
 
-	// OVM legacy: extend receipts with their L1 price (if a rollup tx)
-	L1GasPrice *big.Int   `json:"l1GasPrice,omitempty"`
-	L1GasUsed  *big.Int   `json:"l1GasUsed,omitempty"`
-	L1Fee      *big.Int   `json:"l1Fee,omitempty"`
-	FeeScalar  *big.Float `json:"l1FeeScalar,omitempty"`
+	//// OVM legacy: extend receipts with their L1 price (if a rollup tx)
+	//L1GasPrice *big.Int   `json:"l1GasPrice,omitempty"`
+	//L1GasUsed  *big.Int   `json:"l1GasUsed,omitempty"`
+	//L1Fee      *big.Int   `json:"l1Fee,omitempty"`
+	//FeeScalar  *big.Float `json:"l1FeeScalar,omitempty"`
 }
 
 type receiptMarshaling struct {
@@ -103,13 +103,13 @@ type receiptMarshaling struct {
 	BlockNumber       *hexutil.Big
 	TransactionIndex  hexutil.Uint
 
-	// Optimism
-	L1GasPrice            *hexutil.Big
-	L1GasUsed             *hexutil.Big
-	L1Fee                 *hexutil.Big
-	FeeScalar             *big.Float
-	DepositNonce          *hexutil.Uint64
-	DepositReceiptVersion *hexutil.Uint64
+	//// Optimism
+	//L1GasPrice            *hexutil.Big
+	//L1GasUsed             *hexutil.Big
+	//L1Fee                 *hexutil.Big
+	//FeeScalar             *big.Float
+	//DepositNonce          *hexutil.Uint64
+	//DepositReceiptVersion *hexutil.Uint64
 }
 
 // receiptRLP is the consensus encoding of a receipt.
@@ -452,10 +452,10 @@ func decodeLegacyOptimismReceiptRLP(r *ReceiptForStorage, blob []byte) error {
 			return errors.New("cannot parse fee scalar")
 		}
 	}
-	r.L1GasUsed = stored.L1GasUsed
-	r.L1GasPrice = stored.L1GasPrice
-	r.L1Fee = stored.L1Fee
-	r.FeeScalar = scalar
+	//r.L1GasUsed = stored.L1GasUsed
+	//r.L1GasPrice = stored.L1GasPrice
+	//r.L1Fee = stored.L1Fee
+	//r.FeeScalar = scalar
 	return nil
 }
 
@@ -567,28 +567,6 @@ func (rs Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, nu
 			rs[i].Logs[j].TxIndex = uint(i)
 			rs[i].Logs[j].Index = logIndex
 			logIndex++
-		}
-	}
-	if config.Optimism != nil && len(txs) >= 2 { // need at least an info tx and a non-info tx
-		if data := txs[0].Data(); len(data) >= 4+32*8 { // function selector + 8 arguments to setL1BlockValues
-			l1Basefee := new(big.Int).SetBytes(data[4+32*2 : 4+32*3]) // arg index 2
-			overhead := new(big.Int).SetBytes(data[4+32*6 : 4+32*7])  // arg index 6
-			scalar := new(big.Int).SetBytes(data[4+32*7 : 4+32*8])    // arg index 7
-			fscalar := new(big.Float).SetInt(scalar)                  // legacy: format fee scalar as big Float
-			fdivisor := new(big.Float).SetUint64(1_000_000)           // 10**6, i.e. 6 decimals
-			feeScalar := new(big.Float).Quo(fscalar, fdivisor)
-			for i := 0; i < len(rs); i++ {
-				if !txs[i].IsDepositTx() && !txs[i].IsSubmitTx() {
-					gas := txs[i].RollupDataGas().DataGas(time, config)
-					rs[i].L1GasPrice = l1Basefee
-					// GasUsed reported in receipt should include the overhead
-					rs[i].L1GasUsed = new(big.Int).Add(new(big.Int).SetUint64(gas), overhead)
-					rs[i].L1Fee = L1Cost(gas, l1Basefee, overhead, scalar)
-					rs[i].FeeScalar = feeScalar
-				}
-			}
-		} else {
-			return fmt.Errorf("L1 info tx only has %d bytes, cannot read gas price parameters", len(data))
 		}
 	}
 

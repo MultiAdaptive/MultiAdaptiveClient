@@ -21,12 +21,12 @@ import (
 	"time"
 
 	"github.com/VictoriaMetrics/fastcache"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/trie/trienode"
+	"domiconexec/common"
+	"domiconexec/core/rawdb"
+	"domiconexec/crypto"
+	"domiconexec/ethdb"
+	"domiconexec/log"
+	"domiconexec/trie/trienode"
 )
 
 // nodebuffer is a collection of modified trie nodes to aggregate the disk

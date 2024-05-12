@@ -22,11 +22,11 @@ import (
 	"sync"
 
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/rlp"
+	"domiconexec/common"
+	"domiconexec/core/types"
+	"domiconexec/log"
+	"domiconexec/p2p"
+	"domiconexec/rlp"
 )
 
 const (
@@ -118,26 +118,26 @@ func NewPeer(version uint, p *p2p.Peer, rw p2p.MsgReadWriter, txpool TxPool, fdp
 		Peer:            p,
 		rw:              rw,
 		version:         version,
-		knownTxs:        newKnownCache(maxKnownTxs),
-		knownFds:        newKnownCache(maxKnownFds),
-		knownBlocks:     newKnownCache(maxKnownBlocks),
-		queuedBlocks:    make(chan *blockPropagation, maxQueuedBlocks),
-		queuedBlockAnns: make(chan *types.Block, maxQueuedBlockAnns),
-		txBroadcast:     make(chan []common.Hash),
-		txAnnounce:      make(chan []common.Hash),
+		//knownTxs:        newKnownCache(maxKnownTxs),
+		//knownFds:        newKnownCache(maxKnownFds),
+		//knownBlocks:     newKnownCache(maxKnownBlocks),
+		//queuedBlocks:    make(chan *blockPropagation, maxQueuedBlocks),
+		//queuedBlockAnns: make(chan *types.Block, maxQueuedBlockAnns),
+		//txBroadcast:     make(chan []common.Hash),
+		//txAnnounce:      make(chan []common.Hash),
 		fdBroadcast:     make(chan []common.Hash),
 		fdAnnounce:      make(chan []common.Hash),
 		reqDispatch:     make(chan *request),
 		reqCancel:       make(chan *cancel),
 		resDispatch:     make(chan *response),
-		txpool:          txpool,
+		//txpool:          txpool,
 		fdpool:          fdpool,
 		term:            make(chan struct{}),
 	}
 	// Start up all the broadcasters
-	go peer.broadcastBlocks()
-	go peer.broadcastTransactions()
-	go peer.announceTransactions()
+	//go peer.broadcastBlocks()
+	//go peer.broadcastTransactions()
+	//go peer.announceTransactions()
 	go peer.broadcastFileData()
 	go peer.announceFileDatas()
 	go peer.dispatcher()

@@ -18,13 +18,13 @@ package eth
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/eth/protocols/eth"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/rlp"
+	"domiconexec/common"
+	"domiconexec/core"
+	"domiconexec/core/types"
+	"domiconexec/eth/protocols/eth"
+	"domiconexec/log"
+	"domiconexec/p2p/enode"
+	"domiconexec/rlp"
 )
 
 // ethHandler implements the eth.Backend interface to handle the various network

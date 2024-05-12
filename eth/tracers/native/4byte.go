@@ -21,9 +21,9 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	"github.com/ethereum/go-ethereum/common"
-	//"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/eth/tracers"
+	"domiconexec/common"
+	//"domiconexec/core/vm"
+	"domiconexec/eth/tracers"
 )
 
 func init() {

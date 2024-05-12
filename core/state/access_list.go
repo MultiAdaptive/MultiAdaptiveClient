@@ -17,7 +17,7 @@
 package state
 
 import (
-	"github.com/ethereum/go-ethereum/common"
+	"domiconexec/common"
 )
 
 type accessList struct {

@@ -21,8 +21,8 @@ import (
 	"container/heap"
 	"errors"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"domiconexec/common"
+	"domiconexec/core/types"
 )
 
 // NodeResolver is used for looking up trie nodes before reaching into the real

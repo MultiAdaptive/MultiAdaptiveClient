@@ -23,7 +23,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
+	"domiconexec/log"
 	"github.com/fsnotify/fsnotify"
 )
 

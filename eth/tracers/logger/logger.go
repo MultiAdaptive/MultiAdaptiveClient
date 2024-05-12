@@ -25,11 +25,11 @@ import (
 	//"strings"
 	"sync/atomic"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
+	"domiconexec/common"
+	"domiconexec/common/hexutil"
+	"domiconexec/common/math"
+	"domiconexec/core/types"
+	"domiconexec/params"
 	"github.com/holiman/uint256"
 )
 

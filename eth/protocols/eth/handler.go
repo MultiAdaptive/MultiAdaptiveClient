@@ -21,17 +21,17 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
+	"domiconexec/common"
+	"domiconexec/core"
+	"domiconexec/core/types"
 
-	"github.com/ethereum/go-ethereum/log"
-	pool "github.com/ethereum/go-ethereum/core/filedatapool"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/enr"
-	"github.com/ethereum/go-ethereum/params"
+	"domiconexec/log"
+	pool "domiconexec/core/filedatapool"
+	"domiconexec/metrics"
+	"domiconexec/p2p"
+	"domiconexec/p2p/enode"
+	"domiconexec/p2p/enr"
+	"domiconexec/params"
 )
 
 const (
@@ -190,39 +190,39 @@ type Decoder interface {
 }
 
 var eth67 = map[uint64]msgHandler{
-	NewBlockHashesMsg:             handleNewBlockhashes,
-	NewBlockMsg:                   handleNewBlock,
-	TransactionsMsg:               handleTransactions,
-	NewPooledTransactionHashesMsg: handleNewPooledTransactionHashes67,
+	//NewBlockHashesMsg:             handleNewBlockhashes,
+	//NewBlockMsg:                   handleNewBlock,
+	//TransactionsMsg:               handleTransactions,
+	//NewPooledTransactionHashesMsg: handleNewPooledTransactionHashes67,
 	//GetBlockHeadersMsg:            handleGetBlockHeaders,
-	BlockHeadersMsg:               handleBlockHeaders,
+	//BlockHeadersMsg:               handleBlockHeaders,
 	//GetBlockBodiesMsg:             handleGetBlockBodies,
-	BlockBodiesMsg:                handleBlockBodies,
-	GetReceiptsMsg:                handleGetReceipts,
-	ReceiptsMsg:                   handleReceipts,
-	GetPooledTransactionsMsg:      handleGetPooledTransactions,
+	//BlockBodiesMsg:                handleBlockBodies,
+	//GetReceiptsMsg:                handleGetReceipts,
+	//ReceiptsMsg:                   handleReceipts,
+	//GetPooledTransactionsMsg:      handleGetPooledTransactions,
 	FileDataMsg:				   				 handleFileDatas,
 	ResFileDatasMsg:							 handleResFileDatas,
  	ReqFileDatasMsg:							 handleReqFileDatas,	
-	PooledTransactionsMsg:         handlePooledTransactions,
+	//PooledTransactionsMsg:         handlePooledTransactions,
 	GetPooledFileDatasMsg:         handleGetPooledFileDatas,
 	NewPooledFileDataHashesMsg:    handleNewPooledFileDataHashes67,
 	PooledFileDatasMsg:			  		 handlePooledFileDatas,
 }
 
 var eth68 = map[uint64]msgHandler{
-	NewBlockHashesMsg:             handleNewBlockhashes,
-	NewBlockMsg:                   handleNewBlock,
-	TransactionsMsg:               handleTransactions,
-	NewPooledTransactionHashesMsg: handleNewPooledTransactionHashes68,
+	//NewBlockHashesMsg:             handleNewBlockhashes,
+	//NewBlockMsg:                   handleNewBlock,
+	//TransactionsMsg:               handleTransactions,
+	//NewPooledTransactionHashesMsg: handleNewPooledTransactionHashes68,
 	//GetBlockHeadersMsg:            handleGetBlockHeaders,
-	BlockHeadersMsg:               handleBlockHeaders,
+	//BlockHeadersMsg:               handleBlockHeaders,
 	//GetBlockBodiesMsg:             handleGetBlockBodies,
-	BlockBodiesMsg:                handleBlockBodies,
-	GetReceiptsMsg:                handleGetReceipts,
-	ReceiptsMsg:                   handleReceipts,
-	GetPooledTransactionsMsg:      handleGetPooledTransactions,
-	PooledTransactionsMsg:         handlePooledTransactions,
+	//BlockBodiesMsg:                handleBlockBodies,
+	//GetReceiptsMsg:                handleGetReceipts,
+	//ReceiptsMsg:                   handleReceipts,
+	//GetPooledTransactionsMsg:      handleGetPooledTransactions,
+	//PooledTransactionsMsg:         handlePooledTransactions,
 	FileDataMsg:				  				 handleFileDatas,
 	ReqFileDatasMsg:							 handleReqFileDatas,
  	ResFileDatasMsg:							 handleResFileDatas,	

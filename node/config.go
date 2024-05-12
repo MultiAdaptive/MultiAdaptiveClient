@@ -25,11 +25,11 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/rpc"
+	"domiconexec/common"
+	"domiconexec/crypto"
+	"domiconexec/log"
+	"domiconexec/p2p"
+	"domiconexec/rpc"
 )
 
 const (

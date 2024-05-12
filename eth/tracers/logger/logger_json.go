@@ -18,10 +18,10 @@ package logger
 
 import (
 	"encoding/json"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
+	"domiconexec/common"
+	"domiconexec/common/math"
 	"io"
-	//"github.com/ethereum/go-ethereum/core/vm"
+	//"domiconexec/core/vm"
 )
 
 type JSONLogger struct {

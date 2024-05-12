@@ -19,10 +19,10 @@ package keystore
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
+	"domiconexec"
+	"domiconexec/accounts"
+	"domiconexec/core/types"
+	"domiconexec/crypto"
 )
 
 // keystoreWallet implements the accounts.Wallet interface for the original

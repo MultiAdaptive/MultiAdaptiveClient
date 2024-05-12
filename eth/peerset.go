@@ -22,10 +22,10 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/eth/protocols/eth"
-	"github.com/ethereum/go-ethereum/eth/protocols/snap"
-	"github.com/ethereum/go-ethereum/p2p"
+	"domiconexec/common"
+	"domiconexec/eth/protocols/eth"
+	"domiconexec/eth/protocols/snap"
+	"domiconexec/p2p"
 )
 
 var (

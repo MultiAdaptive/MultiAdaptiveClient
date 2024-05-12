@@ -24,14 +24,14 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/misc/eip4844"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	"domiconexec/common"
+	"domiconexec/misc/eip4844"
+	"domiconexec/core/types"
+	"domiconexec/crypto"
+	"domiconexec/ethdb"
+	"domiconexec/log"
+	"domiconexec/params"
+	"domiconexec/rlp"
 	"golang.org/x/exp/slices"
 )
 

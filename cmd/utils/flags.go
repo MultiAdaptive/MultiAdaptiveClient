@@ -20,15 +20,16 @@ package utils
 import (
 	"context"
 	"crypto/ecdsa"
+	"domiconexec/core/filedatapool"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/eth"
-	//"github.com/ethereum/go-ethereum/eth/filters"
-	"github.com/ethereum/go-ethereum/eth/tracers"
-	"github.com/ethereum/go-ethereum/ethdb"
-	//"github.com/ethereum/go-ethereum/trie/triedb/hashdb"
-	//"github.com/ethereum/go-ethereum/trie/triedb/pathdb"
+	"domiconexec/eth"
+	//"domiconexec/eth/filters"
+	"domiconexec/eth/tracers"
+	"domiconexec/ethdb"
+	//"domiconexec/trie/triedb/hashdb"
+	//"domiconexec/trie/triedb/pathdb"
 	"math"
 	//"math/big"
 	"net"
@@ -40,34 +41,34 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/fdlimit"
-	"github.com/ethereum/go-ethereum/core"
-	//"github.com/ethereum/go-ethereum/core/txpool/filedatapool"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/crypto/kzg4844"
-	"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/internal/flags"
+	"domiconexec/accounts"
+	"domiconexec/accounts/keystore"
+	"domiconexec/common"
+	"domiconexec/common/fdlimit"
+	"domiconexec/core"
+	//"domiconexec/core/txpool/filedatapool"
+	"domiconexec/core/rawdb"
+	"domiconexec/crypto"
+	"domiconexec/crypto/kzg4844"
+	"domiconexec/eth/downloader"
+	"domiconexec/eth/ethconfig"
+	"domiconexec/internal/ethapi"
+	"domiconexec/internal/flags"
 
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/metrics/exp"
-	"github.com/ethereum/go-ethereum/metrics/influxdb"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/nat"
-	"github.com/ethereum/go-ethereum/p2p/netutil"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/ethereum/go-ethereum/trie"
-	"github.com/ethereum/go-ethereum/trie/triedb/hashdb"
-	"github.com/ethereum/go-ethereum/trie/triedb/pathdb"
+	"domiconexec/log"
+	"domiconexec/metrics"
+	"domiconexec/metrics/exp"
+	"domiconexec/metrics/influxdb"
+	"domiconexec/node"
+	"domiconexec/p2p"
+	"domiconexec/p2p/enode"
+	"domiconexec/p2p/nat"
+	"domiconexec/p2p/netutil"
+	"domiconexec/params"
+	"domiconexec/rpc"
+	"domiconexec/trie"
+	"domiconexec/trie/triedb/hashdb"
+	"domiconexec/trie/triedb/pathdb"
 	pcsclite "github.com/gballet/go-libpcsclite"
 	gopsutil "github.com/shirou/gopsutil/mem"
 	"github.com/urfave/cli/v2"
@@ -93,6 +94,40 @@ var (
 		Usage:    "URL for remote database",
 		Category: flags.LoggingCategory,
 	}
+
+	////db flag
+	//DBStateUsr = &cli.StringFlag{
+	//	Name: "db.stateUsr",
+	//	Usage: "state db config User name",
+	//	Value: node.DefaultConfig.DBConfig.User,
+	//	Category: flags.EthCategory,
+	//}
+	//DBStateName = &cli.StringFlag{
+	//	Name: "db.stateName",
+	//	Usage: "state db config name",
+	//	Value: node.DefaultConfig.DBConfig.Name,
+	//	Category: flags.EthCategory,
+	//}
+	//
+	//DBStatePwd = &cli.StringFlag{
+	//	Name: "db.statePwd",
+	//	Usage: "state db config password",
+	//	Value: node.DefaultConfig.DBConfig.Password,
+	//	Category: flags.EthCategory,
+	//}
+	//
+	//DBStateHost = &cli.StringFlag{
+	//	Name: "db.stateHost",
+	//	Usage: "state db config host",
+	//	Category: flags.EthCategory,
+	//}
+	//DBStatePort = &cli.StringFlag{
+	//	Name: "db.statePort",
+	//	Usage: "state db config prot",
+	//	Value: node.DefaultConfig.DBConfig.Port,
+	//	Category: flags.EthCategory,
+	//}
+
 	DBEngineFlag = &cli.StringFlag{
 		Name:     "db.engine",
 		Usage:    "Backing database implementation to use ('pebble' or 'leveldb')",
@@ -149,6 +184,18 @@ var (
 	HoleskyFlag = &cli.BoolFlag{
 		Name:     "holesky",
 		Usage:    "Holesky network: pre-configured proof-of-stake test network",
+		Category: flags.EthCategory,
+	}
+
+	DomiconFlag = &cli.BoolFlag{
+		Name: "domicon",
+		Usage: "domicon network: ",
+		Category: flags.EthCategory,
+	}
+
+	L1ScanUrlFlag = &cli.StringFlag{
+		Name: "l1Url",
+		Usage: "scan l1 url",
 		Category: flags.EthCategory,
 	}
 
@@ -310,33 +357,33 @@ var (
 		Category: flags.FileDataCategory,
 	}
 
-	//FileDataPoolJournalFlag = &cli.StringFlag{
-	//	Name:     "filedatapool.journal",
-	//	Usage:    "Disk journal for local fileData to survive node restarts",
-	//	Value:    ethconfig.Defaults.FileDataPool.Journal,
-	//	Category: flags.FileDataCategory,
-	//}
-	//
-	//FileDataLifetimeFlag = &cli.DurationFlag{
-	//	Name:     "filedatapool.lifetime",
-	//	Usage:    "Maximum amount of time non-executable fileData are queued",
-	//	Value:    ethconfig.Defaults.FileDataPool.Lifetime,
-	//	Category: flags.FileDataCategory,
-	//}
-	//
-	//FileDataRejournalFlag = &cli.DurationFlag{
-	//	Name:     "filedatapool.lifetime",
-	//	Usage:    "Time interval to regenerate the local transaction journal",
-	//	Value:    ethconfig.Defaults.FileDataPool.Rejournal,
-	//	Category: flags.FileDataCategory,
-	//}
-	//
-	//FileDataGlobalSlotsFlag = &cli.Uint64Flag{
-	//	Name:     "filedatapool.globalslots",
-	//	Usage:    "Maximum number of executable fileData slots for all accounts",
-	//	Value:    ethconfig.Defaults.FileDataPool.GlobalSlots,
-	//	Category: flags.FileDataCategory,
-	//}
+	FileDataPoolJournalFlag = &cli.StringFlag{
+		Name:     "filedatapool.journal",
+		Usage:    "Disk journal for local fileData to survive node restarts",
+		Value:    ethconfig.Defaults.FileDataPool.Journal,
+		Category: flags.FileDataCategory,
+	}
+
+	FileDataLifetimeFlag = &cli.DurationFlag{
+		Name:     "filedatapool.lifetime",
+		Usage:    "Maximum amount of time non-executable fileData are queued",
+		Value:    ethconfig.Defaults.FileDataPool.Lifetime,
+		Category: flags.FileDataCategory,
+	}
+
+	FileDataRejournalFlag = &cli.DurationFlag{
+		Name:     "filedatapool.lifetime",
+		Usage:    "Time interval to regenerate the local transaction journal",
+		Value:    ethconfig.Defaults.FileDataPool.Rejournal,
+		Category: flags.FileDataCategory,
+	}
+
+	FileDataGlobalSlotsFlag = &cli.Uint64Flag{
+		Name:     "filedatapool.globalslots",
+		Usage:    "Maximum number of executable fileData slots for all accounts",
+		Value:    ethconfig.Defaults.FileDataPool.GlobalSlots,
+		Category: flags.FileDataCategory,
+	}
 
 	// Performance tuning settings
 	CacheFlag = &cli.IntFlag{
@@ -1172,6 +1219,23 @@ func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error
 	}
 	return accs[index], nil
 }
+//
+//func (ctx *cli.Context,stack *node.Node) {
+//	if ctx.IsSet(DBStateUssetDbConfigr.Name) {
+//		stack.Config().DBConfig.User = DBStateUsr.Name
+//	}
+//	if ctx.IsSet(DBStateName.Name) {
+//		stack.Config().DBConfig.Name = DBStateName.Name
+//	}
+//	if ctx.IsSet(DBStateHost.Name) {
+//		stack.Config().DBConfig.Host = DBStateHost.Name
+//	}
+//	if ctx.IsSet(DBStatePort.Name) {
+//		stack.Config().DBConfig.Port = DBStatePort.Name
+//	}
+//}
+//
+
 
 // setEtherbase retrieves the etherbase from the directly specified command line flags.
 func setEtherbase(ctx *cli.Context, cfg *ethconfig.Config) {
@@ -1370,35 +1434,35 @@ func SetDataDir(ctx *cli.Context, cfg *node.Config) {
 		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "holesky")
 	}
 }
-//
-//func setFileDataPool(ctx *cli.Context, cfg *filedatapool.Config){
-//	if ctx.IsSet(FileDataPoolLocalsFlag.Name) {
-//		locals := strings.Split(ctx.String(FileDataPoolLocalsFlag.Name), ",")
-//		for _, account := range locals {
-//			if trimmed := strings.TrimSpace(account); !common.IsHexAddress(trimmed) {
-//				Fatalf("Invalid account in --txpool.locals: %s", trimmed)
-//			} else {
-//				cfg.Locals = append(cfg.Locals, common.HexToAddress(account))
-//			}
-//		}
-//	}
-//
-//	if ctx.IsSet(FileDataPoolJournalFlag.Name) {
-//		cfg.Journal = ctx.String(FileDataPoolJournalFlag.Name)
-//	}
-//
-//	if ctx.IsSet(FileDataLifetimeFlag.Name) {
-//		cfg.Lifetime = ctx.Duration(FileDataLifetimeFlag.Name)
-//	}
-//
-//	if ctx.IsSet(FileDataRejournalFlag.Name) {
-//		cfg.Rejournal = ctx.Duration(FileDataRejournalFlag.Name)
-//	}
-//
-//	if ctx.IsSet(FileDataGlobalSlotsFlag.Name) {
-//		cfg.GlobalSlots = ctx.Uint64(FileDataGlobalSlotsFlag.Name)
-//	}
-//}
+
+func setFileDataPool(ctx *cli.Context, cfg *filedatapool.Config){
+	if ctx.IsSet(FileDataPoolLocalsFlag.Name) {
+		locals := strings.Split(ctx.String(FileDataPoolLocalsFlag.Name), ",")
+		for _, account := range locals {
+			if trimmed := strings.TrimSpace(account); !common.IsHexAddress(trimmed) {
+				Fatalf("Invalid account in --txpool.locals: %s", trimmed)
+			} else {
+				cfg.Locals = append(cfg.Locals, common.HexToAddress(account))
+			}
+		}
+	}
+
+	if ctx.IsSet(FileDataPoolJournalFlag.Name) {
+		cfg.Journal = ctx.String(FileDataPoolJournalFlag.Name)
+	}
+
+	if ctx.IsSet(FileDataLifetimeFlag.Name) {
+		cfg.Lifetime = ctx.Duration(FileDataLifetimeFlag.Name)
+	}
+
+	if ctx.IsSet(FileDataRejournalFlag.Name) {
+		cfg.Rejournal = ctx.Duration(FileDataRejournalFlag.Name)
+	}
+
+	if ctx.IsSet(FileDataGlobalSlotsFlag.Name) {
+		cfg.GlobalSlots = ctx.Uint64(FileDataGlobalSlotsFlag.Name)
+	}
+}
 
 // CheckExclusive verifies that only a single instance of the provided flags was
 // set by the user. Each flag might optionally be followed by a string type to
@@ -1444,7 +1508,7 @@ func CheckExclusive(ctx *cli.Context, args ...interface{}) {
 // SetEthConfig applies eth-related command line flags to the config.
 func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	// Avoid conflicting network flags
-	CheckExclusive(ctx, MainnetFlag, DeveloperFlag, GoerliFlag, SepoliaFlag, HoleskyFlag)
+	CheckExclusive(ctx, MainnetFlag, DeveloperFlag, GoerliFlag, SepoliaFlag, HoleskyFlag, DomiconFlag)
 	CheckExclusive(ctx, LightServeFlag, SyncModeFlag, "light")
 	CheckExclusive(ctx, DeveloperFlag, ExternalSignerFlag) // Can't use both ephemeral unlocked and external signer
 
@@ -1452,6 +1516,8 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	setEtherbase(ctx, cfg)
 	//setFileDataPool(ctx,&cfg.FileDataPool)
 	setLes(ctx, cfg)
+	// set db conf
+	//setDbConfig(ctx,stack)
 
 	// Cap the cache allowance and tune the garbage collector
 	mem, err := gopsutil.VirtualMemory()
@@ -1580,6 +1646,14 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		}
 		cfg.Genesis = core.DefaultGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.MainnetGenesisHash)
+
+	case ctx.Bool(DomiconFlag.Name):
+		if !ctx.IsSet(NetworkIdFlag.Name) {
+			cfg.NetworkId = 1988
+		}
+		cfg.Genesis = core.DefaultDomicionGenesisBlock()
+		SetDNSDiscoveryDefaults(cfg,params.DomiconGenesisHash)
+
 	case ctx.Bool(HoleskyFlag.Name):
 		if !ctx.IsSet(NetworkIdFlag.Name) {
 			cfg.NetworkId = 17000

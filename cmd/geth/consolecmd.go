@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/console"
-	"github.com/ethereum/go-ethereum/internal/flags"
+	"domiconexec/cmd/utils"
+	"domiconexec/console"
+	"domiconexec/internal/flags"
 	"github.com/urfave/cli/v2"
 )
 
@@ -70,8 +70,8 @@ JavaScript API. See https://geth.ethereum.org/docs/interacting-with-geth/javascr
 func localConsole(ctx *cli.Context) error {
 	// Create and start the node based on the CLI flags
 	prepare(ctx)
-	stack, backend := makeFullNode(ctx)
-	startNode(ctx, stack, backend, true)
+	stack, _ := makeFullNode(ctx)
+	startNode(ctx, stack, true)
 	defer stack.Close()
 
 	// Attach to the newly started node and create the JavaScript console.

@@ -26,12 +26,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	"domiconexec/common"
+	"domiconexec/common/math"
+	"domiconexec/core/types"
+	"domiconexec/crypto"
+	"domiconexec/params"
+	"domiconexec/rlp"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/sha3"
 )

@@ -25,25 +25,25 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	//"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/console/prompt"
-	//"github.com/ethereum/go-ethereum/eth"
-	//"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/internal/debug"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/internal/flags"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/node"
+	"domiconexec/accounts"
+	"domiconexec/accounts/keystore"
+	"domiconexec/cmd/utils"
+	//"domiconexec/common"
+	"domiconexec/console/prompt"
+	//"domiconexec/eth"
+	//"domiconexec/eth/downloader"
+	"domiconexec/ethclient"
+	"domiconexec/internal/debug"
+	// "domiconexec/internal/ethapi"
+	"domiconexec/internal/flags"
+	"domiconexec/log"
+	"domiconexec/metrics"
+	"domiconexec/node"
 	"go.uber.org/automaxprocs/maxprocs"
 
 	// Force-load the tracer engines to trigger registration
-	_ "github.com/ethereum/go-ethereum/eth/tracers/js"
-	_ "github.com/ethereum/go-ethereum/eth/tracers/native"
+	_ "domiconexec/eth/tracers/js"
+	_ "domiconexec/eth/tracers/native"
 
 	"github.com/urfave/cli/v2"
 )
@@ -63,6 +63,8 @@ var (
 		utils.KeyStoreDirFlag,
 		utils.ExternalSignerFlag,
 		utils.NoUSBFlag,
+		utils.DomiconFlag,
+		utils.L1ScanUrlFlag,
 		utils.USBFlag,
 		utils.SmartCardDaemonPathFlag,
 		utils.OverrideCancun,
@@ -305,10 +307,10 @@ func geth(ctx *cli.Context) error {
 	}
 
 	prepare(ctx)
-	stack, backend := makeFullNode(ctx)
+	stack, _ := makeFullNode(ctx)
 	defer stack.Close()
 
-	startNode(ctx, stack, backend, false)
+	startNode(ctx, stack, false)
 	stack.Wait()
 	return nil
 }
@@ -316,7 +318,7 @@ func geth(ctx *cli.Context) error {
 // startNode boots up the system node and all registered protocols, after which
 // it unlocks any requested accounts, and starts the RPC/IPC interfaces and the
 // miner.
-func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend, isConsole bool) {
+func startNode(ctx *cli.Context, stack *node.Node, isConsole bool) {
 	debug.Memsize.Add("node", stack)
 
 	// Start up the node itself
@@ -365,30 +367,7 @@ func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend, isCon
 			}
 		}
 	}()
-
-	//// Spawn a standalone goroutine for status synchronization monitoring,
-	//// close the node when synchronization is complete if user required.
-	//if ctx.Bool(utils.ExitWhenSyncedFlag.Name) {
-	//	go func() {
-	//		sub := stack.EventMux().Subscribe(downloader.DoneEvent{})
-	//		defer sub.Unsubscribe()
-	//		for {
-	//			event := <-sub.Chan()
-	//			if event == nil {
-	//				continue
-	//			}
-	//			done, ok := event.Data.(downloader.DoneEvent)
-	//			if !ok {
-	//				continue
-	//			}
-	//			if timestamp := time.Unix(int64(done.Latest.Time), 0); time.Since(timestamp) < 10*time.Minute {
-	//				log.Info("Synchronisation completed", "latestnum", done.Latest.Number, "latesthash", done.Latest.Hash(),
-	//					"age", common.PrettyAge(timestamp))
-	//				stack.Close()
-	//			}
-	//		}
-	//	}()
-	//}
+	
 }
 
 // unlockAccounts unlocks any account specifically requested.

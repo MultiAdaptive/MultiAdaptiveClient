@@ -27,12 +27,12 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/usbwallet/trezor"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/log"
+	"domiconexec/accounts"
+	"domiconexec/accounts/usbwallet/trezor"
+	"domiconexec/common"
+	"domiconexec/common/hexutil"
+	"domiconexec/core/types"
+	"domiconexec/log"
 	"github.com/golang/protobuf/proto"
 )
 

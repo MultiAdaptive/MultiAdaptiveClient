@@ -26,12 +26,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/ethdb/leveldb"
-	"github.com/ethereum/go-ethereum/ethdb/memorydb"
-	"github.com/ethereum/go-ethereum/ethdb/pebble"
-	"github.com/ethereum/go-ethereum/log"
+	"domiconexec/common"
+	"domiconexec/ethdb"
+	"domiconexec/ethdb/leveldb"
+	"domiconexec/ethdb/memorydb"
+	"domiconexec/ethdb/pebble"
+	"domiconexec/log"
 	"github.com/olekukonko/tablewriter"
 )
 

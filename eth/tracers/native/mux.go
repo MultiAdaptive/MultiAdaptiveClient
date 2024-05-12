@@ -18,8 +18,8 @@ package native
 
 import (
 	"encoding/json"
-	//"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/eth/tracers"
+	//"domiconexec/core/vm"
+	"domiconexec/eth/tracers"
 )
 
 func init() {

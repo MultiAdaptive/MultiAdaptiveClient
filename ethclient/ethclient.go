@@ -24,12 +24,12 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rpc"
+	"domiconexec"
+	"domiconexec/common"
+	"domiconexec/common/hexutil"
+	"domiconexec/core/types"
+	"domiconexec/log"
+	"domiconexec/rpc"
 )
 
 // Client defines typed wrappers for the Ethereum RPC API.

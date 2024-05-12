@@ -16,7 +16,7 @@
 
 package snapshot
 
-import "github.com/ethereum/go-ethereum/metrics"
+import "domiconexec/metrics"
 
 // Metrics in generation
 var (

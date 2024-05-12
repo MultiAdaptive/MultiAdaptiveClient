@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"domiconexec/common"
+	"domiconexec/common/hexutil"
 )
 
 var _ = (*flatCallActionMarshaling)(nil)

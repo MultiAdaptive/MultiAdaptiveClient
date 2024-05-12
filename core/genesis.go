@@ -18,19 +18,19 @@ package core
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
+	"domiconexec/core/rawdb"
+	"domiconexec/core/state"
+	"domiconexec/core/types"
 	"strings"
 	"encoding/json"
 	"errors"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/ethdb"
+	"domiconexec/common/hexutil"
+	"domiconexec/params"
+	"domiconexec/ethdb"
 	"math/big"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/trie"
+	"domiconexec/rlp"
+	"domiconexec/common"
+	"domiconexec/trie"
 )
 
 //go:generate go run github.com/fjl/gencodec -type Genesis -field-override genesisSpecMarshaling -out gen_genesis.go
@@ -425,7 +425,8 @@ func LoadChainConfig(db ethdb.Database, genesis *Genesis) (*params.ChainConfig, 
 	}
 	// There is no stored chain config and no new config provided,
 	// In this case the default chain config(mainnet) will be used
-	return params.MainnetChainConfig, nil
+	//return params.MainnetChainConfig, nil
+	return params.DomiconnetConfig,nil
 }
 
 //func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
@@ -562,6 +563,17 @@ func DefaultGenesisBlock() *Genesis {
 		GasLimit:   5000,
 		Difficulty: big.NewInt(17179869184),
 		Alloc:      decodePrealloc(mainnetAllocData),
+	}
+}
+
+func DefaultDomicionGenesisBlock() *Genesis {
+	return &Genesis{
+		Config:params.DomiconnetConfig,
+		Nonce:      0,
+		ExtraData:  []byte("domicion !"),
+		GasLimit:   5000,
+		Difficulty: big.NewInt(17179869184),
+		//Alloc:      decodePrealloc(mainnetAllocData),
 	}
 }
 

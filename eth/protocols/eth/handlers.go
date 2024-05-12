@@ -20,13 +20,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/filedatapool"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
+	"domiconexec/common"
+	"domiconexec/core"
+	"domiconexec/core/filedatapool"
+	"domiconexec/core/types"
+	"domiconexec/log"
+	"domiconexec/rlp"
+	"domiconexec/trie"
 )
 
 

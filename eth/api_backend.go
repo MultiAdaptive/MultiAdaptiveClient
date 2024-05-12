@@ -22,19 +22,20 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	//"github.com/ethereum/go-ethereum/core/bloombits"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	//"github.com/ethereum/go-ethereum/core/txpool"
-	//"github.com/ethereum/go-ethereum/core/txpool/filedatapool"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
+	"domiconexec"
+	"domiconexec/accounts"
+	"domiconexec/common"
+	//"domiconexec/core/bloombits"
+	"domiconexec/core/filedatapool"
+	"domiconexec/core/rawdb"
+	//"domiconexec/core/txpool"
+	//"domiconexec/core/txpool/filedatapool"
+	"domiconexec/core/types"
+	"domiconexec/ethdb"
+	"domiconexec/event"
+	"domiconexec/log"
+	"domiconexec/params"
+	"domiconexec/rpc"
 )
 
 // EthAPIBackend implements ethapi.Backend and tracers.Backend for full nodes
@@ -44,6 +45,16 @@ type EthAPIBackend struct {
 	disableTxPool       bool
 	eth                 *Ethereum
 	//gpo                 *gasprice.Oracle
+}
+
+// GetFileDataByCommitment implements ethapi.Backend.
+func (b *EthAPIBackend) GetFileDataByCommitment(comimt []byte) (*types.FileData, error) {
+	panic("unimplemented")
+}
+
+// GetFileDataByHash implements ethapi.Backend.
+func (b *EthAPIBackend) GetFileDataByHash(hash common.Hash) (*types.FileData, filedatapool.DISK_FILEDATA_STATE, error) {
+	panic("unimplemented")
 }
 
 // ChainConfig returns the active chain configuration.
@@ -85,7 +96,6 @@ func (b *EthAPIBackend) BlockByHash(ctx context.Context, hash common.Hash) (*typ
 	//return b.eth.blockchain.GetBlockByHash(hash), nil
 	return nil, nil
 }
-
 
 func (b *EthAPIBackend) BlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*types.Block, error) {
 	if blockNr, ok := blockNrOrHash.Number(); ok {
@@ -165,9 +175,9 @@ func (b *EthAPIBackend) UploadFileDataByParams(sender, submitter common.Address,
 //	return nil, err
 //}
 
-func (b *EthAPIBackend) CheckSelfState(blockNr rpc.BlockNumber) (string,error) {
+func (b *EthAPIBackend) CheckSelfState(blockNr rpc.BlockNumber) (string, error) {
 	//bc := b.eth.BlockChain()
-      //block := bc.GetBlockByNumber(uint64(blockNr))
+	//block := bc.GetBlockByNumber(uint64(blockNr))
 	//db := b.eth.chainDb
 	//res := make([]*types.FileData, 0)
 	//var totalCount uint64
@@ -195,12 +205,12 @@ func (b *EthAPIBackend) CheckSelfState(blockNr rpc.BlockNumber) (string,error) {
 	//if len(res) == int(totalCount) {
 	//	return infoStr,nil
 	//}
-	
-	return "",errors.New("dont have full fileDatas with local node")
+
+	return "", errors.New("dont have full fileDatas with local node")
 }
 
 func (b *EthAPIBackend) BatchFileDataByHashes(hashes rpc.TxHashes) ([]uint, []error) {
-	log.Info("EthAPIBackend-----GetFileDataByHashes", "len(hashes)",len(hashes.TxHashes))
+	log.Info("EthAPIBackend-----GetFileDataByHashes", "len(hashes)", len(hashes.TxHashes))
 	flags := make([]uint, len(hashes.TxHashes))
 	errs := make([]error, len(hashes.TxHashes))
 	//for inde, hash := range hashes.TxHashes {
@@ -240,15 +250,15 @@ func (b *EthAPIBackend) DiskSaveFileDataWithHash(hash common.Hash) (bool, error)
 	return true, nil
 }
 
-func (b *EthAPIBackend) DiskSaveFileDatas(hashed []common.Hash,blockNrOrHash rpc.BlockNumberOrHash) (bool, error) {
+func (b *EthAPIBackend) DiskSaveFileDatas(hashed []common.Hash, blockNrOrHash rpc.BlockNumberOrHash) (bool, error) {
 	//flag,err := b.eth.fdPool.SaveBatchFileDatasToDisk(hashed,*blockNrOrHash.BlockHash,uint64(*blockNrOrHash.BlockNumber))
 	//return flag,err
 	return false, nil
 }
 
 // ChangeCurrentState implements ethapi.Backend.
-func (b *EthAPIBackend) ChangeCurrentState(state int,number rpc.BlockNumber) bool{
-	 return true
+func (b *EthAPIBackend) ChangeCurrentState(state int, number rpc.BlockNumber) bool {
+	return true
 }
 
 func (b *EthAPIBackend) SendTx(ctx context.Context, signedTx *types.Transaction) error {
@@ -312,7 +322,6 @@ func (b *EthAPIBackend) GetPoolNonce(ctx context.Context, addr common.Address) (
 	return 0, nil
 }
 
-
 //func (b *EthAPIBackend) TxPoolContent() (map[common.Address][]*types.Transaction, map[common.Address][]*types.Transaction) {
 //	return b.eth.txPool.Content()
 //}
@@ -371,7 +380,6 @@ func (b *EthAPIBackend) RPCEVMTimeout() time.Duration {
 func (b *EthAPIBackend) RPCTxFeeCap() float64 {
 	return b.eth.config.RPCTxFeeCap
 }
-
 
 //func (b *EthAPIBackend) ServiceFilter(ctx context.Context, session *bloombits.MatcherSession) {
 //	//for i := 0; i < bloomFilterThreads; i++ {

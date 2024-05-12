@@ -26,12 +26,12 @@ import (
 	"time"
 
 	"github.com/dop251/goja"
-	"github.com/ethereum/go-ethereum/accounts/scwallet"
-	"github.com/ethereum/go-ethereum/accounts/usbwallet"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/console/prompt"
-	"github.com/ethereum/go-ethereum/internal/jsre"
-	"github.com/ethereum/go-ethereum/rpc"
+	"domiconexec/accounts/scwallet"
+	"domiconexec/accounts/usbwallet"
+	"domiconexec/common/hexutil"
+	"domiconexec/console/prompt"
+	"domiconexec/internal/jsre"
+	"domiconexec/rpc"
 )
 
 // bridge is a collection of JavaScript utility methods to bride the .js runtime

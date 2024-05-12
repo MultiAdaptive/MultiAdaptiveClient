@@ -17,9 +17,9 @@
 package logger
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	//"github.com/ethereum/go-ethereum/core/vm"
+	"domiconexec/common"
+	"domiconexec/core/types"
+	//"domiconexec/core/vm"
 )
 
 // accessList is an accumulator for the set of accounts and storage slots an EVM

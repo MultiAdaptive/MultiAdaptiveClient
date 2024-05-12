@@ -21,8 +21,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rpc"
+	"domiconexec/log"
+	"domiconexec/rpc"
 )
 
 // StartHTTPEndpoint starts the HTTP RPC endpoint.

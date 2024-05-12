@@ -18,10 +18,10 @@
 package ethconfig
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/filedatapool"
-	"github.com/ethereum/go-ethereum/eth/downloader"
+	"domiconexec/common"
+	"domiconexec/core"
+	"domiconexec/core/filedatapool"
+	"domiconexec/eth/downloader"
 	"time"
 )
 
@@ -40,7 +40,7 @@ var Defaults = Config{
 	TrieTimeout:        60 * time.Minute,
 	SnapshotCache:      102,
 	FilterLogCacheSize: 32,
-	//FileDataPool: 	  filedatapool.DefaultConfig,
+	FileDataPool: 	  filedatapool.DefaultConfig,
 	//BlobPool:           blobpool.DefaultConfig,
 	RPCGasCap:          50000000,
 	RPCEVMTimeout:      5 * time.Second,
@@ -63,6 +63,8 @@ type Config struct {
 	// for nodes to connect to.
 	EthDiscoveryURLs  []string
 	SnapDiscoveryURLs []string
+
+	//DBConfig	db.Config //state db config
 
 	NoPruning  bool // Whether to disable pruning and flush everything to disk
 	NoPrefetch bool // Whether to disable prefetching and only load state on demand

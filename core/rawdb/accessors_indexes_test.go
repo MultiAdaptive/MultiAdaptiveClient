@@ -21,12 +21,12 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/internal/blocktest"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	"domiconexec/common"
+	"domiconexec/core/types"
+	"domiconexec/ethdb"
+	"domiconexec/internal/blocktest"
+	"domiconexec/params"
+	"domiconexec/rlp"
 )
 
 var newTestHasher = blocktest.NewHasher

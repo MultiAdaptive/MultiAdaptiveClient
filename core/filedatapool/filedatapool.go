@@ -3,26 +3,22 @@ package filedatapool
 import (
 	"bytes"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
-	"fmt"
+	"gorm.io/gorm"
 	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
+	"domiconexec/common"
+	"domiconexec/core"
 	kzg "github.com/domicon-labs/kzg-sdk"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	//"domiconexec/core/state"
+	"domiconexec/core/types"
+	"domiconexec/event"
+	"domiconexec/log"
+	"domiconexec/metrics"
+	"domiconexec/params"
 )
 
 var (
@@ -73,7 +69,6 @@ type Config struct {
 }
 
 
-
 var DefaultConfig = Config{
 	Journal:  "fileData.rlp",
 	Lifetime: 10 * time.Second,
@@ -88,18 +83,19 @@ type BlockChain interface {
 	Config() *params.ChainConfig
 
 	// CurrentBlock returns the current head of the chain.
-	CurrentBlock() *types.Header
+	CurrentBlock() *types.Block
 
 	// GetBlock retrieves a specific block, used during pool resets.
-	GetBlock(hash common.Hash, number uint64) *types.Block
+	GetBlock(hash common.Hash, number uint64) *types.Header
 
-	// StateAt returns a state database for a given root hash (generally the head).
-	//StateAt(root common.Hash) (*state.StateDB, error)
+
+	SqlDB() *gorm.DB
+
 }
 
 type DiskDetail struct {
 	TxHash        common.Hash 				`json:"TxHash"`
-	State         DISK_FILEDATA_STATE	`json:"State"`
+	State         DISK_FILEDATA_STATE	            `json:"State"`
 	TimeRecord    time.Time						`json:"TimeRecord"`
 	Data          types.FileData			`json:"Data"`
 }
@@ -120,14 +116,12 @@ type FilePool struct {
 	chain            BlockChain
 	fileDataFeed     event.Feed
 	fileDataHashFeed event.Feed
-	mu              sync.RWMutex
-	currentHead     atomic.Pointer[types.Header] // Current head of the blockchain
-	currentState    *state.StateDB               // Current state in the blockchain head
+	mu               sync.RWMutex
 	signer          types.FdSigner
 	journal         *journal                // Journal of local fileData to back up to disk
 	subs            event.SubscriptionScope // Subscription scope to unsubscribe all on shutdown
 	all             *lookup
-	diskCache				*HashCollect  //	
+	diskCache	    *HashCollect  //
 	collector       map[common.Hash]*types.FileData
 	beats           map[common.Hash]time.Time // Last heartbeat from each known account
 	reorgDoneCh     chan chan struct{}
@@ -139,11 +133,11 @@ type FilePool struct {
 func New(config Config, chain BlockChain) *FilePool {
 	fp := &FilePool{
 		config:          config,
-		chain:			 		 chain,		
+		chain:	     chain,
 		chainconfig:     chain.Config(),
 		signer:          types.LatestFdSigner(chain.Config()),
 		all:             newLookup(),
-		diskCache:			 newHashCollect(),
+		diskCache:	     newHashCollect(),
 		collector:       make(map[common.Hash]*types.FileData),
 		beats:           make(map[common.Hash]time.Time),
 		reorgDoneCh:     make(chan chan struct{}),
@@ -155,30 +149,11 @@ func New(config Config, chain BlockChain) *FilePool {
 		fp.journal = newFdJournal(config.Journal)
 	}
 
-	fp.Init(chain.CurrentBlock())
+	fp.Init()
 	return fp
 }
 
-func (fp *FilePool) Init(head *types.Header) error {
-	// Initialize the state with head block, or fallback to empty one in
-	// case the head state is not available(might occur when node is not
-	// fully synced).
-	//TODO should fix this
-	//statedb, err := fp.chain.StateAt(head.Root)
-	//if err != nil {
-	//	statedb, err = fp.chain.StateAt(types.EmptyRootHash)
-	//}
-	//if err != nil {
-	//	return err
-	//}
-	//fp.currentHead.Store(head)
-	//fp.currentState = statedb
-
-	// // Start the reorg loop early, so it can handle requests generated during
-	// // journal loading.
-	// fp.wg.Add(1)
-	// go fp.scheduleReorgLoop()
-
+func (fp *FilePool) Init() error {
 	// If local fileData and journaling is enabled, load from disk
 	if fp.journal != nil {
 		add := fp.addLocals
@@ -219,42 +194,45 @@ func (fp *FilePool) loop() {
 
 		// remove FileData from disk
 		case <- remove.C:
-		 diskDb := fp.currentState.Database().DiskDB()
-		 data,err := diskDb.Get(HashListKey)
-		 if err != nil || len(data) == 0 {
-			continue
-		 }
-
-		var coll HashCollect
-		err = json.Unmarshal(data,&coll)
-		if err != nil {
-			continue
-		}
-
-		var detail DiskDetail
-		for index,txHash := range coll.Hashes {
-			data,err := rawdb.ReadFileDataDetail(diskDb,txHash)
-			if err != nil {
-				continue
-			}
-		
-			err = json.Unmarshal(data,&detail)
-			if err == nil {
-				if detail.TimeRecord.Before(time.Now().Add(3*24*time.Hour)) {
-					detail.State = DISK_FILEDATA_STATE_DEL
-				}
-				if detail.State == DISK_FILEDATA_STATE_DEL {
-					//just for test net v1.0
-					detail.State = DISK_FILEDATA_STATE_SAVE
-					
-					data, _ := rlp.EncodeToBytes(detail)
-					rawdb.WriteFileDataDetail(diskDb,data,txHash)
-					fp.diskCache.Hashes = removeElement(fp.diskCache.Hashes,index)
-				}
-			}
-		}
-		collData,_ := json.Marshal(fp.diskCache)
-		diskDb.Put(HashListKey,collData)	
+		//
+		//	fp.chain.SqlDB()
+		//
+		// diskDb := fp.currentState.Database().DiskDB()
+		// data,err := diskDb.Get(HashListKey)
+		// if err != nil || len(data) == 0 {
+		//	continue
+		// }
+		//
+		//var coll HashCollect
+		//err = json.Unmarshal(data,&coll)
+		//if err != nil {
+		//	continue
+		//}
+		//
+		//var detail DiskDetail
+		//for index,txHash := range coll.Hashes {
+		//	data,err := rawdb.ReadFileDataDetail(diskDb,txHash)
+		//	if err != nil {
+		//		continue
+		//	}
+		//
+		//	err = json.Unmarshal(data,&detail)
+		//	if err == nil {
+		//		if detail.TimeRecord.Before(time.Now().Add(3*24*time.Hour)) {
+		//			detail.State = DISK_FILEDATA_STATE_DEL
+		//		}
+		//		if detail.State == DISK_FILEDATA_STATE_DEL {
+		//			//just for test net v1.0
+		//			detail.State = DISK_FILEDATA_STATE_SAVE
+		//
+		//			data, _ := rlp.EncodeToBytes(detail)
+		//			rawdb.WriteFileDataDetail(diskDb,data,txHash)
+		//			fp.diskCache.Hashes = removeElement(fp.diskCache.Hashes,index)
+		//		}
+		//	}
+		//}
+		//collData,_ := json.Marshal(fp.diskCache)
+		//diskDb.Put(HashListKey,collData)
 
 		// Handle inactive txHash fileData eviction
 		case <-evict.C:
@@ -382,65 +360,66 @@ func (fp *FilePool) Has(hash common.Hash) bool{
 }
 
 func (fp *FilePool) GetByCommitment(comimt []byte) (*types.FileData,DISK_FILEDATA_STATE,error){
-	diskDb := fp.currentState.Database().DiskDB()
-	hashData,err := rawdb.ReadCommitToHash(diskDb,comimt)
-	if err != nil && len(hashData) == 0 {
-		log.Info("GetByCommitment---err","comimt",&comimt)
-		return nil,DISK_FILEDATA_STATE_UNKNOW,errors.New("dont have that commit")
-	}
-
-	hash := common.BytesToHash(hashData)
-	return fp.Get(hash)
+	//diskDb := fp.Database().DiskDB()
+	//hashData,err := rawdb.ReadCommitToHash(diskDb,comimt)
+	//if err != nil && len(hashData) == 0 {
+	//	log.Info("GetByCommitment---err","comimt",&comimt)
+	//	return nil,DISK_FILEDATA_STATE_UNKNOW,errors.New("dont have that commit")
+	//}
+	//hash := common.BytesToHash(hashData)
+	//return fp.Get(hash)
+	return nil,DISK_FILEDATA_STATE_SAVE,nil
 }  
 
 
 // Get retrieves the fileData from local fileDataPool with given
 // tx hash.
 func (fp *FilePool) Get(hash common.Hash) (*types.FileData,DISK_FILEDATA_STATE,error){
-	var getTimes uint64
-Lable:
+	//var getTimes uint64
+//Lable:
 	fd := fp.get(hash)
 	if fd == nil {
-		diskDb := fp.currentState.Database().DiskDB()
-		data,err := rawdb.ReadFileDataDetail(diskDb,hash)
-		if err != nil {
-				log.Info("FilePool 读取磁盘失败","err",err.Error())
-		}
-		if len(data) == 0{
-				log.Info("本地节点没有从需要从远端要--------","hash",hash.String())
-				if getTimes < 1 {
-					fp.fileDataHashFeed.Send(core.FileDataHashEvent{Hashes: []common.Hash{hash}})
-					log.Info("本地节点没有从需要从远端要---进来了么")
-				}
-				time.Sleep(200 * time.Millisecond)
-				getTimes ++
-				if getTimes <= 1 {
-					goto Lable
-				}
-
-				currentPath, _ := os.Getwd()
-				file, err := os.OpenFile(currentPath+"/unknowTxHash.txt", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
-				str := fmt.Sprintf("can not find fileData by TxHash is： %s time to ask ： %s",hash.Hex(),time.Now().String())
-				writeStr := str + "\n"
-				if _, err := file.WriteString(writeStr); err != nil {
-					log.Info("WriteString unknowTxHash err",err.Error())
-				}
-    		file.Close()
-				
-				return nil,DISK_FILEDATA_STATE_UNKNOW,err
-		}
-
-		if len(data) > 0 {
-			var detail DiskDetail
-			err := json.Unmarshal(data,&detail)
-			if err != nil {
-				return nil,DISK_FILEDATA_STATE_UNKNOW,err
-			}
-			if detail.State == DISK_FILEDATA_STATE_DEL {
-				return &detail.Data,detail.State,errors.New("fileData already del")
-			}
-			return &detail.Data,detail.State,nil
-		}
+		fp.chain.SqlDB()
+		//diskDb := fp.currentState.Database().DiskDB()
+		//data,err := rawdb.ReadFileDataDetail(diskDb,hash)
+		//if err != nil {
+		//		log.Info("FilePool 读取磁盘失败","err",err.Error())
+		//}
+		//if len(data) == 0{
+		//		log.Info("本地节点没有从需要从远端要--------","hash",hash.String())
+		//		if getTimes < 1 {
+		//			fp.fileDataHashFeed.Send(core.FileDataHashEvent{Hashes: []common.Hash{hash}})
+		//			log.Info("本地节点没有从需要从远端要---进来了么")
+		//		}
+		//		time.Sleep(200 * time.Millisecond)
+		//		getTimes ++
+		//		if getTimes <= 1 {
+		//			goto Lable
+		//		}
+		//
+		//		currentPath, _ := os.Getwd()
+		//		file, err := os.OpenFile(currentPath+"/unknowTxHash.txt", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+		//		str := fmt.Sprintf("can not find fileData by TxHash is： %s time to ask ： %s",hash.Hex(),time.Now().String())
+		//		writeStr := str + "\n"
+		//		if _, err := file.WriteString(writeStr); err != nil {
+		//			log.Info("WriteString unknowTxHash err",err.Error())
+		//		}
+    		//file.Close()
+		//
+		//		return nil,DISK_FILEDATA_STATE_UNKNOW,err
+		//}
+		//
+		//if len(data) > 0 {
+		//	var detail DiskDetail
+		//	err := json.Unmarshal(data,&detail)
+		//	if err != nil {
+		//		return nil,DISK_FILEDATA_STATE_UNKNOW,err
+		//	}
+		//	if detail.State == DISK_FILEDATA_STATE_DEL {
+		//		return &detail.Data,detail.State,errors.New("fileData already del")
+		//	}
+		//	return &detail.Data,detail.State,nil
+		//}
 	}
 	return fd,DISK_FILEDATA_STATE_SAVE,nil
 }

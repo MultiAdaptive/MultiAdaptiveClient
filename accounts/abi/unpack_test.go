@@ -27,7 +27,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
+	"domiconexec/common"
 	"github.com/stretchr/testify/require"
 )
 

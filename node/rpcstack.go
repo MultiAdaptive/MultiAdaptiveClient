@@ -30,8 +30,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rpc"
+	"domiconexec/log"
+	"domiconexec/rpc"
 	"github.com/rs/cors"
 )
 

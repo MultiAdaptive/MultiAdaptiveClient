@@ -25,7 +25,7 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/ethereum/go-ethereum/log"
+	"domiconexec/log"
 )
 
 var (

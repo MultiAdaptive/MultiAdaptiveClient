@@ -22,7 +22,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/ethereum/go-ethereum/rlp"
+	"domiconexec/rlp"
 )
 
 // Entry is implemented by known node record entry types.

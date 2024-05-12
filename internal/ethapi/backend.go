@@ -22,13 +22,13 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	//"github.com/ethereum/go-ethereum/core/txpool/filedatapool"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
+	"domiconexec"
+	"domiconexec/accounts"
+	"domiconexec/common"
+	"domiconexec/core/filedatapool"
+	"domiconexec/core/types"
+	"domiconexec/params"
+	"domiconexec/rpc"
 )
 
 // Backend interface provides the common API services (that are provided by
@@ -69,16 +69,16 @@ type Backend interface {
 	//TxPoolContent() (map[common.Address][]*types.Transaction, map[common.Address][]*types.Transaction)
 	//TxPoolContentFrom(addr common.Address) ([]*types.Transaction, []*types.Transaction)
 
-	//// FileData pool API
-	//UploadFileDataByParams(sender, submitter common.Address, index, length, gasPrice uint64, commitment, data, signData []byte, txHash common.Hash) error
-	//UploadFileData(data []byte) error
-	//CheckSelfState(blockNr rpc.BlockNumber) (string,error)
-	//GetFileDataByHash(hash common.Hash) (*types.FileData,filedatapool.DISK_FILEDATA_STATE,error)
-	//GetFileDataByCommitment(comimt []byte) (*types.FileData, error)
-	//DiskSaveFileDataWithHash(hash common.Hash) (bool, error)
-	//DiskSaveFileDatas(hashes []common.Hash,blockNrOrHash rpc.BlockNumberOrHash) (bool, error)
-	//BatchSaveFileDataWithHashes(hashes rpc.TxHashes) ([]bool, []error)
-	//ChangeCurrentState(state int, number rpc.BlockNumber) bool
+	// FileData pool API
+	UploadFileDataByParams(sender, submitter common.Address, index, length, gasPrice uint64, commitment, data, signData []byte, txHash common.Hash) error
+	UploadFileData(data []byte) error
+	CheckSelfState(blockNr rpc.BlockNumber) (string,error)
+	GetFileDataByHash(hash common.Hash) (*types.FileData,filedatapool.DISK_FILEDATA_STATE,error)
+	GetFileDataByCommitment(comimt []byte) (*types.FileData, error)
+	DiskSaveFileDataWithHash(hash common.Hash) (bool, error)
+	DiskSaveFileDatas(hashes []common.Hash,blockNrOrHash rpc.BlockNumberOrHash) (bool, error)
+	BatchSaveFileDataWithHashes(hashes rpc.TxHashes) ([]bool, []error)
+	ChangeCurrentState(state int, number rpc.BlockNumber) bool
 	//SubscribeNewFileDataEvent(chan<- core.NewFileDataEvent) event.Subscription
 	
 	ChainConfig() *params.ChainConfig

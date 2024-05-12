@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/dop251/goja"
-	"github.com/ethereum/go-ethereum/common"
+	"domiconexec/common"
 )
 
 // JSRE is a JS runtime environment embedding the goja interpreter.

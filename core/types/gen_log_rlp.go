@@ -2,7 +2,7 @@
 
 package types
 
-import "github.com/ethereum/go-ethereum/rlp"
+import "domiconexec/rlp"
 import "io"
 
 func (obj *Log) EncodeRLP(_w io.Writer) error {

@@ -23,11 +23,11 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	"domiconexec/common"
+	"domiconexec/core"
+	"domiconexec/core/types"
+	"domiconexec/params"
+	"domiconexec/rlp"
 )
 
 // TestCreation tests that different genesis and fork rule combinations result in
@@ -425,7 +425,7 @@ func TestTimeBasedForkInGenesis(t *testing.T) {
 				MergeNetsplitBlock:            big.NewInt(0),
 				ShanghaiTime:                  &shanghai,
 				CancunTime:                    &cancun,
-				Ethash:                        new(params.EthashConfig),
+				//Ethash:                        new(params.EthashConfig),
 			}
 		}
 	)

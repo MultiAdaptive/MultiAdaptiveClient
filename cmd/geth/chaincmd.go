@@ -18,10 +18,10 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/internal/flags"
-	"github.com/ethereum/go-ethereum/log"
+	"domiconexec/cmd/utils"
+	"domiconexec/core"
+	"domiconexec/internal/flags"
+	"domiconexec/log"
 	"github.com/urfave/cli/v2"
 	"os"
 	"strconv"

@@ -39,7 +39,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/crypto"
+	"domiconexec/crypto"
 )
 
 func TestKDF(t *testing.T) {

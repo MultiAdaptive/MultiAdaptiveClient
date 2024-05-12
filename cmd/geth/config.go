@@ -26,20 +26,20 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/external"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/accounts/scwallet"
-	"github.com/ethereum/go-ethereum/accounts/usbwallet"
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/internal/flags"
-	"github.com/ethereum/go-ethereum/internal/version"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/params"
+	"domiconexec/accounts"
+	"domiconexec/accounts/external"
+	"domiconexec/accounts/keystore"
+	"domiconexec/accounts/scwallet"
+	"domiconexec/accounts/usbwallet"
+	"domiconexec/cmd/utils"
+	"domiconexec/eth/ethconfig"
+	"domiconexec/internal/ethapi"
+	"domiconexec/internal/flags"
+	"domiconexec/internal/version"
+	"domiconexec/log"
+	"domiconexec/metrics"
+	"domiconexec/node"
+	"domiconexec/params"
 	"github.com/naoina/toml"
 	"github.com/urfave/cli/v2"
 )
@@ -170,18 +170,14 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 		v := ctx.Uint64(utils.OverrideCancun.Name)
 		cfg.Eth.OverrideCancun = &v
 	}
-	//
-	//if ctx.IsSet(utils.OverrideOptimismCanyon.Name) {
-	//	v := ctx.Uint64(utils.OverrideOptimismCanyon.Name)
-	//	cfg.Eth.OverrideOptimismCanyon = &v
-	//}
 
 	if ctx.IsSet(utils.OverrideVerkle.Name) {
 		v := ctx.Uint64(utils.OverrideVerkle.Name)
 		cfg.Eth.OverrideVerkle = &v
 	}
-
 	backend, eth := utils.RegisterEthService(stack, &cfg.Eth)
+
+
 
 	// Create gauge with geth system and build information
 	if eth != nil { // The 'eth' backend may be nil in light mode
@@ -196,7 +192,6 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 			"protocols": strings.Join(protos, ","),
 		})
 	}
-
 	//// Configure log filter RPC API.
 	//filterSystem := utils.RegisterFilterAPI(stack, backend, &cfg.Eth)
 	//

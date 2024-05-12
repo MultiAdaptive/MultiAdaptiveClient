@@ -22,12 +22,12 @@ import (
 	"sync"
 
 	"github.com/VictoriaMetrics/fastcache"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/trie/trienode"
-	"github.com/ethereum/go-ethereum/trie/triestate"
+	"domiconexec/common"
+	"domiconexec/core/rawdb"
+	"domiconexec/crypto"
+	"domiconexec/log"
+	"domiconexec/trie/trienode"
+	"domiconexec/trie/triestate"
 	"golang.org/x/crypto/sha3"
 )
 

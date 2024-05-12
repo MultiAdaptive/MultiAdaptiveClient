@@ -17,30 +17,32 @@
 package eth
 
 import (
+	"context"
+	"domiconexec/eth/fetcher"
 	"errors"
-	"github.com/ethereum/go-ethereum/eth/fetcher"
+	"gorm.io/gorm"
 	"math"
 	"math/big"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
+	"domiconexec/common"
 
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/forkid"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	pool "github.com/ethereum/go-ethereum/core/filedatapool"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/eth/protocols/eth"
-	"github.com/ethereum/go-ethereum/eth/protocols/snap"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/trie/triedb/pathdb"
+	"domiconexec/core"
+	pool "domiconexec/core/filedatapool"
+	"domiconexec/core/forkid"
+	"domiconexec/core/rawdb"
+	"domiconexec/core/types"
+	"domiconexec/eth/downloader"
+	"domiconexec/eth/protocols/eth"
+	"domiconexec/eth/protocols/snap"
+	"domiconexec/ethdb"
+	"domiconexec/event"
+	"domiconexec/log"
+	"domiconexec/metrics"
+	"domiconexec/p2p"
+	"domiconexec/trie/triedb/pathdb"
 )
 
 const (
@@ -109,13 +111,11 @@ type handlerConfig struct {
 	TxPool         txPool                 // Transaction pool to propagate from
 	//modify by echo 
 	FileDataPool   fileDataPool			  // FileData Pool to propagate from
-	//Merger         *consensus.Merger      // The manager for eth1/2 transition
 	Network        uint64                 // Network identifier to advertise
 	Sync           downloader.SyncMode    // Whether to snap or full sync
 	BloomCache     uint64                 // Megabytes to alloc for snap sync bloom
 	EventMux       *event.TypeMux         // Legacy event mux, deprecate for `feed`
-	RequiredBlocks map[uint64]common.Hash // Hard coded map of required block hashes for sync challenges
-	NoTxGossip     bool                   // Disable P2P transaction gossip
+	SqlDb          *gorm.DB
 }
 
 type handler struct {
@@ -125,35 +125,22 @@ type handler struct {
 	snapSync atomic.Bool // Flag whether snap sync is enabled (gets disabled if we already have blocks)
 	synced   atomic.Bool // Flag whether we're considered synchronised (enables transaction processing)
 
-	database ethdb.Database
-	txpool   txPool
+	database       ethdb.Database
+	txpool         txPool
 	fileDataPool   fileDataPool  // FileData Pool to propagate from
-	chain    *core.BlockChain
-	maxPeers int
-
-	noTxGossip bool
-
-	//downloader   *downloader.Downloader
-	//blockFetcher *fetcher.BlockFetcher
-	//txFetcher    *fetcher.TxFetcher
-	fdFetcher    *fetcher.FileDataFetcher
-	peers        *peerSet
-	//merger       *consensus.Merger
-
+	chain          *core.BlockChain
+	maxPeers          int
+	noTxGossip        bool
+	fdFetcher     *fetcher.FileDataFetcher
+	peers         *peerSet
 	eventMux      *event.TypeMux
-	//txsCh         chan core.NewTxsEvent
-	//txsSub        event.Subscription
 	fdsCh         chan core.NewFileDataEvent
 	fdHashCh      chan core.FileDataHashEvent
 	fdsSub        event.Subscription
 	fdHashSub     event.Subscription
-	//minedBlockSub *event.TypeMuxSubscription
-
-	// channels for fetcher, syncer, txsyncLoop
-	quitSync chan struct{}
-
-	//chainSync *chainSyncer
-	wg        sync.WaitGroup
+	quitSync      chan struct{}
+	chainSync     *chainSyncer
+	wg            sync.WaitGroup
 
 	handlerStartCh chan struct{}
 	handlerDoneCh  chan struct{}
@@ -172,69 +159,13 @@ func newHandler(config *handlerConfig) (*handler, error) {
 		database:       config.Database,
 		txpool:         config.TxPool,
 		fileDataPool:   config.FileDataPool,
-		noTxGossip:     config.NoTxGossip,
 		chain:          config.Chain,
 		peers:          newPeerSet(),
-		//merger:         config.Merger,
-		//requiredBlocks: config.RequiredBlocks,
 		quitSync:       make(chan struct{}),
 		handlerDoneCh:  make(chan struct{}),
 		handlerStartCh: make(chan struct{}),
 	}
 
-
-	//TODO finish this
-	//if config.Sync == downloader.FullSync {
-	//	// The database seems empty as the current block is the genesis. Yet the snap
-	//	// block is ahead, so snap sync was enabled for this node at a certain point.
-	//	// The scenarios where this can happen is
-	//	// * if the user manually (or via a bad block) rolled back a snap sync node
-	//	//   below the sync point.
-	//	// * the last snap sync is not finished while user specifies a full sync this
-	//	//   time. But we don't have any recent state for full sync.
-	//	// In these cases however it's safe to reenable snap sync.
-	//	fullBlock, snapBlock := h.chain.CurrentBlock(), h.chain.CurrentSnapBlock()
-	//	if fullBlock.Number.Uint64() == 0 && snapBlock.Number.Uint64() > 0 {
-	//		h.snapSync.Store(true)
-	//		log.Warn("Switch sync mode from full sync to snap sync", "reason", "snap sync incomplete")
-	//	} else if !h.chain.HasState(fullBlock.Root) {
-	//		h.snapSync.Store(true)
-	//		log.Warn("Switch sync mode from full sync to snap sync", "reason", "head state missing")
-	//	}
-	//} else {
-	//	head := h.chain.CurrentBlock()
-	//	if head.Number.Uint64() > 0 && h.chain.HasState(head.Root) && (!config.Chain.Config().IsOptimism() || head.Number.Cmp(config.Chain.Config().BedrockBlock) != 0) {
-	//		// Print warning log if database is not empty to run snap sync.
-	//		// For OP chains, snap sync from bedrock block is allowed.
-	//		log.Warn("Switch sync mode from snap sync to full sync")
-	//	} else {
-	//		// If snap sync was requested and our database is empty, grant it
-	//		h.snapSync.Store(true)
-	//		log.Info("Enabled snap sync", "head", head.Number, "hash", head.Hash())
-	//	}
-	//}
-
-
-	// Construct the downloader (long sync)
-	//h.downloader = downloader.New(config.Database, h.eventMux, h.chain, nil, h.removePeer, h.enableSyncedFeatures)
-	//if ttd := h.chain.Config().TerminalTotalDifficulty; ttd != nil {
-	//	if h.chain.Config().TerminalTotalDifficultyPassed {
-	//		log.Info("Chain post-merge, sync via beacon client")
-	//	} else {
-	//		head := h.chain.CurrentBlock()
-	//		if td := h.chain.GetTd(head.Hash(), head.Number.Uint64()); td.Cmp(ttd) >= 0 {
-	//			log.Info("Chain post-TTD, sync via beacon client")
-	//		} else {
-	//			log.Warn("Chain pre-merge, sync via PoW (ensure beacon client is ready)")
-	//		}
-	//	}
-	//} else if h.chain.Config().TerminalTotalDifficultyPassed {
-	//	log.Error("Chain configured post-merge, but without TTD. Are you debugging sync?")
-	//}
-
-	//heighter := func() uint64 {
-	//	return h.chain.CurrentBlock().Number.Uint64()
-	//}
 	fetchFd := func (peer string,hashes []common.Hash) error {
 		p := h.peers.peer(peer)
 		if p == nil {
@@ -251,6 +182,11 @@ func newHandler(config *handlerConfig) (*handler, error) {
 	}
 	h.fdFetcher = fetcher.NewFdFetcher(h.fileDataPool.Has,addFds,fetchFd,h.removePeer)
 	//h.chainSync = newChainSyncer(h)
+	//url := utils.L1ScanUrlFlag.Value
+	//if url == "" {
+	//	log.Info("newHandler geth l1 scan url failed","url",url)
+	//}
+	h.chainSync = newChainSync(context.Background(),config.SqlDb,"url",h)
 	return h, nil
 }
 
@@ -350,17 +286,7 @@ func (h *handler) runEthPeer(peer *eth.Peer, handler eth.Handler) error {
 	if p == nil {
 		return errors.New("peer dropped during handling")
 	}
-	//// Register the peer in the downloader. If the downloader considers it banned, we disconnect
-	//if err := h.downloader.RegisterPeer(peer.ID(), peer.Version(), peer); err != nil {
-	//	peer.Log().Error("Failed to register peer in eth syncer", "err", err)
-	//	return err
-	//}
-	//if snap != nil {
-	//	if err := h.downloader.SnapSyncer.Register(snap); err != nil {
-	//		peer.Log().Error("Failed to register peer in snap syncer", "err", err)
-	//		return err
-	//	}
-	//}
+
 	//h.chainSync.handlePeerEvent()
 
 	//// Propagate existing transactions. new transactions appearing
@@ -426,14 +352,6 @@ func (h *handler) unregisterPeer(id string) {
 	// Remove the `eth` peer if it exists
 	logger.Debug("Removing Ethereum peer", "snap", peer.snapExt != nil)
 
-	//TODO should finish this part
-	//// Remove the `snap` extension if it exists
-	//if peer.snapExt != nil {
-	//	h.downloader.SnapSyncer.Unregister(id)
-	//}
-	//h.downloader.UnregisterPeer(id)
-	//h.txFetcher.Drop(id)
-
 	if err := h.peers.unregisterPeer(id); err != nil {
 		logger.Error("Ethereum peer removal failed", "err", err)
 	}
@@ -441,12 +359,6 @@ func (h *handler) unregisterPeer(id string) {
 
 func (h *handler) Start(maxPeers int) {
 	h.maxPeers = maxPeers
-
-	// broadcast and announce transactions (only new ones, not resurrected ones)
-	h.wg.Add(1)
-	//h.txsCh = make(chan core.NewTxsEvent, txChanSize)
-	//h.txsSub = h.txpool.SubscribeTransactions(h.txsCh, false)
-	//go h.txBroadcastLoop()
 
 	// broadcast fileDatas  (only new ones, not resurrected ones)
 	h.wg.Add(2)
@@ -457,14 +369,10 @@ func (h *handler) Start(maxPeers int) {
 	go h.fdBroadcastLoop()
 	go h.fdGetFileDatasLoop()
 
-	//// broadcast mined blocks
-	//h.wg.Add(1)
-	//h.minedBlockSub = h.eventMux.Subscribe(core.NewMinedBlockEvent{})
-	//go h.minedBroadcastLoop()
 
-	//// start sync handlers
-	//h.wg.Add(1)
-	//go h.chainSync.loop()
+	// start sync handlers
+	h.wg.Add(1)
+	go h.chainSync.loop()
 
 	// start peer handler tracker
 	h.wg.Add(1)

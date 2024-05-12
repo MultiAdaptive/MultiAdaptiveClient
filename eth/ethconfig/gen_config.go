@@ -5,8 +5,8 @@ package ethconfig
 import (
 	"time"
 
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/eth/downloader"
+	"domiconexec/core"
+	"domiconexec/eth/downloader"
 
 )
 
