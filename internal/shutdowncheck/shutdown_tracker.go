@@ -19,10 +19,10 @@ package shutdowncheck
 import (
 	"time"
 
-	"domiconexec/common"
-	"domiconexec/core/rawdb"
-	"domiconexec/ethdb"
-	"domiconexec/log"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // ShutdownTracker is a service that reports previous unclean shutdowns

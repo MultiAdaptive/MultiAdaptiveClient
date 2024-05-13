@@ -23,9 +23,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"domiconexec/accounts"
-	"domiconexec/event"
-	"domiconexec/log"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/karalabe/usb"
 )
 

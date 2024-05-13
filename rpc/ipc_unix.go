@@ -26,7 +26,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"domiconexec/log"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 const (

@@ -26,7 +26,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"domiconexec/common"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // Type enumerator

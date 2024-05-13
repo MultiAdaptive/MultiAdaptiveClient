@@ -24,7 +24,7 @@ import (
 	"math/big"
 	"reflect"
 
-	"domiconexec/common"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var (

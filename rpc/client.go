@@ -28,7 +28,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"domiconexec/log"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 var (

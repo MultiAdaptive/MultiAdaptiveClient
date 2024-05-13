@@ -10,9 +10,9 @@ import (
 	"encoding/binary"
 	"math/big"
 
-	"domiconexec/common"
-	"domiconexec/crypto"
-	"domiconexec/params"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 //var ErrInvalidChainId = errors.New("invalid chain id for signer")
@@ -180,7 +180,7 @@ func (s EIP155FdSigner) Hash(fd *FileData) common.Hash {
 	data = append(data, uint64ToBigEndianHexBytes(s.chainId.Uint64())...)	
 	data = append(data, fd.Sender.Bytes()...)
 	data = append(data, fd.Submitter.Bytes()...)
-	data = append(data, uint64ToBigEndianHexBytes(fd.GasPrice)...)
+	//data = append(data, uint64ToBigEndianHexBytes(fd.GasPrice)...)
 	data = append(data, uint64ToBigEndianHexBytes(fd.Index)...)
 	data = append(data, uint64ToBigEndianHexBytes(fd.Length)...)
 	data = append(data, fd.Commitment...)
@@ -245,7 +245,7 @@ func (fs FrontierFdSigner) Hash(fd *FileData) common.Hash {
 	data := make([]byte,0)	
 	data = append(data, fd.Sender.Bytes()...)
 	data = append(data, fd.Submitter.Bytes()...)
-	data = append(data, uint64ToBigEndianHexBytes(fd.GasPrice)...)
+	//data = append(data, uint64ToBigEndianHexBytes(fd.GasPrice)...)
 	data = append(data, uint64ToBigEndianHexBytes(fd.Index)...)
 	data = append(data, uint64ToBigEndianHexBytes(fd.Length)...)
 	data = append(data, fd.Commitment...)

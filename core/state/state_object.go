@@ -23,12 +23,12 @@ import (
 	"math/big"
 	"time"
 
-	"domiconexec/common"
-	"domiconexec/core/types"
-	"domiconexec/crypto"
-	"domiconexec/metrics"
-	"domiconexec/rlp"
-	"domiconexec/trie/trienode"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/trie/trienode"
 )
 
 type Code []byte

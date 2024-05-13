@@ -19,7 +19,7 @@ package ethapi
 import (
 	"sync"
 
-	"domiconexec/common"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type AddrLocker struct {

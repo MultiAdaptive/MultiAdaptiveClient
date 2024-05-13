@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"domiconexec/common"
-	"domiconexec/crypto"
-	"domiconexec/params"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 var ErrInvalidChainId = errors.New("invalid chain id for signer")

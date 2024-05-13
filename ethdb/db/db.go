@@ -1,9 +1,12 @@
 package db
 
 import (
-	"domiconexec/common"
-	"domiconexec/core/types"
-	"domiconexec/log"
+	"errors"
+	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
 	"strconv"
 
 	//"github.com/go-sql-driver/mysql"
@@ -28,6 +31,7 @@ type Block struct {
 	BlockNum    int64    `gorm:"primaryKey"`
 	BlockHash   string   `gorm:"not null"`
 	ParentHash  string
+	EncodeData        string
 	ReceivedAt  string   `gorm:"type:timestamp with time zone; not null"`
 }
 
@@ -59,12 +63,18 @@ type Log struct {
 }
 
 // 创建commitment表格模型
-type Commitment struct {
+type DA struct {
 	gorm.Model
+	Sender     string
+	Submitter  string
+	Index      int64
+	Length     int64
 	TxHash     string `gorm:"primaryKey;column:tx_hash"`
 	Commitment string
-	Hash       string
 	Data       string
+	SignData   string
+	ParentStateHash string  //parent Commit Data Hash
+	StateHash  string       //latest commit Data hash
 }
 
 type SyncInfo struct {
@@ -80,7 +90,7 @@ func NewSqlDB(path string) (*gorm.DB,error) {
 }
 
 func MigrateUp(db *gorm.DB) error {
-	return db.AutoMigrate(&Transaction{},&Block{}, &Receipt{}, &Log{}, &SyncInfo{})
+	return db.AutoMigrate(&Transaction{},&Block{}, &Receipt{}, &Log{}, &SyncInfo{}, &DA{})
 }
 
 func CloseDB(db *gorm.DB) error {
@@ -128,25 +138,21 @@ func GetLastBlockNum(db *gorm.DB) (uint64,error) {
 	return syncInfo.LastBlockNum, nil
 }
 
-func AddBlock(db *gorm.DB,block Block) error {
-	tx := db.Create(&block)
+func AddBlock(db *gorm.DB,block *types.Block) error {
+	data,err := rlp.EncodeToBytes(block)
+	if err != nil {
+		log.Info("AddBlock----encode","err",err.Error())
+	}
+	wb := Block{
+		BlockNum: block.Number().Int64(),
+		BlockHash: block.Hash().Hex(),
+		ParentHash: block.ParentHash().Hex(),
+		ReceivedAt: block.ReceivedAt.String(),
+		EncodeData: common.Bytes2Hex(data),
+	}
+	tx := db.Create(&wb)
 	return tx.Commit().Error
 }
-
-func TransToSaveBlock(blocks []*types.Block) []Block {
-	wbcs := make([]Block, len(blocks))
-	for i, bc := range blocks  {
-		wbc := Block{
-			BlockNum: bc.Number().Int64(),
-			BlockHash: bc.Hash().String(),
-			ParentHash: bc.ParentHash().String(),
-			ReceivedAt: strconv.FormatUint(bc.Time(),10),
-		}
-		wbcs[i] = wbc
-	}
-	return wbcs
-}
-
 
 func AddBatchBlocks(db *gorm.DB,blocks []*types.Block) error {
 	// 开启事务
@@ -160,11 +166,16 @@ func AddBatchBlocks(db *gorm.DB,blocks []*types.Block) error {
 
 	// 遍历每个区块，依次插入数据库
 	for _, block := range blocks {
+		data,err := rlp.EncodeToBytes(block)
+		if err != nil {
+			log.Info("AddBlock----encode","err",err.Error())
+		}
 		wb := Block{
 			BlockNum: block.Number().Int64(),
 			BlockHash: block.Hash().String(),
 			ParentHash: block.ParentHash().String(),
 			ReceivedAt: strconv.FormatUint(block.Time(),10),
+			EncodeData: common.Bytes2Hex(data),
 		}
 		result := tx.Create(&wb)
 		if result.Error != nil {
@@ -178,16 +189,28 @@ func AddBatchBlocks(db *gorm.DB,blocks []*types.Block) error {
 	return tx.Commit().Error
 }
 
-func GetBlockByHash(db *gorm.DB,blockHash common.Hash) *Block {
+func GetBlockByHash(db *gorm.DB,blockHash common.Hash) (*types.Block,error) {
 	var block Block
-	db.First(&block, "block_hash = ?", blockHash)
-	return &block
+	tx := db.First(&block, "block_hash = ?", blockHash)
+	if tx.Error == nil {
+		var roiBlock types.Block
+		err := rlp.DecodeBytes(common.Hex2Bytes(block.EncodeData),roiBlock)
+		return &roiBlock,err
+	}
+	errstr := fmt.Sprintf("can not find block with given blockHash :%s",blockHash.Hex())
+	return nil,errors.New(errstr)
 }
 
-func GetBlockByNum(db *gorm.DB,blockNum uint64) *Block {
+func GetBlockByNum(db *gorm.DB,blockNum uint64) (*types.Block,error) {
 	var block Block
-	db.First(&block,"block_num = ?",blockNum)
-	return &block
+	tx := db.First(&block,"block_num = ?",blockNum)
+	if tx.Error == nil {
+		var roiBlock types.Block
+		err := rlp.DecodeBytes(common.Hex2Bytes(block.EncodeData),roiBlock)
+		return &roiBlock,err
+	}
+	errstr := fmt.Sprintf("can not find block with given blocknum :%d",blockNum)
+	return nil,errors.New(errstr)
 }
 
 func DeleteBlockByHash(db *gorm.DB,blockHash common.Hash) error {
@@ -361,9 +384,72 @@ func DeleteReceiptByHash(db *gorm.DB,txHash common.Hash) error {
 	return nil
 }
 
-//func AddBatchCommitment(db *gorm.DB,)  {
-//
-//}
+func AddCommitment(db *gorm.DB,da *types.FileData,parentHash common.Hash) error {
+	currentParentHash := parentHash
+	dataCollect := make([]byte,0)
+	dataCollect = append(dataCollect,da.Commitment...)
+	dataCollect = append(dataCollect,da.Sender.Bytes()...)
+	dataCollect = append(dataCollect,currentParentHash.Bytes()...)
+	stateHash := common.BytesToHash(dataCollect)
+	wd := DA{
+		Sender: da.Sender.Hex(),
+		Submitter: da.Submitter.Hex(),
+		Index: int64(da.Index),
+		Length: int64(da.Length),
+		TxHash: da.TxHash.Hex(),
+		Commitment: common.Bytes2Hex(da.Commitment),
+		Data: common.Bytes2Hex(da.Data),
+		SignData: common.Bytes2Hex(da.SignData),
+		ParentStateHash: currentParentHash.Hex(),
+		StateHash: stateHash.Hex(),
+	}
+	tx := db.Create(&wd)
+	return tx.Commit().Error
+}
+
+func AddBatchCommitment(db *gorm.DB,das []*types.FileData,parentHash common.Hash) error {
+	currentParentHash := parentHash
+	dataCollect := make([]byte,0)
+	// 开启事务
+	tx := db.Begin()
+	defer func() {
+		// 如果发生错误，回滚事务
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+	// 遍历每个区块，依次插入数据库
+	for _, da := range das {
+		dataCollect = append(dataCollect,da.Commitment...)
+		dataCollect = append(dataCollect,da.Sender.Bytes()...)
+		dataCollect = append(dataCollect,currentParentHash.Bytes()...)
+		stateHash := common.BytesToHash(dataCollect)
+
+		wda := DA{
+			Sender: da.Sender.Hex(),
+			Submitter: da.Submitter.Hex(),
+			TxHash: da.TxHash.String(),
+			Index: int64(da.Index),
+			Length: int64(da.Length),
+			Data: common.Bytes2Hex(da.Data),
+			Commitment: common.Bytes2Hex(da.Commitment),
+			SignData: common.Bytes2Hex(da.SignData),
+			ParentStateHash: currentParentHash.String(),
+			StateHash: stateHash.Hex(),
+		}
+		result := tx.Create(&wda)
+		if result.Error != nil {
+			// 插入失败，回滚事务并返回错误
+			tx.Rollback()
+			return result.Error
+		}
+		currentParentHash = stateHash
+	}
+	// 提交事务
+	return tx.Commit().Error
+}
+
+
 
 //
 //func CreatOrOpenDB(path string) (*sql.DB, error) {

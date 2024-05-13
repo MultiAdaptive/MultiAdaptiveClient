@@ -27,7 +27,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-const pathOfPackageRLP = "domiconexec/rlp"
+const pathOfPackageRLP = "github.com/ethereum/go-ethereum/rlp"
 
 func main() {
 	var (

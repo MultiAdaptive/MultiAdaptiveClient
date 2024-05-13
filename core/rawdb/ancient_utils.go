@@ -19,8 +19,8 @@ package rawdb
 import (
 	"fmt"
 
-	"domiconexec/common"
-	"domiconexec/ethdb"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb"
 )
 
 type tableSize struct {

@@ -25,10 +25,10 @@ import (
 	"io"
 	"strings"
 
-	"domiconexec/crypto"
-	"domiconexec/p2p/enode"
-	"domiconexec/p2p/enr"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/p2p/enr"
+	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
 	"golang.org/x/exp/slices"
 )

@@ -22,9 +22,9 @@ import (
 	"io"
 	"math/big"
 
-	"domiconexec/common"
-	"domiconexec/common/hexutil"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/holiman/uint256"
 )
 

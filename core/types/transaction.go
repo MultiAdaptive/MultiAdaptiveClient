@@ -24,11 +24,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"domiconexec/common"
-	"domiconexec/common/math"
-	"domiconexec/crypto"
-	"domiconexec/log"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 var (

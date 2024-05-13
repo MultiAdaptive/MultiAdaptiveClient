@@ -1,31 +1,44 @@
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
 package eth
 
 import (
-	"context"
-	"domiconexec/common"
-	"domiconexec/core"
-	"domiconexec/core/types"
-	"domiconexec/ethclient"
-	"domiconexec/ethdb/db"
-	"domiconexec/log"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/ethdb/db"
 	"gorm.io/gorm"
 	"math/big"
 	"time"
+	"context"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 const (
-	forceSyncCycle      = 10 * time.Second // Time interval to force syncs
+	forceSyncCycle      = 10 * time.Second // Time interval to force syncs, even if few peers are available
+	defaultMinSyncPeers = 5                // Amount of peers desired to start syncing
+	QuickReqTime        = 1 * time.Second
+	LongReqTime         = 5 * time.Second
 	SyncChunkSize       = 1024
 )
 
-const ScanContractAddress1 string = "0xadd123"
-const ScanContractAddress2 string = "0xadd122"
 
-var (
-	QuickReqTime time.Duration = 1 * time.Second
-	LongReqTime time.Duration = 5 *time.Second
-)
-
+// chainSyncer coordinates blockchain sync components.
 type chainSyncer struct {
 	ctx         context.Context
 	force       *time.Timer
@@ -35,10 +48,10 @@ type chainSyncer struct {
 	db         *gorm.DB
 	chain      *core.BlockChain
 	//stopCh     chan struct{}
-	doneCh     chan error   // non-nil when sync is running
+	doneCh     chan error
 }
 
-func newChainSync(ctx context.Context,sqlDb *gorm.DB,url string,handler *handler) *chainSyncer {
+func newChainSync(ctx context.Context,sqlDb *gorm.DB,url string,handler *handler, chain *core.BlockChain) *chainSyncer {
 	eth,err := ethclient.Dial(url)
 	if err != nil {
 		log.Error("NewChainSync Dial url failed","err",err.Error(),"url",url)
@@ -49,9 +62,9 @@ func newChainSync(ctx context.Context,sqlDb *gorm.DB,url string,handler *handler
 		handler: handler,
 		ethclient: eth,
 		db: sqlDb,
+		chain: chain,
 	}
 }
-
 func (cs *chainSyncer) startSync() {
 	cs.doneCh = make(chan error,1)
 	go func() {
@@ -68,7 +81,7 @@ func (cs *chainSyncer) loop() {
 	defer cs.force.Stop()
 
 	for  {
-		if cs.forced == false {
+		if !cs.forced {
 			cs.startSync()
 		}
 
@@ -79,7 +92,7 @@ func (cs *chainSyncer) loop() {
 			cs.force.Reset(forceSyncCycle)
 
 		case <-cs.force.C:
-			if cs.forced == false {
+			if !cs.forced {
 				cs.startSync()
 			}
 
@@ -94,7 +107,8 @@ func (cs *chainSyncer) loop() {
 }
 
 func (cs *chainSyncer) doSync() error {
-	var currentHeader uint64 
+	log.Info("chainSyncer---start---doSync")
+	var currentHeader uint64
 	currentBlock := cs.chain.CurrentBlock()
 	if currentBlock == nil || currentBlock.Number == nil {
 		num,err := db.GetLastBlockNum(cs.db)
@@ -104,24 +118,25 @@ func (cs *chainSyncer) doSync() error {
 		}
 		currentHeader = num
 	}else {
-		currentHeader = currentBlock.NumberU64()
-	}
-	
-	l1Num,err := cs.ethclient.BlockNumber(cs.ctx)
-	if err != nil {
-		return err
+		currentHeader = currentBlock.Number.Uint64()
 	}
 
+	l1Num,err := cs.ethclient.BlockNumber(cs.ctx)
+	if err != nil {
+		log.Info("doSync-----","err",err.Error())
+		return err
+	}
+	log.Info("doSync-----","l1num",l1Num)
 	cs.forced = true
 
 	//当前高度为零 可以直接从genesis开始同步
 	if currentHeader == 0 {
 		requireTime := time.NewTimer(QuickReqTime)
-		genesis := cs.chain.Genesis()
+		startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
 		blocks := make([]*types.Block,SyncChunkSize)
 		var shouldBreak bool
 		//TODO should fix this bug
-		for i := genesis.Number().Uint64();true;i += SyncChunkSize {
+		for i := startNum;true;i += SyncChunkSize {
 			for j := i;j<SyncChunkSize;j++ {
 				if j > l1Num  {
 					shouldBreak = true
@@ -134,6 +149,7 @@ func (cs *chainSyncer) doSync() error {
 					if err == nil {
 						blocks[j] = block
 					}
+				default:
 				}
 			}
 			cs.processBlocks(blocks)
@@ -143,21 +159,21 @@ func (cs *chainSyncer) doSync() error {
 		}
 	}else {
 		//当前数据库有数据需要检查是否回滚
-		latestBlock := db.GetBlockByNum(cs.db,currentHeader)
-		flag,org := cs.checkReorg(*latestBlock)
+		latestBlock,_ := db.GetBlockByNum(cs.db,currentHeader)
+		flag,org := cs.checkReorg(latestBlock)
 		switch flag {
 		case true:
 			//回滚了删除从org开始的数据重新同步
-			for i:=latestBlock.BlockNum;i > org.BlockNum;i-- {
+			for i:=latestBlock.NumberU64();i > org.NumberU64();i-- {
 				db.DeleteBlockByNum(cs.db,uint64(i))
 			}
-			db.SetLastBlocNum(cs.db,uint64(org.BlockNum))
+			db.SetLastBlocNum(cs.db,org.NumberU64())
 
 		case false:
 			//没回滚继续同步
 			//cs.startSyncWithNum(uint64(org.BlockNum+1))
 		}
-		cs.startSyncWithNum(uint64(org.BlockNum+1))
+		cs.startSyncWithNum(org.NumberU64()+1)
 	}
 	return nil
 }
@@ -202,7 +218,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		}
 		for _,tx := range bc.Transactions(){
 			switch tx.To().String() {
-			case ScanContractAddress1:
+			case cs.chain.Config().L1Conf.DomiconCommitmentProxy:
 				//get data from trans data
 				trans = append(trans,tx)
 				txData := tx.Data()
@@ -243,27 +259,25 @@ func slice(data []byte) []byte {
 }
 
 //false 没有回滚
-func (cs *chainSyncer) checkReorg(block db.Block) (bool,db.Block) {
-	var parentHash string
-	blockNum := block.BlockNum
-	l1Block,err := cs.ethclient.BlockByNumber(cs.ctx,new(big.Int).SetInt64(blockNum))
+func (cs *chainSyncer) checkReorg(block *types.Block) (bool,*types.Block) {
+	var parentHash common.Hash
+	blockNum := block.NumberU64()
+	l1Block,err := cs.ethclient.BlockByNumber(cs.ctx,block.Number())
 	if err != nil {
 		log.Error("checkReorg------BlockByNumber","num",blockNum)
 	}
-	if block.BlockHash == l1Block.Hash().String() {
+	if block.Hash().Hex() == l1Block.Hash().String() {
 		return false,block
 	}else {
-		parentHash = block.ParentHash
-		block,err := cs.ethclient.BlockByHash(cs.ctx,common.HexToHash(parentHash))
+		parentHash = block.ParentHash()
+		block,err := cs.ethclient.BlockByHash(cs.ctx,parentHash)
 		if err != nil || block == nil {
-			block := db.GetBlockByHash(cs.db,common.HexToHash(parentHash))
-			//一直找到头了也不对
-			//TODO fix this 头应该是genesis
-			if block.BlockNum == 0  {
-				return true,*block
+			block,_ := db.GetBlockByHash(cs.db,parentHash)
+			if block.NumberU64() == cs.chain.Config().L1Conf.GenesisBlockNumber  {
+				return true,block
 			}
-			cs.checkReorg(*block)
+			cs.checkReorg(block)
 		}
 	}
-	return true,db.Block{BlockNum: 0}
+	return true,block
 }

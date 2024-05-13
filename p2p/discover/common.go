@@ -21,11 +21,11 @@ import (
 	"net"
 	"time"
 
-	"domiconexec/common/mclock"
-	"domiconexec/log"
-	"domiconexec/p2p/enode"
-	"domiconexec/p2p/enr"
-	"domiconexec/p2p/netutil"
+	"github.com/ethereum/go-ethereum/common/mclock"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/p2p/enr"
+	"github.com/ethereum/go-ethereum/p2p/netutil"
 )
 
 // UDPConn is a network connection on which discovery can operate.

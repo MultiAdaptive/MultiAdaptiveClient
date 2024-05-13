@@ -17,9 +17,9 @@
 package eth
 
 import (
-	"domiconexec/core"
-	"domiconexec/eth/protocols/snap"
-	"domiconexec/p2p/enode"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/eth/protocols/snap"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 )
 
 // snapHandler implements the snap.Backend interface to handle the various network
@@ -46,7 +46,6 @@ func (h *snapHandler) PeerInfo(id enode.ID) interface{} {
 // Handle is invoked from a peer's message handler when it receives a new remote
 // message that the handler couldn't consume and serve itself.
 func (h *snapHandler) Handle(peer *snap.Peer, packet snap.Packet) error {
-	//TODO should fix this
 	//return h.downloader.DeliverSnapPacket(peer, packet)
 	return nil
 }

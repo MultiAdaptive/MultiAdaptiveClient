@@ -17,20 +17,27 @@
 package core
 
 import (
-	"fmt"
-	"domiconexec/core/rawdb"
-	"domiconexec/core/state"
-	"domiconexec/core/types"
-	"strings"
+	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"domiconexec/common/hexutil"
-	"domiconexec/params"
-	"domiconexec/ethdb"
+	"fmt"
 	"math/big"
-	"domiconexec/rlp"
-	"domiconexec/common"
-	"domiconexec/trie"
+	"strings"
+
+	//"github.com/ethereum-optimism/superchain-registry/superchain"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/trie"
 )
 
 //go:generate go run github.com/fjl/gencodec -type Genesis -field-override genesisSpecMarshaling -out gen_genesis.go
@@ -66,47 +73,47 @@ type Genesis struct {
 	StateHash *common.Hash `json:"stateHash,omitempty"`
 }
 
-//func ReadGenesis(db ethdb.Database) (*Genesis, error) {
-//	var genesis Genesis
-//	stored := rawdb.ReadCanonicalHash(db, 0)
-//	if (stored == common.Hash{}) {
-//		return nil, fmt.Errorf("invalid genesis hash in database: %x", stored)
-//	}
-//	blob := rawdb.ReadGenesisStateSpec(db, stored)
-//	if blob == nil {
-//		return nil, errors.New("genesis state missing from db")
-//	}
-//	if len(blob) != 0 {
-//		if err := genesis.Alloc.UnmarshalJSON(blob); err != nil {
-//			return nil, fmt.Errorf("could not unmarshal genesis state json: %s", err)
-//		}
-//	}
-//	genesis.Config = rawdb.ReadChainConfig(db, stored)
-//	if genesis.Config == nil {
-//		return nil, errors.New("genesis config missing from db")
-//	}
-//	genesisBlock := rawdb.ReadBlock(db, stored, 0)
-//	if genesisBlock == nil {
-//		return nil, errors.New("genesis block missing from db")
-//	}
-//	genesisHeader := genesisBlock.Header()
-//	genesis.Nonce = genesisHeader.Nonce.Uint64()
-//	genesis.Timestamp = genesisHeader.Time
-//	genesis.ExtraData = genesisHeader.Extra
-//	genesis.GasLimit = genesisHeader.GasLimit
-//	genesis.Difficulty = genesisHeader.Difficulty
-//	genesis.Mixhash = genesisHeader.MixDigest
-//	genesis.Coinbase = genesisHeader.Coinbase
-//	genesis.BaseFee = genesisHeader.BaseFee
-//	genesis.ExcessBlobGas = genesisHeader.ExcessBlobGas
-//	genesis.BlobGasUsed = genesisHeader.BlobGasUsed
-//	if genesis.Alloc == nil {
-//		h := genesisHeader.Hash()
-//		genesis.StateHash = &h
-//	}
-//
-//	return &genesis, nil
-//}
+func ReadGenesis(db ethdb.Database) (*Genesis, error) {
+	var genesis Genesis
+	stored := rawdb.ReadCanonicalHash(db, 0)
+	if (stored == common.Hash{}) {
+		return nil, fmt.Errorf("invalid genesis hash in database: %x", stored)
+	}
+	blob := rawdb.ReadGenesisStateSpec(db, stored)
+	if blob == nil {
+		return nil, errors.New("genesis state missing from db")
+	}
+	if len(blob) != 0 {
+		if err := genesis.Alloc.UnmarshalJSON(blob); err != nil {
+			return nil, fmt.Errorf("could not unmarshal genesis state json: %s", err)
+		}
+	}
+	genesis.Config = rawdb.ReadChainConfig(db, stored)
+	if genesis.Config == nil {
+		return nil, errors.New("genesis config missing from db")
+	}
+	genesisBlock := rawdb.ReadBlock(db, stored, 0)
+	if genesisBlock == nil {
+		return nil, errors.New("genesis block missing from db")
+	}
+	genesisHeader := genesisBlock.Header()
+	genesis.Nonce = genesisHeader.Nonce.Uint64()
+	genesis.Timestamp = genesisHeader.Time
+	genesis.ExtraData = genesisHeader.Extra
+	genesis.GasLimit = genesisHeader.GasLimit
+	genesis.Difficulty = genesisHeader.Difficulty
+	genesis.Mixhash = genesisHeader.MixDigest
+	genesis.Coinbase = genesisHeader.Coinbase
+	genesis.BaseFee = genesisHeader.BaseFee
+	genesis.ExcessBlobGas = genesisHeader.ExcessBlobGas
+	genesis.BlobGasUsed = genesisHeader.BlobGasUsed
+	if genesis.Alloc == nil {
+		h := genesisHeader.Hash()
+		genesis.StateHash = &h
+	}
+
+	return &genesis, nil
+}
 
 // GenesisAlloc specifies the initial state that is part of the genesis block.
 type GenesisAlloc map[common.Address]GenesisAccount
@@ -144,44 +151,44 @@ func (ga *GenesisAlloc) hash() (common.Hash, error) {
 	}
 	return statedb.Commit(0, false)
 }
-//
-//// flush is very similar with hash, but the main difference is all the generated
-//// states will be persisted into the given database. Also, the genesis state
-//// specification will be flushed as well.
-//func (ga *GenesisAlloc) flush(db ethdb.Database, triedb *trie.Database, blockhash common.Hash) error {
-//	statedb, err := state.New(types.EmptyRootHash, state.NewDatabaseWithNodeDB(db, triedb), nil)
-//	if err != nil {
-//		return err
-//	}
-//	for addr, account := range *ga {
-//		if account.Balance != nil {
-//			statedb.AddBalance(addr, account.Balance)
-//		}
-//		statedb.SetCode(addr, account.Code)
-//		statedb.SetNonce(addr, account.Nonce)
-//		for key, value := range account.Storage {
-//			statedb.SetState(addr, key, value)
-//		}
-//	}
-//	root, err := statedb.Commit(0, false)
-//	if err != nil {
-//		return err
-//	}
-//	// Commit newly generated states into disk if it's not empty.
-//	if root != types.EmptyRootHash {
-//		if err := triedb.Commit(root, true); err != nil {
-//			return err
-//		}
-//	}
-//	//// Marshal the genesis state specification and persist.
-//	//blob, err := json.Marshal(ga)
-//	//if err != nil {
-//	//	return err
-//	//}
-//	//rawdb.WriteGenesisStateSpec(db, blockhash, blob)
-//	return nil
-//}
-//
+
+// flush is very similar with hash, but the main difference is all the generated
+// states will be persisted into the given database. Also, the genesis state
+// specification will be flushed as well.
+func (ga *GenesisAlloc) flush(db ethdb.Database, triedb *trie.Database, blockhash common.Hash) error {
+	statedb, err := state.New(types.EmptyRootHash, state.NewDatabaseWithNodeDB(db, triedb), nil)
+	if err != nil {
+		return err
+	}
+	for addr, account := range *ga {
+		if account.Balance != nil {
+			statedb.AddBalance(addr, account.Balance)
+		}
+		statedb.SetCode(addr, account.Code)
+		statedb.SetNonce(addr, account.Nonce)
+		for key, value := range account.Storage {
+			statedb.SetState(addr, key, value)
+		}
+	}
+	root, err := statedb.Commit(0, false)
+	if err != nil {
+		return err
+	}
+	// Commit newly generated states into disk if it's not empty.
+	if root != types.EmptyRootHash {
+		if err := triedb.Commit(root, true); err != nil {
+			return err
+		}
+	}
+	// Marshal the genesis state specification and persist.
+	blob, err := json.Marshal(ga)
+	if err != nil {
+		return err
+	}
+	rawdb.WriteGenesisStateSpec(db, blockhash, blob)
+	return nil
+}
+
 // GenesisAccount is an account in the state of the genesis block.
 type GenesisAccount struct {
 	Code       []byte                      `json:"code,omitempty"`
@@ -191,49 +198,49 @@ type GenesisAccount struct {
 	PrivateKey []byte                      `json:"secretKey,omitempty"` // for tests
 }
 
-//// field type overrides for gencodec
-//type genesisSpecMarshaling struct {
-//	Nonce         math.HexOrDecimal64
-//	Timestamp     math.HexOrDecimal64
-//	ExtraData     hexutil.Bytes
-//	GasLimit      math.HexOrDecimal64
-//	GasUsed       math.HexOrDecimal64
-//	Number        math.HexOrDecimal64
-//	Difficulty    *math.HexOrDecimal256
-//	Alloc         map[common.UnprefixedAddress]GenesisAccount
-//	BaseFee       *math.HexOrDecimal256
-//	ExcessBlobGas *math.HexOrDecimal64
-//	BlobGasUsed   *math.HexOrDecimal64
-//}
-//
-//type genesisAccountMarshaling struct {
-//	Code       hexutil.Bytes
-//	Balance    *math.HexOrDecimal256
-//	Nonce      math.HexOrDecimal64
-//	Storage    map[storageJSON]storageJSON
-//	PrivateKey hexutil.Bytes
-//}
-//
-//// storageJSON represents a 256 bit byte array, but allows less than 256 bits when
-//// unmarshaling from hex.
-//type storageJSON common.Hash
-//
-//func (h *storageJSON) UnmarshalText(text []byte) error {
-//	text = bytes.TrimPrefix(text, []byte("0x"))
-//	if len(text) > 64 {
-//		return fmt.Errorf("too many hex characters in storage key/value %q", text)
-//	}
-//	offset := len(h) - len(text)/2 // pad on the left
-//	if _, err := hex.Decode(h[offset:], text); err != nil {
-//		return fmt.Errorf("invalid hex storage key/value %q", text)
-//	}
-//	return nil
-//}
-//
-//func (h storageJSON) MarshalText() ([]byte, error) {
-//	return hexutil.Bytes(h[:]).MarshalText()
-//}
-//
+// field type overrides for gencodec
+type genesisSpecMarshaling struct {
+	Nonce         math.HexOrDecimal64
+	Timestamp     math.HexOrDecimal64
+	ExtraData     hexutil.Bytes
+	GasLimit      math.HexOrDecimal64
+	GasUsed       math.HexOrDecimal64
+	Number        math.HexOrDecimal64
+	Difficulty    *math.HexOrDecimal256
+	Alloc         map[common.UnprefixedAddress]GenesisAccount
+	BaseFee       *math.HexOrDecimal256
+	ExcessBlobGas *math.HexOrDecimal64
+	BlobGasUsed   *math.HexOrDecimal64
+}
+
+type genesisAccountMarshaling struct {
+	Code       hexutil.Bytes
+	Balance    *math.HexOrDecimal256
+	Nonce      math.HexOrDecimal64
+	Storage    map[storageJSON]storageJSON
+	PrivateKey hexutil.Bytes
+}
+
+// storageJSON represents a 256 bit byte array, but allows less than 256 bits when
+// unmarshaling from hex.
+type storageJSON common.Hash
+
+func (h *storageJSON) UnmarshalText(text []byte) error {
+	text = bytes.TrimPrefix(text, []byte("0x"))
+	if len(text) > 64 {
+		return fmt.Errorf("too many hex characters in storage key/value %q", text)
+	}
+	offset := len(h) - len(text)/2 // pad on the left
+	if _, err := hex.Decode(h[offset:], text); err != nil {
+		return fmt.Errorf("invalid hex storage key/value %q", text)
+	}
+	return nil
+}
+
+func (h storageJSON) MarshalText() ([]byte, error) {
+	return hexutil.Bytes(h[:]).MarshalText()
+}
+
 // GenesisMismatchError is raised when trying to overwrite an existing
 // genesis block with an incompatible one.
 type GenesisMismatchError struct {
@@ -244,157 +251,144 @@ func (e *GenesisMismatchError) Error() string {
 	return fmt.Sprintf("database contains incompatible genesis (have %x, new %x)", e.Stored, e.New)
 }
 
-//// ChainOverrides contains the changes to chain config.
-//type ChainOverrides struct {
-//	OverrideCancun *uint64
-//	OverrideVerkle *uint64
-//	// optimism
-//	OverrideOptimismCanyon  *uint64
-//	ApplySuperchainUpgrades bool
-//}
+// ChainOverrides contains the changes to chain config.
+type ChainOverrides struct {
+	OverrideCancun *uint64
+	OverrideVerkle *uint64
+	// optimism
+	OverrideOptimismCanyon  *uint64
+	ApplySuperchainUpgrades bool
+}
+
+// SetupGenesisBlock writes or updates the genesis block in db.
+// The block that will be used is:
 //
-//// SetupGenesisBlock writes or updates the genesis block in db.
-//// The block that will be used is:
-////
-////	                     genesis == nil       genesis != nil
-////	                  +------------------------------------------
-////	db has no genesis |  main-net default  |  genesis
-////	db has genesis    |  from DB           |  genesis (if compatible)
-////
-//// The stored chain configuration will be updated if it is compatible (i.e. does not
-//// specify a fork block below the local head block). In case of a conflict, the
-//// error is a *params.ConfigCompatError and the new, unwritten config is returned.
-////
-//// The returned chain configuration is never nil.
-//func SetupGenesisBlock(db ethdb.Database, triedb *trie.Database, genesis *Genesis) (*params.ChainConfig, common.Hash, error) {
-//	return SetupGenesisBlockWithOverride(db, triedb, genesis, nil)
-//}
+//	                     genesis == nil       genesis != nil
+//	                  +------------------------------------------
+//	db has no genesis |  main-net default  |  genesis
+//	db has genesis    |  from DB           |  genesis (if compatible)
 //
-//func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *trie.Database, genesis *Genesis, overrides *ChainOverrides) (*params.ChainConfig, common.Hash, error) {
-//	if genesis != nil && genesis.Config == nil {
-//		return params.AllEthashProtocolChanges, common.Hash{}, errGenesisNoConfig
-//	}
-//	applyOverrides := func(config *params.ChainConfig) {
-//		if config != nil {
-//			// If applying the superchain-registry to a known OP-Stack chain,
-//			// then override the local chain-config with that from the registry.
-//			if overrides != nil && overrides.ApplySuperchainUpgrades && config.IsOptimism() && config.ChainID != nil && config.ChainID.IsUint64() {
-//				if _, ok := superchain.OPChains[config.ChainID.Uint64()]; ok {
-//					conf, err := params.LoadOPStackChainConfig(config.ChainID.Uint64())
-//					if err != nil {
-//						log.Warn("failed to load chain config from superchain-registry, skipping override", "err", err, "chain_id", config.ChainID)
-//					} else {
-//						*config = *conf
-//					}
-//				}
-//			}
+// The stored chain configuration will be updated if it is compatible (i.e. does not
+// specify a fork block below the local head block). In case of a conflict, the
+// error is a *params.ConfigCompatError and the new, unwritten config is returned.
 //
-//			if config.IsOptimism() && config.ChainID != nil && config.ChainID.Cmp(big.NewInt(params.OPGoerliChainID)) == 0 {
-//				// Apply Optimism Goerli regolith time
-//				config.RegolithTime = &params.OptimismGoerliRegolithTime
-//			}
-//			if config.IsOptimism() && config.ChainID != nil && config.ChainID.Cmp(big.NewInt(params.BaseGoerliChainID)) == 0 {
-//				// Apply Base Goerli regolith time
-//				config.RegolithTime = &params.BaseGoerliRegolithTime
-//			}
-//			if overrides != nil && overrides.OverrideCancun != nil {
-//				config.CancunTime = overrides.OverrideCancun
-//			}
-//			if overrides != nil && overrides.OverrideVerkle != nil {
-//				config.VerkleTime = overrides.OverrideVerkle
-//			}
-//			if overrides != nil && overrides.OverrideOptimismCanyon != nil {
-//				config.CanyonTime = overrides.OverrideOptimismCanyon
-//				config.ShanghaiTime = overrides.OverrideOptimismCanyon
-//				if config.Optimism != nil && config.Optimism.EIP1559DenominatorCanyon == 0 {
-//					config.Optimism.EIP1559DenominatorCanyon = 250
-//				}
-//			}
-//		}
-//	}
-//	// Just commit the new block if there is no stored genesis block.
-//	stored := rawdb.ReadCanonicalHash(db, 0)
-//	if (stored == common.Hash{}) {
-//		if genesis == nil {
-//			log.Info("Writing default main-net genesis block")
-//			genesis = DefaultGenesisBlock()
-//		} else {
-//			log.Info("Writing custom genesis block")
-//		}
-//		block, err := genesis.Commit(db, triedb)
-//		if err != nil {
-//			return genesis.Config, common.Hash{}, err
-//		}
-//		applyOverrides(genesis.Config)
-//		return genesis.Config, block.Hash(), nil
-//	}
-//	// The genesis block is present(perhaps in ancient database) while the
-//	// state database is not initialized yet. It can happen that the node
-//	// is initialized with an external ancient store. Commit genesis state
-//	// in this case.
-//	header := rawdb.ReadHeader(db, stored, 0)
-//	if header.Root != types.EmptyRootHash && !triedb.Initialized(header.Root) {
-//		if genesis == nil {
-//			genesis = DefaultGenesisBlock()
-//		}
-//		// Ensure the stored genesis matches with the given one.
-//		hash := genesis.ToBlock().Hash()
-//		if hash != stored {
-//			return genesis.Config, hash, &GenesisMismatchError{stored, hash}
-//		}
-//		block, err := genesis.Commit(db, triedb)
-//		if err != nil {
-//			return genesis.Config, hash, err
-//		}
-//		applyOverrides(genesis.Config)
-//		return genesis.Config, block.Hash(), nil
-//	}
-//	// Check whether the genesis block is already written.
-//	if genesis != nil {
-//		hash := genesis.ToBlock().Hash()
-//		if hash != stored {
-//			return genesis.Config, hash, &GenesisMismatchError{stored, hash}
-//		}
-//	}
-//	// Get the existing chain configuration.
-//	newcfg := genesis.configOrDefault(stored)
-//	applyOverrides(newcfg)
-//	if err := newcfg.CheckConfigForkOrder(); err != nil {
-//		return newcfg, common.Hash{}, err
-//	}
-//	storedcfg := rawdb.ReadChainConfig(db, stored)
-//	if storedcfg == nil {
-//		log.Warn("Found genesis block without chain config")
-//		rawdb.WriteChainConfig(db, stored, newcfg)
-//		return newcfg, stored, nil
-//	}
-//	storedData, _ := json.Marshal(storedcfg)
-//	// Special case: if a private network is being used (no genesis and also no
-//	// mainnet hash in the database), we must not apply the `configOrDefault`
-//	// chain config as that would be AllProtocolChanges (applying any new fork
-//	// on top of an existing private network genesis block). In that case, only
-//	// apply the overrides.
-//	if genesis == nil && stored != params.MainnetGenesisHash {
-//		newcfg = storedcfg
-//		applyOverrides(newcfg)
-//	}
-//	// Check config compatibility and write the config. Compatibility errors
-//	// are returned to the caller unless we're already at block zero.
-//	head := rawdb.ReadHeadHeader(db)
-//	if head == nil {
-//		return newcfg, stored, errors.New("missing head header")
-//	}
-//	compatErr := storedcfg.CheckCompatible(newcfg, head.Number.Uint64(), head.Time)
-//	if compatErr != nil && ((head.Number.Uint64() != 0 && compatErr.RewindToBlock != 0) || (head.Time != 0 && compatErr.RewindToTime != 0)) {
-//		return newcfg, stored, compatErr
-//	}
-//	// Don't overwrite if the old is identical to the new
-//	if newData, _ := json.Marshal(newcfg); !bytes.Equal(storedData, newData) {
-//		rawdb.WriteChainConfig(db, stored, newcfg)
-//	}
-//	return newcfg, stored, nil
-//}
-//
+// The returned chain configuration is never nil.
+func SetupGenesisBlock(db ethdb.Database, triedb *trie.Database, genesis *Genesis) (*params.ChainConfig, common.Hash, error) {
+	return SetupGenesisBlockWithOverride(db, triedb, genesis)
+}
+
+func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *trie.Database, genesis *Genesis) (*params.ChainConfig, common.Hash, error) {
+	if genesis != nil && genesis.Config == nil {
+		return params.AllEthashProtocolChanges, common.Hash{}, errGenesisNoConfig
+	}
+	//applyOverrides := func(config *params.ChainConfig) {
+	//	if config != nil {
+	//		// If applying the superchain-registry to a known OP-Stack chain,
+	//		// then override the local chain-config with that from the registry.
+	//		if config.IsOptimism() && config.ChainID != nil && config.ChainID.IsUint64() {
+	//			if _, ok := superchain.OPChains[config.ChainID.Uint64()]; ok {
+	//				conf, err := params.LoadOPStackChainConfig(config.ChainID.Uint64())
+	//				if err != nil {
+	//					log.Warn("failed to load chain config from superchain-registry, skipping override", "err", err, "chain_id", config.ChainID)
+	//				} else {
+	//					*config = *conf
+	//				}
+	//			}
+	//		}
+	//
+	//		if config.IsOptimism() && config.ChainID != nil && config.ChainID.Cmp(big.NewInt(params.OPGoerliChainID)) == 0 {
+	//			// Apply Optimism Goerli regolith time
+	//			config.RegolithTime = &params.OptimismGoerliRegolithTime
+	//		}
+	//		if config.IsOptimism() && config.ChainID != nil && config.ChainID.Cmp(big.NewInt(params.BaseGoerliChainID)) == 0 {
+	//			// Apply Base Goerli regolith time
+	//			config.RegolithTime = &params.BaseGoerliRegolithTime
+	//		}
+	//	}
+	//}
+	// Just commit the new block if there is no stored genesis block.
+	stored := rawdb.ReadCanonicalHash(db, 0)
+	if (stored == common.Hash{}) {
+		if genesis == nil {
+			log.Info("Writing default main-net genesis block")
+			genesis = DefaultGenesisBlock()
+		} else {
+			log.Info("Writing custom genesis block")
+		}
+		block, err := genesis.Commit(db, triedb)
+		if err != nil {
+			return genesis.Config, common.Hash{}, err
+		}
+		//applyOverrides(genesis.Config)
+		return genesis.Config, block.Hash(), nil
+	}
+	// The genesis block is present(perhaps in ancient database) while the
+	// state database is not initialized yet. It can happen that the node
+	// is initialized with an external ancient store. Commit genesis state
+	// in this case.
+	header := rawdb.ReadHeader(db, stored, 0)
+	if header.Root != types.EmptyRootHash && !triedb.Initialized(header.Root) {
+		if genesis == nil {
+			genesis = DefaultGenesisBlock()
+		}
+		// Ensure the stored genesis matches with the given one.
+		hash := genesis.ToBlock().Hash()
+		if hash != stored {
+			return genesis.Config, hash, &GenesisMismatchError{stored, hash}
+		}
+		block, err := genesis.Commit(db, triedb)
+		if err != nil {
+			return genesis.Config, hash, err
+		}
+		//applyOverrides(genesis.Config)
+		return genesis.Config, block.Hash(), nil
+	}
+	// Check whether the genesis block is already written.
+	if genesis != nil {
+		hash := genesis.ToBlock().Hash()
+		if hash != stored {
+			return genesis.Config, hash, &GenesisMismatchError{stored, hash}
+		}
+	}
+	// Get the existing chain configuration.
+	newcfg := genesis.configOrDefault(stored)
+	//applyOverrides(newcfg)
+	if err := newcfg.CheckConfigForkOrder(); err != nil {
+		return newcfg, common.Hash{}, err
+	}
+	storedcfg := rawdb.ReadChainConfig(db, stored)
+	if storedcfg == nil {
+		log.Warn("Found genesis block without chain config")
+		rawdb.WriteChainConfig(db, stored, newcfg)
+		return newcfg, stored, nil
+	}
+	storedData, _ := json.Marshal(storedcfg)
+	// Special case: if a private network is being used (no genesis and also no
+	// mainnet hash in the database), we must not apply the `configOrDefault`
+	// chain config as that would be AllProtocolChanges (applying any new fork
+	// on top of an existing private network genesis block). In that case, only
+	// apply the overrides.
+	if genesis == nil && stored != params.MainnetGenesisHash {
+		newcfg = storedcfg
+		//applyOverrides(newcfg)
+	}
+	// Check config compatibility and write the config. Compatibility errors
+	// are returned to the caller unless we're already at block zero.
+	head := rawdb.ReadHeadHeader(db)
+	if head == nil {
+		return newcfg, stored, errors.New("missing head header")
+	}
+	compatErr := storedcfg.CheckCompatible(newcfg, head.Number.Uint64(), head.Time)
+	if compatErr != nil && ((head.Number.Uint64() != 0 && compatErr.RewindToBlock != 0) || (head.Time != 0 && compatErr.RewindToTime != 0)) {
+		return newcfg, stored, compatErr
+	}
+	// Don't overwrite if the old is identical to the new
+	if newData, _ := json.Marshal(newcfg); !bytes.Equal(storedData, newData) {
+		rawdb.WriteChainConfig(db, stored, newcfg)
+	}
+	return newcfg, stored, nil
+}
+
 // LoadChainConfig loads the stored chain config if it is already present in
 // database, otherwise, return the config in the provided genesis specification.
 func LoadChainConfig(db ethdb.Database, genesis *Genesis) (*params.ChainConfig, error) {
@@ -425,25 +419,24 @@ func LoadChainConfig(db ethdb.Database, genesis *Genesis) (*params.ChainConfig, 
 	}
 	// There is no stored chain config and no new config provided,
 	// In this case the default chain config(mainnet) will be used
-	//return params.MainnetChainConfig, nil
-	return params.DomiconnetConfig,nil
+	return params.MainnetChainConfig, nil
 }
 
-//func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
-//	switch {
-//	case g != nil:
-//		return g.Config
-//	case ghash == params.MainnetGenesisHash:
-//		return params.MainnetChainConfig
-//	case ghash == params.SepoliaGenesisHash:
-//		return params.SepoliaChainConfig
-//	case ghash == params.GoerliGenesisHash:
-//		return params.GoerliChainConfig
-//	default:
-//		return params.AllEthashProtocolChanges
-//	}
-//}
-//
+func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
+	switch {
+	case g != nil:
+		return g.Config
+	case ghash == params.MainnetGenesisHash:
+		return params.MainnetChainConfig
+	case ghash == params.SepoliaGenesisHash:
+		return params.SepoliaChainConfig
+	case ghash == params.GoerliGenesisHash:
+		return params.GoerliChainConfig
+	default:
+		return params.AllEthashProtocolChanges
+	}
+}
+
 // ToBlock returns the genesis block according to genesis specification.
 func (g *Genesis) ToBlock() *types.Block {
 	var root common.Hash
@@ -509,51 +502,50 @@ func (g *Genesis) ToBlock() *types.Block {
 	}
 	return types.NewBlock(head, nil, nil, nil, trie.NewStackTrie(nil)).WithWithdrawals(withdrawals)
 }
-//
-//// Commit writes the block and state of a genesis specification to the database.
-//// The block is committed as the canonical head block.
-//func (g *Genesis) Commit(db ethdb.Database, triedb *trie.Database) (*types.Block, error) {
-//	block := g.ToBlock()
-//	if block.Number().Sign() != 0 {
-//		return nil, errors.New("can't commit genesis block with number > 0")
-//	}
-//	config := g.Config
-//	if config == nil {
-//		config = params.AllEthashProtocolChanges
-//	}
-//	if err := config.CheckConfigForkOrder(); err != nil {
-//		return nil, err
-//	}
-//	if config.Clique != nil && len(block.Extra()) < 32+crypto.SignatureLength {
-//		return nil, errors.New("can't start clique chain without signers")
-//	}
-//	// All the checks has passed, flush the states derived from the genesis
-//	// specification as well as the specification itself into the provided
-//	// database.
-//	if err := g.Alloc.flush(db, triedb, block.Hash()); err != nil {
-//		return nil, err
-//	}
-//	rawdb.WriteTd(db, block.Hash(), block.NumberU64(), block.Difficulty())
-//	rawdb.WriteBlock(db, block)
-//	rawdb.WriteReceipts(db, block.Hash(), block.NumberU64(), nil)
-//	rawdb.WriteCanonicalHash(db, block.Hash(), block.NumberU64())
-//	rawdb.WriteHeadBlockHash(db, block.Hash())
-//	rawdb.WriteHeadFastBlockHash(db, block.Hash())
-//	rawdb.WriteHeadHeaderHash(db, block.Hash())
-//	rawdb.WriteChainConfig(db, block.Hash(), config)
-//	return block, nil
-//}
-//
-//// MustCommit writes the genesis block and state to db, panicking on error.
-//// The block is committed as the canonical head block.
-//func (g *Genesis) MustCommit(db ethdb.Database, triedb *trie.Database) *types.Block {
-//	block, err := g.Commit(db, triedb)
-//	if err != nil {
-//		panic(err)
-//	}
-//	return block
-//}
-//
+
+// Commit writes the block and state of a genesis specification to the database.
+// The block is committed as the canonical head block.
+func (g *Genesis) Commit(db ethdb.Database, triedb *trie.Database) (*types.Block, error) {
+	block := g.ToBlock()
+	if block.Number().Sign() != 0 {
+		return nil, errors.New("can't commit genesis block with number > 0")
+	}
+	config := g.Config
+	if config == nil {
+		config = params.AllEthashProtocolChanges
+	}
+	if err := config.CheckConfigForkOrder(); err != nil {
+		return nil, err
+	}
+
+	// All the checks has passed, flush the states derived from the genesis
+	// specification as well as the specification itself into the provided
+	// database.
+	if err := g.Alloc.flush(db, triedb, block.Hash()); err != nil {
+		return nil, err
+	}
+	rawdb.WriteTd(db, block.Hash(), block.NumberU64(), block.Difficulty())
+	rawdb.WriteBlock(db, block)
+	rawdb.WriteReceipts(db, block.Hash(), block.NumberU64(), nil)
+	rawdb.WriteCanonicalHash(db, block.Hash(), block.NumberU64())
+	rawdb.WriteHeadBlockHash(db, block.Hash())
+	rawdb.WriteHeadFastBlockHash(db, block.Hash())
+	rawdb.WriteHeadHeaderHash(db, block.Hash())
+	rawdb.WriteChainConfig(db, block.Hash(), config)
+	log.Info("config-----","GenesisBlockNumber",config.L1Conf.GenesisBlockNumber,"DomiconCommitmentProxy",config.L1Conf.DomiconCommitmentProxy)
+	return block, nil
+}
+
+// MustCommit writes the genesis block and state to db, panicking on error.
+// The block is committed as the canonical head block.
+func (g *Genesis) MustCommit(db ethdb.Database, triedb *trie.Database) *types.Block {
+	block, err := g.Commit(db, triedb)
+	if err != nil {
+		panic(err)
+	}
+	return block
+}
+
 // DefaultGenesisBlock returns the Ethereum main net genesis block.
 func DefaultGenesisBlock() *Genesis {
 	return &Genesis{

@@ -22,11 +22,11 @@ import (
 	"sync"
 
 	mapset "github.com/deckarep/golang-set/v2"
-	"domiconexec/common"
-	"domiconexec/core/types"
-	"domiconexec/log"
-	"domiconexec/p2p"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 const (
@@ -87,15 +87,15 @@ type Peer struct {
 
 	head common.Hash // Latest advertised head block hash
 	td   *big.Int    // Latest advertised head block total difficulty
+	//
+	//knownBlocks     *knownCache            // Set of block hashes known to be known by this peer
+	//queuedBlocks    chan *blockPropagation // Queue of blocks to broadcast to the peer
+	//queuedBlockAnns chan *types.Block      // Queue of blocks to announce to the peer
 
-	knownBlocks     *knownCache            // Set of block hashes known to be known by this peer
-	queuedBlocks    chan *blockPropagation // Queue of blocks to broadcast to the peer
-	queuedBlockAnns chan *types.Block      // Queue of blocks to announce to the peer
-
-	txpool      TxPool             // Transaction pool used by the broadcasters for liveness checks
-	knownTxs    *knownCache        // Set of transaction hashes known to be known by this peer
-	txBroadcast chan []common.Hash // Channel used to queue transaction propagation requests
-	txAnnounce  chan []common.Hash // Channel used to queue transaction announcement requests
+	//txpool      TxPool             // Transaction pool used by the broadcasters for liveness checks
+	//knownTxs    *knownCache        // Set of transaction hashes known to be known by this peer
+	//txBroadcast chan []common.Hash // Channel used to queue transaction propagation requests
+	//txAnnounce  chan []common.Hash // Channel used to queue transaction announcement requests
 
 	fdpool      FileDataPool       // fileData pool used by the broadcasters for liveness checks
 	knownFds    *knownCache        // Set of fileData hashes known to be known by this peer
@@ -112,14 +112,14 @@ type Peer struct {
 
 // NewPeer create a wrapper for a network connection and negotiated  protocol
 // version.
-func NewPeer(version uint, p *p2p.Peer, rw p2p.MsgReadWriter, txpool TxPool, fdpool FileDataPool) *Peer {
+func NewPeer(version uint, p *p2p.Peer, rw p2p.MsgReadWriter, fdpool FileDataPool) *Peer {
 	peer := &Peer{
 		id:              p.ID().String(),
 		Peer:            p,
 		rw:              rw,
 		version:         version,
 		//knownTxs:        newKnownCache(maxKnownTxs),
-		//knownFds:        newKnownCache(maxKnownFds),
+		knownFds:        newKnownCache(maxKnownFds),
 		//knownBlocks:     newKnownCache(maxKnownBlocks),
 		//queuedBlocks:    make(chan *blockPropagation, maxQueuedBlocks),
 		//queuedBlockAnns: make(chan *types.Block, maxQueuedBlockAnns),
@@ -180,34 +180,12 @@ func (p *Peer) SetHead(hash common.Hash, td *big.Int) {
 	p.td.Set(td)
 }
 
-// KnownBlock returns whether peer is known to already have a block.
-func (p *Peer) KnownBlock(hash common.Hash) bool {
-	return p.knownBlocks.Contains(hash)
-}
-
-// KnownTransaction returns whether peer is known to already have a transaction.
-func (p *Peer) KnownTransaction(hash common.Hash) bool {
-	return p.knownTxs.Contains(hash)
-}
 
 // KnownFileData returns whether peer is known to already have a fileData.
 func (p *Peer) KnownFileData(hash common.Hash) bool {
 	return p.knownFds.Contains(hash)
 }
 
-// markBlock marks a block as known for the peer, ensuring that the block will
-// never be propagated to this particular peer.
-func (p *Peer) markBlock(hash common.Hash) {
-	// If we reached the memory allowance, drop a previously known block hash
-	p.knownBlocks.Add(hash)
-}
-
-// markTransaction marks a transaction as known for the peer, ensuring that it
-// will never be propagated to this particular peer.
-func (p *Peer) markTransaction(hash common.Hash) {
-	// If we reached the memory allowance, drop a previously known transaction hash
-	p.knownTxs.Add(hash)
-}
 
 // markFileData marks a fileData as known for the peer, ensuring that it
 // will never be propagated to this particular peer.
@@ -215,22 +193,6 @@ func (p *Peer) markFileData(hash common.Hash) {
 	p.knownFds.Add(hash)
 }
 
-// SendTransactions sends transactions to the peer and includes the hashes
-// in its transaction hash set for future reference.
-//
-// This method is a helper used by the async transaction sender. Don't call it
-// directly as the queueing (memory) and transmission (bandwidth) costs should
-// not be managed directly.
-//
-// The reasons this is public is to allow packages using this protocol to write
-// tests that directly send messages without having to do the async queueing.
-func (p *Peer) SendTransactions(txs types.Transactions) error {
-	// Mark all the transactions as known, but ensure we don't overflow our limits
-	for _, tx := range txs {
-		p.knownTxs.Add(tx.Hash())
-	}
-	return p2p.Send(p.rw, TransactionsMsg, txs)
-}
 
 // SendFileDatas sends fileData to the peer and includes the hashes
 // in its fileData hash set for future reference.
@@ -242,19 +204,6 @@ func (p *Peer) SendFileDatas(fds []*types.FileData) error {
 	}
 	log.Info("SendFileDatas----", "FileDataMsg", FileDataMsg, "fds length", len(fds), "peer id", p.ID(), "txHash", txHash.String())
 	return p2p.Send(p.rw, FileDataMsg, fds)
-}
-
-// AsyncSendTransactions queues a list of transactions (by hash) to eventually
-// propagate to a remote peer. The number of pending sends are capped (new ones
-// will force old sends to be dropped)
-func (p *Peer) AsyncSendTransactions(hashes []common.Hash) {
-	select {
-	case p.txBroadcast <- hashes:
-		// Mark all the transactions as known, but ensure we don't overflow our limits
-		p.knownTxs.Add(hashes...)
-	case <-p.term:
-		p.Log().Debug("Dropping transaction propagation", "count", len(hashes))
-	}
 }
 
 // AsyncSendFileData queues a list of fileData (by txHash hash) to eventually
@@ -310,56 +259,6 @@ func (p *Peer) AsyncSendPooledFileDataHashes(hashes []common.Hash) {
 	}
 }
 
-// sendPooledTransactionHashes66 sends transaction hashes to the peer and includes
-// them in its transaction hash set for future reference.
-//
-// This method is a helper used by the async transaction announcer. Don't call it
-// directly as the queueing (memory) and transmission (bandwidth) costs should
-// not be managed directly.
-func (p *Peer) sendPooledTransactionHashes66(hashes []common.Hash) error {
-	// Mark all the transactions as known, but ensure we don't overflow our limits
-	p.knownTxs.Add(hashes...)
-	return p2p.Send(p.rw, NewPooledTransactionHashesMsg, NewPooledTransactionHashesPacket67(hashes))
-}
-
-// sendPooledTransactionHashes68 sends transaction hashes (tagged with their type
-// and size) to the peer and includes them in its transaction hash set for future
-// reference.
-//
-// This method is a helper used by the async transaction announcer. Don't call it
-// directly as the queueing (memory) and transmission (bandwidth) costs should
-// not be managed directly.
-func (p *Peer) sendPooledTransactionHashes68(hashes []common.Hash, types []byte, sizes []uint32) error {
-	// Mark all the transactions as known, but ensure we don't overflow our limits
-	p.knownTxs.Add(hashes...)
-	return p2p.Send(p.rw, NewPooledTransactionHashesMsg, NewPooledTransactionHashesPacket68{Types: types, Sizes: sizes, Hashes: hashes})
-}
-
-// AsyncSendPooledTransactionHashes queues a list of transactions hashes to eventually
-// announce to a remote peer.  The number of pending sends are capped (new ones
-// will force old sends to be dropped)
-func (p *Peer) AsyncSendPooledTransactionHashes(hashes []common.Hash) {
-	select {
-	case p.txAnnounce <- hashes:
-		// Mark all the transactions as known, but ensure we don't overflow our limits
-		p.knownTxs.Add(hashes...)
-	case <-p.term:
-		p.Log().Debug("Dropping transaction announcement", "count", len(hashes))
-	}
-}
-
-// ReplyPooledTransactionsRLP is the response to RequestTxs.
-func (p *Peer) ReplyPooledTransactionsRLP(id uint64, hashes []common.Hash, txs []rlp.RawValue) error {
-	// Mark all the transactions as known, but ensure we don't overflow our limits
-	p.knownTxs.Add(hashes...)
-
-	// Not packed into PooledTransactionsResponse to avoid RLP decoding
-	return p2p.Send(p.rw, PooledTransactionsMsg, &PooledTransactionsRLPPacket{
-		RequestId:                     id,
-		PooledTransactionsRLPResponse: txs,
-	})
-}
-
 // ReplyPooledFileDatasRLP is the response to RequestTxs.
 func (p *Peer) ReplyPooledFileDatasRLP(id uint64, hashes []common.Hash, fds []rlp.RawValue, status []uint) error {
 	// Mark all the fileData as known, but ensure we don't overflow our limits
@@ -370,55 +269,6 @@ func (p *Peer) ReplyPooledFileDatasRLP(id uint64, hashes []common.Hash, fds []rl
 		PooledFileDataRLPResponse: fds,
 		PooledFileDataStatusResponse: status,
 	})
-}
-
-// SendNewBlockHashes announces the availability of a number of blocks through
-// a hash notification.
-func (p *Peer) SendNewBlockHashes(hashes []common.Hash, numbers []uint64) error {
-	// Mark all the block hashes as known, but ensure we don't overflow our limits
-	p.knownBlocks.Add(hashes...)
-
-	request := make(NewBlockHashesPacket, len(hashes))
-	for i := 0; i < len(hashes); i++ {
-		request[i].Hash = hashes[i]
-		request[i].Number = numbers[i]
-	}
-	return p2p.Send(p.rw, NewBlockHashesMsg, request)
-}
-
-// AsyncSendNewBlockHash queues the availability of a block for propagation to a
-// remote peer. If the peer's broadcast queue is full, the event is silently
-// dropped.
-func (p *Peer) AsyncSendNewBlockHash(block *types.Block) {
-	select {
-	case p.queuedBlockAnns <- block:
-		// Mark all the block hash as known, but ensure we don't overflow our limits
-		p.knownBlocks.Add(block.Hash())
-	default:
-		p.Log().Debug("Dropping block announcement", "number", block.NumberU64(), "hash", block.Hash())
-	}
-}
-
-// SendNewBlock propagates an entire block to a remote peer.
-func (p *Peer) SendNewBlock(block *types.Block, td *big.Int) error {
-	// Mark all the block hash as known, but ensure we don't overflow our limits
-	p.knownBlocks.Add(block.Hash())
-	return p2p.Send(p.rw, NewBlockMsg, &NewBlockPacket{
-		Block: block,
-		TD:    td,
-	})
-}
-
-// AsyncSendNewBlock queues an entire block for propagation to a remote peer. If
-// the peer's broadcast queue is full, the event is silently dropped.
-func (p *Peer) AsyncSendNewBlock(block *types.Block, td *big.Int) {
-	select {
-	case p.queuedBlocks <- &blockPropagation{block: block, td: td}:
-		// Mark all the block hash as known, but ensure we don't overflow our limits
-		p.knownBlocks.Add(block.Hash())
-	default:
-		p.Log().Debug("Dropping block propagation", "number", block.NumberU64(), "hash", block.Hash())
-	}
 }
 
 // ReplyBlockHeadersRLP is the response to GetBlockHeaders.

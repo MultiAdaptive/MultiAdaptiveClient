@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"math/big"
 
-	"domiconexec/common"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 const DepositTxType = 0x7E

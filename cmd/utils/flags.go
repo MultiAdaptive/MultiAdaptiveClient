@@ -20,18 +20,10 @@ package utils
 import (
 	"context"
 	"crypto/ecdsa"
-	"domiconexec/core/filedatapool"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"domiconexec/eth"
-	//"domiconexec/eth/filters"
-	"domiconexec/eth/tracers"
-	"domiconexec/ethdb"
-	//"domiconexec/trie/triedb/hashdb"
-	//"domiconexec/trie/triedb/pathdb"
 	"math"
-	//"math/big"
 	"net"
 	"net/http"
 	"os"
@@ -41,34 +33,38 @@ import (
 	"strings"
 	"time"
 
-	"domiconexec/accounts"
-	"domiconexec/accounts/keystore"
-	"domiconexec/common"
-	"domiconexec/common/fdlimit"
-	"domiconexec/core"
-	//"domiconexec/core/txpool/filedatapool"
-	"domiconexec/core/rawdb"
-	"domiconexec/crypto"
-	"domiconexec/crypto/kzg4844"
-	"domiconexec/eth/downloader"
-	"domiconexec/eth/ethconfig"
-	"domiconexec/internal/ethapi"
-	"domiconexec/internal/flags"
-
-	"domiconexec/log"
-	"domiconexec/metrics"
-	"domiconexec/metrics/exp"
-	"domiconexec/metrics/influxdb"
-	"domiconexec/node"
-	"domiconexec/p2p"
-	"domiconexec/p2p/enode"
-	"domiconexec/p2p/nat"
-	"domiconexec/p2p/netutil"
-	"domiconexec/params"
-	"domiconexec/rpc"
-	"domiconexec/trie"
-	"domiconexec/trie/triedb/hashdb"
-	"domiconexec/trie/triedb/pathdb"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/fdlimit"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/core/txpool/filedatapool"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto/kzg4844"
+	"github.com/ethereum/go-ethereum/eth"
+	"github.com/ethereum/go-ethereum/eth/downloader"
+	"github.com/ethereum/go-ethereum/eth/ethconfig"
+	"github.com/ethereum/go-ethereum/eth/tracers"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/ethdb/remotedb"
+	"github.com/ethereum/go-ethereum/ethstats"
+	"github.com/ethereum/go-ethereum/internal/ethapi"
+	"github.com/ethereum/go-ethereum/internal/flags"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/ethereum/go-ethereum/metrics/exp"
+	"github.com/ethereum/go-ethereum/metrics/influxdb"
+	"github.com/ethereum/go-ethereum/node"
+	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/p2p/nat"
+	"github.com/ethereum/go-ethereum/p2p/netutil"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/ethereum/go-ethereum/trie"
+	"github.com/ethereum/go-ethereum/trie/triedb/hashdb"
+	"github.com/ethereum/go-ethereum/trie/triedb/pathdb"
 	pcsclite "github.com/gballet/go-libpcsclite"
 	gopsutil "github.com/shirou/gopsutil/mem"
 	"github.com/urfave/cli/v2"
@@ -94,40 +90,6 @@ var (
 		Usage:    "URL for remote database",
 		Category: flags.LoggingCategory,
 	}
-
-	////db flag
-	//DBStateUsr = &cli.StringFlag{
-	//	Name: "db.stateUsr",
-	//	Usage: "state db config User name",
-	//	Value: node.DefaultConfig.DBConfig.User,
-	//	Category: flags.EthCategory,
-	//}
-	//DBStateName = &cli.StringFlag{
-	//	Name: "db.stateName",
-	//	Usage: "state db config name",
-	//	Value: node.DefaultConfig.DBConfig.Name,
-	//	Category: flags.EthCategory,
-	//}
-	//
-	//DBStatePwd = &cli.StringFlag{
-	//	Name: "db.statePwd",
-	//	Usage: "state db config password",
-	//	Value: node.DefaultConfig.DBConfig.Password,
-	//	Category: flags.EthCategory,
-	//}
-	//
-	//DBStateHost = &cli.StringFlag{
-	//	Name: "db.stateHost",
-	//	Usage: "state db config host",
-	//	Category: flags.EthCategory,
-	//}
-	//DBStatePort = &cli.StringFlag{
-	//	Name: "db.statePort",
-	//	Usage: "state db config prot",
-	//	Value: node.DefaultConfig.DBConfig.Port,
-	//	Category: flags.EthCategory,
-	//}
-
 	DBEngineFlag = &cli.StringFlag{
 		Name:     "db.engine",
 		Usage:    "Backing database implementation to use ('pebble' or 'leveldb')",
@@ -296,7 +258,11 @@ var (
 		Usage:    "Manually specify the Verkle fork timestamp, overriding the bundled setting",
 		Category: flags.EthCategory,
 	}
-
+	OverrideOptimismCanyon = &flags.BigFlag{
+		Name:     "override.canyon",
+		Usage:    "Manually specify the Optimsim Canyon fork timestamp, overriding the bundled setting",
+		Category: flags.EthCategory,
+	}
 	SyncModeFlag = &flags.TextMarshalerFlag{
 		Name:     "syncmode",
 		Usage:    `Blockchain sync mode ("snap", "full" or "light")`,
@@ -314,7 +280,18 @@ var (
 		Usage:    "Scheme to use for storing ethereum state ('hash' or 'path')",
 		Category: flags.StateCategory,
 	}
-
+	StateHistoryFlag = &cli.Uint64Flag{
+		Name:     "history.state",
+		Usage:    "Number of recent blocks to retain state history for (default = 90,000 blocks, 0 = entire chain)",
+		Value:    ethconfig.Defaults.StateHistory,
+		Category: flags.StateCategory,
+	}
+	TransactionHistoryFlag = &cli.Uint64Flag{
+		Name:     "history.transactions",
+		Usage:    "Number of recent blocks to maintain transactions index for (default = about one year, 0 = entire chain)",
+		Value:    ethconfig.Defaults.TransactionHistory,
+		Category: flags.StateCategory,
+	}
 	// Light server and client settings
 	LightServeFlag = &cli.IntFlag{
 		Name:     "light.serve",
@@ -362,14 +339,14 @@ var (
 		Usage:    "Disk journal for local fileData to survive node restarts",
 		Value:    ethconfig.Defaults.FileDataPool.Journal,
 		Category: flags.FileDataCategory,
-	}
+	} 
 
 	FileDataLifetimeFlag = &cli.DurationFlag{
 		Name:     "filedatapool.lifetime",
 		Usage:    "Maximum amount of time non-executable fileData are queued",
 		Value:    ethconfig.Defaults.FileDataPool.Lifetime,
 		Category: flags.FileDataCategory,
-	}
+	}	
 
 	FileDataRejournalFlag = &cli.DurationFlag{
 		Name:     "filedatapool.lifetime",
@@ -444,6 +421,7 @@ var (
 		Category: flags.PerfCategory,
 	}
 
+	// Miner settings
 
 	MinerEtherbaseFlag = &cli.StringFlag{
 		Name:     "miner.etherbase",
@@ -597,23 +575,7 @@ var (
 		Value:    "",
 		Category: flags.APICategory,
 	}
-	GraphQLEnabledFlag = &cli.BoolFlag{
-		Name:     "graphql",
-		Usage:    "Enable GraphQL on the HTTP-RPC server. Note that GraphQL can only be started if an HTTP server is started as well.",
-		Category: flags.APICategory,
-	}
-	GraphQLCORSDomainFlag = &cli.StringFlag{
-		Name:     "graphql.corsdomain",
-		Usage:    "Comma separated list of domains from which to accept cross origin requests (browser enforced)",
-		Value:    "",
-		Category: flags.APICategory,
-	}
-	GraphQLVirtualHostsFlag = &cli.StringFlag{
-		Name:     "graphql.vhosts",
-		Usage:    "Comma separated list of virtual hostnames from which to accept requests (server enforced). Accepts '*' wildcard.",
-		Value:    strings.Join(node.DefaultConfig.GraphQLVirtualHosts, ","),
-		Category: flags.APICategory,
-	}
+
 	WSEnabledFlag = &cli.BoolFlag{
 		Name:     "ws",
 		Usage:    "Enable the WS-RPC server",
@@ -772,6 +734,7 @@ var (
 		Category: flags.APICategory,
 	}
 
+
 	// Metrics flags
 	MetricsEnabledFlag = &cli.BoolFlag{
 		Name:     "metrics",
@@ -876,7 +839,7 @@ var (
 		HoleskyFlag,
 	}
 	// NetworkFlags is the flag group of all built-in supported networks.
-	NetworkFlags = append([]cli.Flag{MainnetFlag}, TestnetFlags...)
+	NetworkFlags = append([]cli.Flag{MainnetFlag, DomiconFlag}, TestnetFlags...)
 
 	// DatabaseFlags is the flag group of all database flags.
 	DatabaseFlags = []cli.Flag{
@@ -902,6 +865,9 @@ func MakeDataDir(ctx *cli.Context) string {
 		}
 		if ctx.Bool(HoleskyFlag.Name) {
 			return filepath.Join(path, "holesky")
+		}
+		if ctx.IsSet(DomiconFlag.Name) {
+			return filepath.Join(path, ctx.String(DomiconFlag.Name))
 		}
 		return path
 	}
@@ -1097,16 +1063,6 @@ func setHTTP(ctx *cli.Context, cfg *node.Config) {
 	}
 }
 
-// setGraphQL creates the GraphQL listener interface string from the set
-// command line flags, returning empty if the GraphQL endpoint is disabled.
-func setGraphQL(ctx *cli.Context, cfg *node.Config) {
-	if ctx.IsSet(GraphQLCORSDomainFlag.Name) {
-		cfg.GraphQLCors = SplitAndTrim(ctx.String(GraphQLCORSDomainFlag.Name))
-	}
-	if ctx.IsSet(GraphQLVirtualHostsFlag.Name) {
-		cfg.GraphQLVirtualHosts = SplitAndTrim(ctx.String(GraphQLVirtualHostsFlag.Name))
-	}
-}
 
 // setWS creates the WebSocket RPC listener interface string from the set
 // command line flags, returning empty if the HTTP endpoint is disabled.
@@ -1219,23 +1175,6 @@ func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error
 	}
 	return accs[index], nil
 }
-//
-//func (ctx *cli.Context,stack *node.Node) {
-//	if ctx.IsSet(DBStateUssetDbConfigr.Name) {
-//		stack.Config().DBConfig.User = DBStateUsr.Name
-//	}
-//	if ctx.IsSet(DBStateName.Name) {
-//		stack.Config().DBConfig.Name = DBStateName.Name
-//	}
-//	if ctx.IsSet(DBStateHost.Name) {
-//		stack.Config().DBConfig.Host = DBStateHost.Name
-//	}
-//	if ctx.IsSet(DBStatePort.Name) {
-//		stack.Config().DBConfig.Port = DBStatePort.Name
-//	}
-//}
-//
-
 
 // setEtherbase retrieves the etherbase from the directly specified command line flags.
 func setEtherbase(ctx *cli.Context, cfg *ethconfig.Config) {
@@ -1354,7 +1293,6 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 	SetP2PConfig(ctx, &cfg.P2P)
 	setIPC(ctx, cfg)
 	setHTTP(ctx, cfg)
-	setGraphQL(ctx, cfg)
 	setWS(ctx, cfg)
 	setNodeUserIdent(ctx, cfg)
 	SetDataDir(ctx, cfg)
@@ -1432,6 +1370,8 @@ func SetDataDir(ctx *cli.Context, cfg *node.Config) {
 		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "sepolia")
 	case ctx.Bool(HoleskyFlag.Name) && cfg.DataDir == node.DefaultDataDir():
 		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "holesky")
+	case ctx.IsSet(DomiconFlag.Name) && cfg.DataDir == node.DefaultDataDir():
+		cfg.DataDir = filepath.Join(node.DefaultDataDir(), ctx.String(DomiconFlag.Name))
 	}
 }
 
@@ -1450,7 +1390,7 @@ func setFileDataPool(ctx *cli.Context, cfg *filedatapool.Config){
 	if ctx.IsSet(FileDataPoolJournalFlag.Name) {
 		cfg.Journal = ctx.String(FileDataPoolJournalFlag.Name)
 	}
-
+	
 	if ctx.IsSet(FileDataLifetimeFlag.Name) {
 		cfg.Lifetime = ctx.Duration(FileDataLifetimeFlag.Name)
 	}
@@ -1462,6 +1402,7 @@ func setFileDataPool(ctx *cli.Context, cfg *filedatapool.Config){
 	if ctx.IsSet(FileDataGlobalSlotsFlag.Name) {
 		cfg.GlobalSlots = ctx.Uint64(FileDataGlobalSlotsFlag.Name)
 	}
+
 }
 
 // CheckExclusive verifies that only a single instance of the provided flags was
@@ -1514,10 +1455,9 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 
 	// Set configurations from CLI flags
 	setEtherbase(ctx, cfg)
-	//setFileDataPool(ctx,&cfg.FileDataPool)
-	setLes(ctx, cfg)
-	// set db conf
-	//setDbConfig(ctx,stack)
+	//setTxPool(ctx, &cfg.TxPool)
+	setFileDataPool(ctx,&cfg.FileDataPool)
+
 
 	// Cap the cache allowance and tune the garbage collector
 	mem, err := gopsutil.VirtualMemory()
@@ -1570,7 +1510,9 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		cfg.Preimages = true
 		log.Info("Enabling recording of key preimages since archive mode is used")
 	}
-
+	if ctx.IsSet(StateHistoryFlag.Name) {
+		cfg.StateHistory = ctx.Uint64(StateHistoryFlag.Name)
+	}
 	if ctx.IsSet(StateSchemeFlag.Name) {
 		cfg.StateScheme = ctx.String(StateSchemeFlag.Name)
 	}
@@ -1729,6 +1671,13 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 			}
 			chaindb.Close()
 		}
+
+	case ctx.IsSet(DomiconFlag.Name):
+		genesis := MakeGenesis(ctx)
+		if !ctx.IsSet(NetworkIdFlag.Name) {
+			cfg.NetworkId = genesis.Config.ChainID.Uint64()
+		}
+		cfg.Genesis = genesis
 	default:
 		if cfg.NetworkId == 1 {
 			SetDNSDiscoveryDefaults(cfg, params.MainnetGenesisHash)
@@ -1764,62 +1713,21 @@ func SetDNSDiscoveryDefaults(cfg *ethconfig.Config, genesis common.Hash) {
 // The second return value is the full node instance, which may be nil if the
 // node is running as a light client.
 func RegisterEthService(stack *node.Node, cfg *ethconfig.Config) (ethapi.Backend, *eth.Ethereum) {
-	if cfg.SyncMode == downloader.LightSync {
-		return nil,nil
-		//backend, err := les.New(stack, cfg)
-		//if err != nil {
-		//	Fatalf("Failed to register the Ethereum service: %v", err)
-		//}
-		//stack.RegisterAPIs(tracers.APIs(backend.ApiBackend))
-		//return backend.ApiBackend, nil
-	}
 	backend, err := eth.New(stack, cfg)
 	if err != nil {
 		Fatalf("Failed to register the Ethereum service: %v", err)
 	}
-	//if cfg.LightServ > 0 {
-	//	//_, err := les.NewLesServer(stack, backend, cfg)
-	//	//if err != nil {
-	//	//	Fatalf("Failed to create the LES server: %v", err)
-	//	//}
-	//}
+
 	stack.RegisterAPIs(tracers.APIs(backend.APIBackend))
 	return backend.APIBackend, backend
 }
 
-//// RegisterEthStatsService configures the Ethereum Stats daemon and adds it to the node.
-//func RegisterEthStatsService(stack *node.Node, backend ethapi.Backend, url string) {
-//	if err := ethstats.New(stack, backend, backend.Engine(), url); err != nil {
-//		Fatalf("Failed to register the Ethereum Stats service: %v", err)
-//	}
-//}
-
-//// RegisterGraphQLService adds the GraphQL API to the node.
-//func RegisterGraphQLService(stack *node.Node, backend ethapi.Backend, filterSystem *filters.FilterSystem, cfg *node.Config) {
-//	err := graphql.New(stack, backend, filterSystem, cfg.GraphQLCors, cfg.GraphQLVirtualHosts)
-//	if err != nil {
-//		Fatalf("Failed to register the GraphQL service: %v", err)
-//	}
-//}
-
-//// RegisterFilterAPI adds the eth log filtering RPC API to the node.
-//func RegisterFilterAPI(stack *node.Node, backend ethapi.Backend, ethcfg *ethconfig.Config) *filters.FilterSystem {
-//	isLightClient := ethcfg.SyncMode == downloader.LightSync
-//	filterSystem := filters.NewFilterSystem(backend, filters.Config{
-//		LogCacheSize: ethcfg.FilterLogCacheSize,
-//	})
-//	stack.RegisterAPIs([]rpc.API{{
-//		Namespace: "eth",
-//		Service:   filters.NewFilterAPI(filterSystem, isLightClient),
-//	}})
-//	return filterSystem
-//}
-
-//// RegisterFullSyncTester adds the full-sync tester service into node.
-//func RegisterFullSyncTester(stack *node.Node, eth *eth.Ethereum, target common.Hash) {
-//	catalyst.RegisterFullSyncTester(stack, eth, target)
-//	log.Info("Registered full-sync tester", "hash", target)
-//}
+// RegisterEthStatsService configures the Ethereum Stats daemon and adds it to the node.
+func RegisterEthStatsService(stack *node.Node, backend ethapi.Backend, url string) {
+	if err := ethstats.New(stack, backend, url); err != nil {
+		Fatalf("Failed to register the Ethereum Stats service: %v", err)
+	}
+}
 
 func SetupMetrics(ctx *cli.Context) {
 	if metrics.Enabled {
@@ -1909,6 +1817,13 @@ func MakeChainDatabase(ctx *cli.Context, stack *node.Node, readonly bool) ethdb.
 		chainDb ethdb.Database
 	)
 	switch {
+	case ctx.IsSet(RemoteDBFlag.Name):
+		log.Info("Using remote db", "url", ctx.String(RemoteDBFlag.Name), "headers", len(ctx.StringSlice(HttpHeaderFlag.Name)))
+		client, err := DialRPCWithHeaders(ctx.String(RemoteDBFlag.Name), ctx.StringSlice(HttpHeaderFlag.Name))
+		if err != nil {
+			break
+		}
+		chainDb = remotedb.New(client)
 	case ctx.String(SyncModeFlag.Name) == "light":
 		chainDb, err = stack.OpenDatabase("lightchaindata", cache, handles, "", readonly)
 	default:
@@ -1976,6 +1891,18 @@ func MakeGenesis(ctx *cli.Context) *core.Genesis {
 		genesis = core.DefaultSepoliaGenesisBlock()
 	case ctx.Bool(GoerliFlag.Name):
 		genesis = core.DefaultGoerliGenesisBlock()
+	case ctx.IsSet(DomiconFlag.Name):
+		//name := ctx.String(DomiconFlag.Name)
+		//ch, err := params.OPStackChainIDByName(name)
+		//if err != nil {
+		//	Fatalf("failed to load OP-Stack chain %q: %v", name, err)
+		//}
+		//genesis, err := core.LoadOPStackGenesis(ch)
+		//if err != nil {
+		//	Fatalf("failed to load genesis for OP-Stack chain %q (%d): %v", name, ch, err)
+		//}
+		//TODO should fix this
+		return genesis
 	case ctx.Bool(DeveloperFlag.Name):
 		Fatalf("Developer chains are ephemeral")
 	}
@@ -2009,7 +1936,7 @@ func MakeChain(ctx *cli.Context, stack *node.Node, readonly bool) (*core.BlockCh
 		SnapshotLimit:       ethconfig.Defaults.SnapshotCache,
 		Preimages:           ctx.Bool(CachePreimagesFlag.Name),
 		StateScheme:         scheme,
-		//StateHistory:        ctx.Uint64(StateHistoryFlag.Name),
+		StateHistory:        ctx.Uint64(StateHistoryFlag.Name),
 	}
 	if cache.TrieDirtyDisabled && !cache.Preimages {
 		cache.Preimages = true
@@ -2030,12 +1957,13 @@ func MakeChain(ctx *cli.Context, stack *node.Node, readonly bool) (*core.BlockCh
 		cache.TrieDirtyLimit = ctx.Int(CacheFlag.Name) * ctx.Int(CacheGCFlag.Name) / 100
 	}
 	//vmcfg := vm.Config{EnablePreimageRecording: ctx.Bool(VMEnableDebugFlag.Name)}
-	//
-	//// Disable transaction indexing/unindexing by default.
+
+	// Disable transaction indexing/unindexing by default.
 	//chain, err := core.NewBlockChain(chainDb, cache, gspec, nil, engine, vmcfg, nil, nil)
 	//if err != nil {
 	//	Fatalf("Can't create BlockChain: %v", err)
 	//}
+	//TODO should fix this
 	return nil, chainDb
 }
 

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"io"
 
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 type MyCoolType struct {

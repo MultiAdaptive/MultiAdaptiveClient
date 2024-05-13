@@ -24,7 +24,7 @@ import (
 	"net"
 	"time"
 
-	"domiconexec/log"
+	"github.com/ethereum/go-ethereum/log"
 	"golang.org/x/exp/slices"
 )
 

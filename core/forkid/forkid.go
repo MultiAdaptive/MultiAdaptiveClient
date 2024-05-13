@@ -26,9 +26,9 @@ import (
 	"reflect"
 	"strings"
 
-	"domiconexec/core/types"
-	"domiconexec/log"
-	"domiconexec/params"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
 	"golang.org/x/exp/slices"
 )
 
@@ -59,7 +59,7 @@ type Blockchain interface {
 	Genesis() *types.Block
 
 	// CurrentHeader retrieves the current head header of the canonical chain.
-	CurrentHeader() *types.Header
+	CurrentBlock() *types.Header
 }
 
 // ID is a fork identifier as defined by EIP-2124.
@@ -99,7 +99,7 @@ func NewID(config *params.ChainConfig, genesis *types.Block, head, time uint64) 
 
 // NewIDWithChain calculates the Ethereum fork ID from an existing chain instance.
 func NewIDWithChain(chain Blockchain) ID {
-	head := chain.CurrentHeader()
+	head := chain.CurrentBlock()
 
 	return NewID(
 		chain.Config(),
@@ -116,7 +116,7 @@ func NewFilter(chain Blockchain) Filter {
 		chain.Config(),
 		chain.Genesis(),
 		func() (uint64, uint64) {
-			head := chain.CurrentHeader()
+			head := chain.CurrentBlock()
 			return head.Number.Uint64(), head.Time
 		},
 	)

@@ -25,7 +25,7 @@ package blocktest
 import (
 	"hash"
 
-	"domiconexec/common"
+	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/crypto/sha3"
 )
 

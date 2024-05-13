@@ -24,12 +24,12 @@ import (
 	"fmt"
 	"math/big"
 
-	"domiconexec"
-	"domiconexec/common"
-	"domiconexec/common/hexutil"
-	"domiconexec/core/types"
-	"domiconexec/log"
-	"domiconexec/rpc"
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rpc"
 )
 
 // Client defines typed wrappers for the Ethereum RPC API.
@@ -323,7 +323,7 @@ func (ec *Client) GetFileDataByHash(ctx context.Context,hash common.Hash) (RPCFi
 	return fd,err
 }
 
-func (ec *Client) GetFileDataByCommitment(ctx context.Context,comimt []byte) (RPCFileData, error) {
+func (ec *Client) GetFileDataByCommitment(ctx context.Context,comimt string) (RPCFileData, error) {
 	var fd RPCFileData
 	log.Info("client---GetFileDataByCommitment---iscalling---")
 	err := ec.c.CallContext(ctx,&fd,"eth_getFileDataByCommitment",comimt)

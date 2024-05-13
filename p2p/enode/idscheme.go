@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"io"
 
-	"domiconexec/common/math"
-	"domiconexec/crypto"
-	"domiconexec/p2p/enr"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/p2p/enr"
+	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
 )
 

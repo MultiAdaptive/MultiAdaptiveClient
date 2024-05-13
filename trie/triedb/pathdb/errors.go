@@ -20,8 +20,8 @@ import (
 	"errors"
 	"fmt"
 
-	"domiconexec/common"
-	"domiconexec/common/hexutil"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 var (

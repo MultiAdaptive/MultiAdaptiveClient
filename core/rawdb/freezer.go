@@ -26,10 +26,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"domiconexec/common"
-	"domiconexec/ethdb"
-	"domiconexec/log"
-	"domiconexec/metrics"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/gofrs/flock"
 )
 

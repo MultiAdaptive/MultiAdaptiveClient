@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	"domiconexec/p2p/enode"
-	"domiconexec/p2p/enr"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/p2p/enr"
 )
 
 // Protocol represents a P2P subprotocol implementation.

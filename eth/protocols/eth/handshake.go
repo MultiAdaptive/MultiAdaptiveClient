@@ -22,10 +22,10 @@ import (
 	"math/big"
 	"time"
 
-	"domiconexec/common"
-	"domiconexec/core/forkid"
-	"domiconexec/metrics"
-	"domiconexec/p2p"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/forkid"
+	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/ethereum/go-ethereum/p2p"
 )
 
 const (

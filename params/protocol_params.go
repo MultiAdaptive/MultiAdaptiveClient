@@ -19,7 +19,7 @@ package params
 import (
 	"math/big"
 
-	"domiconexec/common"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var (

@@ -32,11 +32,11 @@ import (
 	"sync"
 	"time"
 
-	"domiconexec/accounts"
-	"domiconexec/common"
-	"domiconexec/core/types"
-	"domiconexec/crypto"
-	"domiconexec/event"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/event"
 )
 
 var (

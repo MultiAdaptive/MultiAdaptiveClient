@@ -18,10 +18,20 @@ package main
 
 import (
 	"encoding/json"
-	"domiconexec/cmd/utils"
-	"domiconexec/core"
-	"domiconexec/internal/flags"
-	"domiconexec/log"
+	"errors"
+	"fmt"
+	"github.com/ethereum/go-ethereum/cmd/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/internal/flags"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/node"
 	"github.com/urfave/cli/v2"
 	"os"
 	"strconv"
@@ -89,12 +99,11 @@ func initGenesis(ctx *cli.Context) error {
 		triedb := utils.MakeTrieDatabase(ctx, chaindb, ctx.Bool(utils.CachePreimagesFlag.Name), false)
 		defer triedb.Close()
 
-		//TODO SHOULD FIX THIS
-		//_, hash, err := core.SetupGenesisBlock(chaindb, triedb, genesis)
+		_, hash, err := core.SetupGenesisBlock(chaindb, triedb, genesis)
 		if err != nil {
 			utils.Fatalf("Failed to write genesis block: %v", err)
 		}
-		log.Info("Successfully wrote genesis state", "database", name)
+		log.Info("Successfully wrote genesis state", "database", name, "hash", hash)
 	}
 	return nil
 }
@@ -118,22 +127,109 @@ func dumpGenesis(ctx *cli.Context) error {
 			}
 			continue
 		}
-		//TODO SHOULD FIX THIS
-		//genesis, err := core.ReadGenesis(db)
+		genesis, err := core.ReadGenesis(db)
 		if err != nil {
 			utils.Fatalf("failed to read genesis: %s", err)
 		}
 		db.Close()
-		//
-		//if err := json.NewEncoder(os.Stdout).Encode(*nil); err != nil {
-		//	utils.Fatalf("could not encode stored genesis: %s", err)
-		//}
+
+		if err := json.NewEncoder(os.Stdout).Encode(*genesis); err != nil {
+			utils.Fatalf("could not encode stored genesis: %s", err)
+		}
 		return nil
 	}
 	if ctx.IsSet(utils.DataDirFlag.Name) {
 		utils.Fatalf("no existing datadir at %s", stack.Config().DataDir)
 	}
 	utils.Fatalf("no network preset provided, no existing genesis in the default datadir")
+	return nil
+}
+
+func parseDumpConfig(ctx *cli.Context, stack *node.Node) (*state.DumpConfig, ethdb.Database, common.Hash, error) {
+	db := utils.MakeChainDatabase(ctx, stack, true)
+	defer db.Close()
+
+	var header *types.Header
+	if ctx.NArg() > 1 {
+		return nil, nil, common.Hash{}, fmt.Errorf("expected 1 argument (number or hash), got %d", ctx.NArg())
+	}
+	if ctx.NArg() == 1 {
+		arg := ctx.Args().First()
+		if hashish(arg) {
+			hash := common.HexToHash(arg)
+			if number := rawdb.ReadHeaderNumber(db, hash); number != nil {
+				header = rawdb.ReadHeader(db, hash, *number)
+			} else {
+				return nil, nil, common.Hash{}, fmt.Errorf("block %x not found", hash)
+			}
+		} else {
+			number, err := strconv.ParseUint(arg, 10, 64)
+			if err != nil {
+				return nil, nil, common.Hash{}, err
+			}
+			if hash := rawdb.ReadCanonicalHash(db, number); hash != (common.Hash{}) {
+				header = rawdb.ReadHeader(db, hash, number)
+			} else {
+				return nil, nil, common.Hash{}, fmt.Errorf("header for block %d not found", number)
+			}
+		}
+	} else {
+		// Use latest
+		header = rawdb.ReadHeadHeader(db)
+	}
+	if header == nil {
+		return nil, nil, common.Hash{}, errors.New("no head block found")
+	}
+	startArg := common.FromHex(ctx.String(utils.StartKeyFlag.Name))
+	var start common.Hash
+	switch len(startArg) {
+	case 0: // common.Hash
+	case 32:
+		start = common.BytesToHash(startArg)
+	case 20:
+		start = crypto.Keccak256Hash(startArg)
+		log.Info("Converting start-address to hash", "address", common.BytesToAddress(startArg), "hash", start.Hex())
+	default:
+		return nil, nil, common.Hash{}, fmt.Errorf("invalid start argument: %x. 20 or 32 hex-encoded bytes required", startArg)
+	}
+	var conf = &state.DumpConfig{
+		SkipCode:          ctx.Bool(utils.ExcludeCodeFlag.Name),
+		SkipStorage:       ctx.Bool(utils.ExcludeStorageFlag.Name),
+		OnlyWithAddresses: !ctx.Bool(utils.IncludeIncompletesFlag.Name),
+		Start:             start.Bytes(),
+		Max:               ctx.Uint64(utils.DumpLimitFlag.Name),
+	}
+	log.Info("State dump configured", "block", header.Number, "hash", header.Hash().Hex(),
+		"skipcode", conf.SkipCode, "skipstorage", conf.SkipStorage,
+		"start", hexutil.Encode(conf.Start), "limit", conf.Max)
+	return conf, db, header.Root, nil
+}
+
+func dump(ctx *cli.Context) error {
+	stack, _ := makeConfigNode(ctx)
+	defer stack.Close()
+
+	conf, db, root, err := parseDumpConfig(ctx, stack)
+	if err != nil {
+		return err
+	}
+	triedb := utils.MakeTrieDatabase(ctx, db, true, true) // always enable preimage lookup
+	defer triedb.Close()
+
+	state, err := state.New(root, state.NewDatabaseWithNodeDB(db, triedb), nil)
+	if err != nil {
+		return err
+	}
+	if ctx.Bool(utils.IterativeOutputFlag.Name) {
+		state.IterativeDump(conf, json.NewEncoder(os.Stdout))
+	} else {
+		if conf.OnlyWithAddresses {
+			fmt.Fprintf(os.Stderr, "If you want to include accounts with missing preimages, you need iterative output, since"+
+				" otherwise the accounts will overwrite each other in the resulting mapping.")
+			return errors.New("incompatible options")
+		}
+		fmt.Println(string(state.Dump(conf)))
+	}
 	return nil
 }
 

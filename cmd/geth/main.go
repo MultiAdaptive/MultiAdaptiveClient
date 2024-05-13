@@ -24,26 +24,22 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"domiconexec/accounts"
-	"domiconexec/accounts/keystore"
-	"domiconexec/cmd/utils"
-	//"domiconexec/common"
-	"domiconexec/console/prompt"
-	//"domiconexec/eth"
-	//"domiconexec/eth/downloader"
-	"domiconexec/ethclient"
-	"domiconexec/internal/debug"
-	// "domiconexec/internal/ethapi"
-	"domiconexec/internal/flags"
-	"domiconexec/log"
-	"domiconexec/metrics"
-	"domiconexec/node"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/cmd/utils"
+	"github.com/ethereum/go-ethereum/console/prompt"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/internal/debug"
+	"github.com/ethereum/go-ethereum/internal/ethapi"
+	"github.com/ethereum/go-ethereum/internal/flags"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/ethereum/go-ethereum/node"
 	"go.uber.org/automaxprocs/maxprocs"
 
 	// Force-load the tracer engines to trigger registration
-	_ "domiconexec/eth/tracers/js"
-	_ "domiconexec/eth/tracers/native"
+	//_ "github.com/ethereum/go-ethereum/eth/tracers/js"
+	//_ "github.com/ethereum/go-ethereum/eth/tracers/native"
 
 	"github.com/urfave/cli/v2"
 )
@@ -63,12 +59,11 @@ var (
 		utils.KeyStoreDirFlag,
 		utils.ExternalSignerFlag,
 		utils.NoUSBFlag,
-		utils.DomiconFlag,
-		utils.L1ScanUrlFlag,
 		utils.USBFlag,
 		utils.SmartCardDaemonPathFlag,
 		utils.OverrideCancun,
 		utils.OverrideVerkle,
+		utils.OverrideOptimismCanyon,
 		utils.EnablePersonal,
 		utils.SyncModeFlag,
 		utils.SyncTargetFlag,
@@ -76,6 +71,8 @@ var (
 		utils.GCModeFlag,
 		utils.SnapshotFlag,
 		utils.TxLookupLimitFlag,
+		utils.TransactionHistoryFlag,
+		utils.StateHistoryFlag,
 		utils.LightServeFlag,
 		utils.LightIngressFlag,
 		utils.LightEgressFlag,
@@ -119,6 +116,7 @@ var (
 		utils.NetworkIdFlag,
 		utils.EthStatsURLFlag,
 		utils.NoCompactionFlag,
+		configFileFlag,
 	}, utils.NetworkFlags, utils.DatabaseFlags)
 
 	rpcFlags = []cli.Flag{
@@ -131,9 +129,6 @@ var (
 		utils.AuthVirtualHostsFlag,
 		utils.JWTSecretFlag,
 		utils.HTTPVirtualHostsFlag,
-		utils.GraphQLEnabledFlag,
-		utils.GraphQLCORSDomainFlag,
-		utils.GraphQLVirtualHostsFlag,
 		utils.HTTPApiFlag,
 		utils.HTTPPathPrefixFlag,
 		utils.WSEnabledFlag,
@@ -180,6 +175,7 @@ func init() {
 	app.Commands = []*cli.Command{
 		// See chaincmd.go:
 		initCommand,
+		removedbCommand,
 		dumpGenesisCommand,
 		// See accountcmd.go:
 		accountCommand,
@@ -269,6 +265,9 @@ func prepare(ctx *cli.Context) {
      to 0, and discovery is disabled.
 `)
 
+	case ctx.IsSet(utils.DomiconFlag.Name):
+		log.Info("Starting geth on an Domicon network...", "network", ctx.String(utils.DomiconFlag.Name))
+
 	case !ctx.IsSet(utils.NetworkIdFlag.Name):
 		log.Info("Starting Geth on Ethereum mainnet...")
 	}
@@ -282,6 +281,12 @@ func prepare(ctx *cli.Context) {
 			// Nope, we're really on mainnet. Bump that cache up!
 			// Note: If we don't set the OPNetworkFlag and have already initialized the database, we may hit this case.
 			log.Info("Bumping default cache on mainnet", "provided", ctx.Int(utils.CacheFlag.Name), "updated", 4096)
+			ctx.Set(utils.CacheFlag.Name, strconv.Itoa(4096))
+		}
+	} else if ctx.String(utils.SyncModeFlag.Name) != "light" && !ctx.IsSet(utils.CacheFlag.Name) && ctx.IsSet(utils.DomiconFlag.Name) {
+		// We haven't set the cache, but may used the OP network flag we may be on an OP stack mainnet.
+		if strings.Contains(ctx.String(utils.DomiconFlag.Name), "mainnet") {
+			log.Info("Bumping default cache on mainnet", "provided", ctx.Int(utils.CacheFlag.Name), "updated", 4096, "network", ctx.String(utils.DomiconFlag.Name))
 			ctx.Set(utils.CacheFlag.Name, strconv.Itoa(4096))
 		}
 	}
@@ -307,10 +312,10 @@ func geth(ctx *cli.Context) error {
 	}
 
 	prepare(ctx)
-	stack, _ := makeFullNode(ctx)
+	stack, backend := makeFullNode(ctx)
 	defer stack.Close()
 
-	startNode(ctx, stack, false)
+	startNode(ctx, stack, backend, false)
 	stack.Wait()
 	return nil
 }
@@ -318,7 +323,7 @@ func geth(ctx *cli.Context) error {
 // startNode boots up the system node and all registered protocols, after which
 // it unlocks any requested accounts, and starts the RPC/IPC interfaces and the
 // miner.
-func startNode(ctx *cli.Context, stack *node.Node, isConsole bool) {
+func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend, isConsole bool) {
 	debug.Memsize.Add("node", stack)
 
 	// Start up the node itself
@@ -367,7 +372,6 @@ func startNode(ctx *cli.Context, stack *node.Node, isConsole bool) {
 			}
 		}
 	}()
-	
 }
 
 // unlockAccounts unlocks any account specifically requested.

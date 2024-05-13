@@ -22,9 +22,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"domiconexec/common"
-	"domiconexec/ethdb"
-	"domiconexec/log"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 const (
@@ -61,7 +62,7 @@ func newChainFreezer(datadir string, namespace string, readonly bool) (*chainFre
 		quit:    make(chan struct{}),
 		trigger: make(chan chan struct{}),
 	}
-	cf.threshold.Store(90000)
+	cf.threshold.Store(params.FullImmutabilityThreshold)
 	return &cf, nil
 }
 

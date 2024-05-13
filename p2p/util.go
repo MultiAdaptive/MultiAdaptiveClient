@@ -19,7 +19,7 @@ package p2p
 import (
 	"container/heap"
 
-	"domiconexec/common/mclock"
+	"github.com/ethereum/go-ethereum/common/mclock"
 )
 
 // expHeap tracks strings and their expiry time.

@@ -21,9 +21,9 @@ import (
 	"errors"
 	"fmt"
 
-	"domiconexec/common"
-	"domiconexec/ethdb"
-	"domiconexec/log"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // Prove constructs a merkle proof for key. The result contains all encoded nodes

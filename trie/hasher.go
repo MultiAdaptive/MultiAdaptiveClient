@@ -19,8 +19,8 @@ package trie
 import (
 	"sync"
 
-	"domiconexec/crypto"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
 )
 

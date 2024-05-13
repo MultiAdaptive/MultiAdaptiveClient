@@ -22,7 +22,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"domiconexec/log"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 const MetadataApi = "rpc"

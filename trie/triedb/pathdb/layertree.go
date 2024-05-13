@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"sync"
 
-	"domiconexec/common"
-	"domiconexec/core/types"
-	"domiconexec/trie/trienode"
-	"domiconexec/trie/triestate"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/trie/trienode"
+	"github.com/ethereum/go-ethereum/trie/triestate"
 )
 
 // layerTree is a group of state layers identified by the state root.

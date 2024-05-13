@@ -1,21 +1,25 @@
 package fetcher
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
-	"bytes"
 	"math"
 	mrand "math/rand"
 	"sort"
 	"time"
 
-	"domiconexec/common"
-	"domiconexec/common/mclock"
-	"domiconexec/core/filedatapool"
-	"domiconexec/core/types"
-	"domiconexec/log"
-	"domiconexec/metrics"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/mclock"
+	"github.com/ethereum/go-ethereum/core/txpool/filedatapool"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/metrics"
 )
+// errTerminated is returned if the sync mechanism was terminated for this run of
+// the process. This is usually the case when Geth is shutting down and some events
+// might still be propagating.
+var errTerminated = errors.New("terminated")
 
 var (
 	// maxFdAnnounces is the maximum number of unique fileData a peer
@@ -50,15 +54,6 @@ var (
 	// fdFetchTimeout is the maximum allotted time to return an explicitly
 	// requested fileData.
 	fdFetchTimeout = 5 * time.Second
-)
-
-var errTerminated = errors.New("terminated")
-
-const (
-	ArriveTimeout = 500 * time.Millisecond
-	gatherSlack   = 100 * time.Millisecond // Interval used to collate almost-expired announces with fetches
-	fetchTimeout  = 5 * time.Second        // Maximum allotted time to return an explicitly requested block/transaction
-
 )
 
 var (
@@ -699,12 +694,12 @@ func (f *FileDataFetcher) rescheduleWait(timer *mclock.Timer, trigger chan struc
 	for _, instance := range f.waittime {
 		if earliest > instance {
 			earliest = instance
-			if ArriveTimeout-time.Duration(now-earliest) < gatherSlack {
+			if fdArriveTimeout-time.Duration(now-earliest) < fdGatherSlack {
 				break
 			}
 		}
 	}
-	*timer = f.clock.AfterFunc(ArriveTimeout-time.Duration(now-earliest), func() {
+	*timer = f.clock.AfterFunc(fdArriveTimeout-time.Duration(now-earliest), func() {
 		trigger <- struct{}{}
 	})
 }
@@ -737,12 +732,12 @@ func (f *FileDataFetcher) rescheduleTimeout(timer *mclock.Timer, trigger chan st
 		}
 		if earliest > req.time {
 			earliest = req.time
-			if fetchTimeout-time.Duration(now-earliest) < gatherSlack {
+			if fdFetchTimeout-time.Duration(now-earliest) < fdGatherSlack {
 				break
 			}
 		}
 	}
-	*timer = f.clock.AfterFunc(fetchTimeout-time.Duration(now-earliest), func() {
+	*timer = f.clock.AfterFunc(fdFetchTimeout-time.Duration(now-earliest), func() {
 		trigger <- struct{}{}
 	})
 }
@@ -847,6 +842,17 @@ func (f *FileDataFetcher) forEachPeer(peers map[string]struct{}, do func(peer st
 	}
 }
 
+// rotateStrings rotates the contents of a slice by n steps. This method is only
+// used in tests to simulate random map iteration but keep it deterministic.
+func rotateStrings(slice []string, n int) {
+	orig := make([]string, len(slice))
+	copy(orig, slice)
+
+	for i := 0; i < len(orig); i++ {
+		slice[i] = orig[(i+n)%len(orig)]
+	}
+}
+
 // forEachAnnounce does a range loop over a map of announcements in production,
 // but during testing it does a deterministic sorted random to allow reproducing
 // issues.
@@ -874,17 +880,6 @@ func (f *FileDataFetcher) forEachAnnounce(announces map[common.Hash]*fdMetadata,
 	}
 }
 
-// rotateStrings rotates the contents of a slice by n steps. This method is only
-// used in tests to simulate random map iteration but keep it deterministic.
-func rotateStrings(slice []string, n int) {
-	orig := make([]string, len(slice))
-	copy(orig, slice)
-
-	for i := 0; i < len(orig); i++ {
-		slice[i] = orig[(i+n)%len(orig)]
-	}
-}
-
 // sortHashes sorts a slice of hashes. This method is only used in tests in order
 // to simulate random map iteration but keep it deterministic.
 func sortHashes(slice []common.Hash) {
@@ -896,7 +891,6 @@ func sortHashes(slice []common.Hash) {
 		}
 	}
 }
-
 
 // rotateHashes rotates the contents of a slice by n steps. This method is only
 // used in tests to simulate random map iteration but keep it deterministic.

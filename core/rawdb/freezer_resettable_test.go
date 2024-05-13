@@ -21,7 +21,7 @@ import (
 	"os"
 	"testing"
 
-	"domiconexec/ethdb"
+	"github.com/ethereum/go-ethereum/ethdb"
 )
 
 func TestResetFreezer(t *testing.T) {

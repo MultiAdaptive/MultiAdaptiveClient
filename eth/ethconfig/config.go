@@ -18,11 +18,13 @@
 package ethconfig
 
 import (
-	"domiconexec/common"
-	"domiconexec/core"
-	"domiconexec/core/filedatapool"
-	"domiconexec/eth/downloader"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/txpool/filedatapool"
+	"github.com/ethereum/go-ethereum/eth/downloader"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 
@@ -32,7 +34,7 @@ var Defaults = Config{
 	NetworkId:          1,
 	TxLookupLimit:      2350000,
 	TransactionHistory: 2350000,
-	//StateHistory:       params.FullImmutabilityThreshold,
+	StateHistory:       params.FullImmutabilityThreshold,
 	LightPeers:         100,
 	DatabaseCache:      512,
 	TrieCleanCache:     154,
@@ -40,8 +42,7 @@ var Defaults = Config{
 	TrieTimeout:        60 * time.Minute,
 	SnapshotCache:      102,
 	FilterLogCacheSize: 32,
-	FileDataPool: 	  filedatapool.DefaultConfig,
-	//BlobPool:           blobpool.DefaultConfig,
+	FileDataPool: 		filedatapool.DefaultConfig,
 	RPCGasCap:          50000000,
 	RPCEVMTimeout:      5 * time.Second,
 	RPCTxFeeCap:        1, // 1 ether
@@ -64,8 +65,6 @@ type Config struct {
 	EthDiscoveryURLs  []string
 	SnapDiscoveryURLs []string
 
-	//DBConfig	db.Config //state db config
-
 	NoPruning  bool // Whether to disable pruning and flush everything to disk
 	NoPrefetch bool // Whether to disable prefetching and only load state on demand
 
@@ -79,6 +78,10 @@ type Config struct {
 	// consistent with persistent state.
 	StateScheme string `toml:",omitempty"`
 
+	// RequiredBlocks is a set of block number -> hash mappings which must be in the
+	// canonical chain of all remote peers. Setting the option makes geth verify the
+	// presence of these blocks for every new peer connection.
+	RequiredBlocks map[uint64]common.Hash `toml:"-"`
 
 	// Light client options
 	LightServ        int  `toml:",omitempty"` // Maximum percentage of time allowed for serving LES requests
@@ -103,15 +106,13 @@ type Config struct {
 	// This is the number of blocks for which logs will be cached in the filter system.
 	FilterLogCacheSize int
 
-	//// Mining options
-	//Miner miner.Config
-	Etherbase common.Address `toml:",omitempty"` // Public address for block mining rewards
+	Etherbase common.Address
 
-	//// FileData pool options
+	// FileData pool options
 	FileDataPool filedatapool.Config
 
 	// Enables tracking of SHA3 preimages in the VM
-	EnablePreimageRecording bool
+	//EnablePreimageRecording bool
 
 	// Miscellaneous options
 	DocRoot string `toml:"-"`
@@ -136,5 +137,5 @@ type Config struct {
 
 	// ApplySuperchainUpgrades requests the node to load chain-configuration from the superchain-registry.
 	ApplySuperchainUpgrades bool `toml:",omitempty"`
-
 }
+

@@ -21,8 +21,8 @@ import (
 	"sort"
 	"sync"
 
-	"domiconexec/common"
-	"domiconexec/event"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/event"
 )
 
 // managerSubBufferSize determines how many incoming wallet events

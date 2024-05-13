@@ -27,9 +27,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"domiconexec/common"
-	"domiconexec/log"
-	"domiconexec/metrics"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/golang/snappy"
 )
 

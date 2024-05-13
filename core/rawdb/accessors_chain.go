@@ -21,17 +21,16 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math/big"
 
-	"domiconexec/common"
-	"domiconexec/misc/eip4844"
-	"domiconexec/core/types"
-	"domiconexec/crypto"
-	"domiconexec/ethdb"
-	"domiconexec/log"
-	"domiconexec/params"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/consensus/misc/eip4844"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/exp/slices"
 )
 
@@ -825,51 +824,6 @@ func ReadBlock(db ethdb.Reader, hash common.Hash, number uint64) *types.Block {
 func WriteBlock(db ethdb.KeyValueWriter, block *types.Block) {
 	WriteBody(db, block.Hash(), block.NumberU64(), block.Body())
 	WriteHeader(db, block.Header())
-}
-
-// WriteAncientBlocks writes entire block data into ancient store and returns the total written size.
-func WriteAncientBlocks(db ethdb.AncientWriter, blocks []*types.Block, receipts []types.Receipts, td *big.Int) (int64, error) {
-	var (
-		tdSum      = new(big.Int).Set(td)
-		stReceipts []*types.ReceiptForStorage
-	)
-	return db.ModifyAncients(func(op ethdb.AncientWriteOp) error {
-		for i, block := range blocks {
-			// Convert receipts to storage format and sum up total difficulty.
-			stReceipts = stReceipts[:0]
-			for _, receipt := range receipts[i] {
-				stReceipts = append(stReceipts, (*types.ReceiptForStorage)(receipt))
-			}
-			header := block.Header()
-			if i > 0 {
-				tdSum.Add(tdSum, header.Difficulty)
-			}
-			if err := writeAncientBlock(op, block, header, stReceipts, tdSum); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
-func writeAncientBlock(op ethdb.AncientWriteOp, block *types.Block, header *types.Header, receipts []*types.ReceiptForStorage, td *big.Int) error {
-	num := block.NumberU64()
-	if err := op.AppendRaw(ChainFreezerHashTable, num, block.Hash().Bytes()); err != nil {
-		return fmt.Errorf("can't add block %d hash: %v", num, err)
-	}
-	if err := op.Append(ChainFreezerHeaderTable, num, header); err != nil {
-		return fmt.Errorf("can't append block header %d: %v", num, err)
-	}
-	if err := op.Append(ChainFreezerBodiesTable, num, block.Body()); err != nil {
-		return fmt.Errorf("can't append block body %d: %v", num, err)
-	}
-	if err := op.Append(ChainFreezerReceiptTable, num, receipts); err != nil {
-		return fmt.Errorf("can't append block %d receipts: %v", num, err)
-	}
-	if err := op.Append(ChainFreezerDifficultyTable, num, td); err != nil {
-		return fmt.Errorf("can't append block %d total difficulty: %v", num, err)
-	}
-	return nil
 }
 
 // DeleteBlock removes all block data associated with a hash.

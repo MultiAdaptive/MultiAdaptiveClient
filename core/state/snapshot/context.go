@@ -22,12 +22,12 @@ import (
 	"errors"
 	"time"
 
-	"domiconexec/common"
-	"domiconexec/common/math"
-	"domiconexec/core/rawdb"
-	"domiconexec/ethdb"
-	"domiconexec/ethdb/memorydb"
-	"domiconexec/log"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/ethdb/memorydb"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 const (

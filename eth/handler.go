@@ -18,31 +18,28 @@ package eth
 
 import (
 	"context"
-	"domiconexec/eth/fetcher"
 	"errors"
-	"gorm.io/gorm"
-	"math"
-	"math/big"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"domiconexec/common"
-
-	"domiconexec/core"
-	pool "domiconexec/core/filedatapool"
-	"domiconexec/core/forkid"
-	"domiconexec/core/rawdb"
-	"domiconexec/core/types"
-	"domiconexec/eth/downloader"
-	"domiconexec/eth/protocols/eth"
-	"domiconexec/eth/protocols/snap"
-	"domiconexec/ethdb"
-	"domiconexec/event"
-	"domiconexec/log"
-	"domiconexec/metrics"
-	"domiconexec/p2p"
-	"domiconexec/trie/triedb/pathdb"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/consensus"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/forkid"
+	"github.com/ethereum/go-ethereum/core/rawdb"
+	pool "github.com/ethereum/go-ethereum/core/txpool/filedatapool"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/eth/downloader"
+	"github.com/ethereum/go-ethereum/eth/fetcher"
+	"github.com/ethereum/go-ethereum/eth/protocols/eth"
+	"github.com/ethereum/go-ethereum/eth/protocols/snap"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/trie/triedb/pathdb"
 )
 
 const (
@@ -59,26 +56,6 @@ const (
 
 var syncChallengeTimeout = 15 * time.Second // Time allowance for a node to reply to the sync progress challenge
 
-// txPool defines the methods needed from a transaction pool implementation to
-// support all the operations needed by the Ethereum chain protocols.
-type txPool interface {
-	// Has returns an indicator whether txpool has a transaction
-	// cached with the given hash.
-	Has(hash common.Hash) bool
-
-	// Get retrieves the transaction from local txpool with given
-	// tx hash.
-	Get(hash common.Hash) *types.Transaction
-
-	// Add should add the given transactions to the pool.
-	Add(txs []*types.Transaction, local bool, sync bool) []error
-
-	//// SubscribeTransactions subscribes to new transaction events. The subscriber
-	//// can decide whether to receive notifications only for newly seen transactions
-	//// or also for reorged out ones.
-	//SubscribeTransactions(ch chan<- core.NewTxsEvent, reorgs bool) event.Subscription
-}
-
 // fileDataPool defines the methods needed from a fileData pool implementation to
 // support all the operations needed by the Ethereum chain protocols.
 type fileDataPool interface {
@@ -93,13 +70,13 @@ type fileDataPool interface {
 	// Add should add the given transactions to the pool.
 	Add(fds []*types.FileData, local bool, sync bool) []error
 
-	//// SubscribenFileDatas subscribes to new fileData events. The subscriber
-	//// can decide whether to receive notifications only for newly seen fileDatas
-	//// or also for reorged out ones.
-	//SubscribenFileDatas(ch chan<- core.NewFileDataEvent) event.Subscription
-	//
-	//// SubscribenFileDatasHash subscribes to get fileData Hash  events.
-	//SubscribenFileDatasHash(ch chan<- core.FileDataHashEvent) event.Subscription
+	// SubscribenFileDatas subscribes to new fileData events. The subscriber
+	// can decide whether to receive notifications only for newly seen fileDatas
+	// or also for reorged out ones.
+	SubscribenFileDatas(ch chan<- core.NewFileDataEvent) event.Subscription
+
+	// SubscribenFileDatasHash subscribes to get fileData Hash  events.
+	SubscribenFileDatasHash(ch chan<- core.FileDataHashEvent) event.Subscription
 }
 
 
@@ -108,14 +85,16 @@ type fileDataPool interface {
 type handlerConfig struct {
 	Database       ethdb.Database         // Database for direct sync insertions
 	Chain          *core.BlockChain       // Blockchain to serve data from
-	TxPool         txPool                 // Transaction pool to propagate from
+	//TxPool         txPool                 // Transaction pool to propagate from
 	//modify by echo 
 	FileDataPool   fileDataPool			  // FileData Pool to propagate from
+	Merger         *consensus.Merger      // The manager for eth1/2 transition
 	Network        uint64                 // Network identifier to advertise
 	Sync           downloader.SyncMode    // Whether to snap or full sync
 	BloomCache     uint64                 // Megabytes to alloc for snap sync bloom
 	EventMux       *event.TypeMux         // Legacy event mux, deprecate for `feed`
-	SqlDb          *gorm.DB
+	//RequiredBlocks map[uint64]common.Hash // Hard coded map of required block hashes for sync challenges
+	NoTxGossip     bool                   // Disable P2P transaction gossip
 }
 
 type handler struct {
@@ -125,22 +104,36 @@ type handler struct {
 	snapSync atomic.Bool // Flag whether snap sync is enabled (gets disabled if we already have blocks)
 	synced   atomic.Bool // Flag whether we're considered synchronised (enables transaction processing)
 
-	database       ethdb.Database
-	txpool         txPool
+	database ethdb.Database
 	fileDataPool   fileDataPool  // FileData Pool to propagate from
-	chain          *core.BlockChain
-	maxPeers          int
-	noTxGossip        bool
-	fdFetcher     *fetcher.FileDataFetcher
-	peers         *peerSet
+	chain    *core.BlockChain
+	maxPeers int
+
+	noTxGossip bool
+
+	//downloader   *downloader.Downloader
+	//blockFetcher *fetcher.BlockFetcher
+	//txFetcher    *fetcher.TxFetcher
+	fdFetcher    *fetcher.FileDataFetcher
+	peers        *peerSet
+	merger       *consensus.Merger
+
 	eventMux      *event.TypeMux
+	txsCh         chan core.NewTxsEvent
+	txsSub        event.Subscription
 	fdsCh         chan core.NewFileDataEvent
 	fdHashCh      chan core.FileDataHashEvent
 	fdsSub        event.Subscription
 	fdHashSub     event.Subscription
-	quitSync      chan struct{}
-	chainSync     *chainSyncer
-	wg            sync.WaitGroup
+	//minedBlockSub *event.TypeMuxSubscription
+
+	//requiredBlocks map[uint64]common.Hash
+
+	// channels for fetcher, syncer, txsyncLoop
+	quitSync chan struct{}
+
+	chainSync *chainSyncer
+	wg        sync.WaitGroup
 
 	handlerStartCh chan struct{}
 	handlerDoneCh  chan struct{}
@@ -157,13 +150,30 @@ func newHandler(config *handlerConfig) (*handler, error) {
 		forkFilter:     forkid.NewFilter(config.Chain),
 		eventMux:       config.EventMux,
 		database:       config.Database,
-		txpool:         config.TxPool,
 		fileDataPool:   config.FileDataPool,
+		noTxGossip:     config.NoTxGossip,
 		chain:          config.Chain,
 		peers:          newPeerSet(),
+		merger:         config.Merger,
 		quitSync:       make(chan struct{}),
 		handlerDoneCh:  make(chan struct{}),
 		handlerStartCh: make(chan struct{}),
+	}
+	// Construct the downloader (long sync)
+
+	if ttd := h.chain.Config().TerminalTotalDifficulty; ttd != nil {
+		if h.chain.Config().TerminalTotalDifficultyPassed {
+			log.Info("Chain post-merge, sync via beacon client")
+		} else {
+			//head := h.chain.CurrentBlock()
+			if td := h.chain.GetTd(); td.Cmp(ttd) >= 0 {
+				log.Info("Chain post-TTD, sync via beacon client")
+			} else {
+				log.Warn("Chain pre-merge, sync via PoW (ensure beacon client is ready)")
+			}
+		}
+	} else if h.chain.Config().TerminalTotalDifficultyPassed {
+		log.Error("Chain configured post-merge, but without TTD. Are you debugging sync?")
 	}
 
 	fetchFd := func (peer string,hashes []common.Hash) error {
@@ -181,14 +191,10 @@ func newHandler(config *handlerConfig) (*handler, error) {
 		return h.fileDataPool.Add(fds, false, false)
 	}
 	h.fdFetcher = fetcher.NewFdFetcher(h.fileDataPool.Has,addFds,fetchFd,h.removePeer)
-	//h.chainSync = newChainSyncer(h)
-	//url := utils.L1ScanUrlFlag.Value
-	//if url == "" {
-	//	log.Info("newHandler geth l1 scan url failed","url",url)
-	//}
-	h.chainSync = newChainSync(context.Background(),config.SqlDb,"url",h)
+	h.chainSync = newChainSync(context.Background(),h.chain.SqlDB(),"https://eth-sepolia.g.alchemy.com/v2/-t67_L9EE802yd-RZYxsZ38XRcJOCHfq",h,h.chain)
 	return h, nil
 }
+
 
 // protoTracker tracks the number of active protocol handlers.
 func (h *handler) protoTracker() {
@@ -245,14 +251,13 @@ func (h *handler) runEthPeer(peer *eth.Peer, handler eth.Handler) error {
 	// Execute the Ethereum handshake
 	var (
 		genesis = h.chain.Genesis()
-		head    = h.chain.CurrentHeader()
+		head    = h.chain.CurrentBlock()
 		hash    = head.Hash()
 		number  = head.Number.Uint64()
-		//td      = h.chain.GetTd(hash, number)
+		td      = h.chain.GetTd()
 	)
 	forkID := forkid.NewID(h.chain.Config(), genesis, number, head.Time)
-	//TODO handshake td should input
-	if err := peer.Handshake(h.networkID, big.NewInt(0), hash, genesis.Hash(), forkID, h.forkFilter); err != nil {
+	if err := peer.Handshake(h.networkID, td, hash, genesis.Hash(), forkID, h.forkFilter); err != nil {
 		peer.Log().Debug("Ethereum handshake failed", "err", err)
 		return err
 	}
@@ -289,8 +294,8 @@ func (h *handler) runEthPeer(peer *eth.Peer, handler eth.Handler) error {
 
 	//h.chainSync.handlePeerEvent()
 
-	//// Propagate existing transactions. new transactions appearing
-	//// after this will be sent via broadcasts.
+	// Propagate existing transactions. new transactions appearing
+	// after this will be sent via broadcasts.
 	//h.syncTransactions(peer)
 
 	// Create a notification channel for pending requests if the peer goes down
@@ -364,11 +369,10 @@ func (h *handler) Start(maxPeers int) {
 	h.wg.Add(2)
 	h.fdsCh = make(chan core.NewFileDataEvent, fdChanSize)
 	h.fdHashCh = make(chan core.FileDataHashEvent, fdChanSize)
-	//h.fdsSub = h.fileDataPool.SubscribenFileDatas(h.fdsCh)
-	//h.fdHashSub = h.fileDataPool.SubscribenFileDatasHash(h.fdHashCh)
+	h.fdsSub = h.fileDataPool.SubscribenFileDatas(h.fdsCh)
+	h.fdHashSub = h.fileDataPool.SubscribenFileDatasHash(h.fdHashCh)
 	go h.fdBroadcastLoop()
 	go h.fdGetFileDatasLoop()
-
 
 	// start sync handlers
 	h.wg.Add(1)
@@ -383,7 +387,6 @@ func (h *handler) Stop() {
 	//h.txsSub.Unsubscribe()        // quits txBroadcastLoop
 	h.fdsSub.Unsubscribe()				// quits fileDataBroadcastLoop
 	h.fdHashSub.Unsubscribe()	  	// quits getFileDataHashLoop
-	//h.minedBlockSub.Unsubscribe() // quits blockBroadcastLoop
 
 	// Quit chainSync and txsync64.
 	// After this is done, no new peers will be accepted.
@@ -475,60 +478,6 @@ func (h *handler) GetFileDatasFileData(hashs []common.Hash){
 	}
 }
 
-// BroadcastTransactions will propagate a batch of transactions
-// - To a square root of all peers for non-blob transactions
-// - And, separately, as announcements to all peers which are not known to
-// already have the given transaction.
-func (h *handler) BroadcastTransactions(txs types.Transactions) {
-	var (
-		blobTxs  int // Number of blob transactions to announce only
-		largeTxs int // Number of large transactions to announce only
-
-		directCount int // Number of transactions sent directly to peers (duplicates included)
-		directPeers int // Number of peers that were sent transactions directly
-		annCount    int // Number of transactions announced across all peers (duplicates included)
-		annPeers    int // Number of peers announced about transactions
-
-		txset = make(map[*ethPeer][]common.Hash) // Set peer->hash to transfer directly
-		annos = make(map[*ethPeer][]common.Hash) // Set peer->hash to announce
-	)
-	// Broadcast transactions to a batch of peers not knowing about it
-	for _, tx := range txs {
-		peers := h.peers.peersWithoutTransaction(tx.Hash())
-
-		var numDirect int
-		switch {
-		case tx.Type() == types.BlobTxType:
-			blobTxs++
-		case tx.Size() > txMaxBroadcastSize:
-			largeTxs++
-		default:
-			numDirect = int(math.Sqrt(float64(len(peers))))
-		}
-		// Send the tx unconditionally to a subset of our peers
-		for _, peer := range peers[:numDirect] {
-			txset[peer] = append(txset[peer], tx.Hash())
-		}
-		// For the remaining peers, send announcement only
-		for _, peer := range peers[numDirect:] {
-			annos[peer] = append(annos[peer], tx.Hash())
-		}
-	}
-	for peer, hashes := range txset {
-		directPeers++
-		directCount += len(hashes)
-		peer.AsyncSendTransactions(hashes)
-	}
-	for peer, hashes := range annos {
-		annPeers++
-		annCount += len(hashes)
-		peer.AsyncSendPooledTransactionHashes(hashes)
-	}
-	log.Debug("Distributed transactions", "plaintxs", len(txs)-blobTxs-largeTxs, "blobtxs", blobTxs, "largetxs", largeTxs,
-		"bcastpeers", directPeers, "bcastcount", directCount, "annpeers", annPeers, "anncount", annCount)
-}
-
-
 // fdBroadcastLoop announces new fileData to connected peers.
 func (h *handler) fdBroadcastLoop() {
 	defer h.wg.Done()
@@ -555,6 +504,7 @@ func (h *handler) fdGetFileDatasLoop() {
 		}
 	}
 }
+
 
 // enableSyncedFeatures enables the post-sync functionalities when the initial
 // sync is finished.

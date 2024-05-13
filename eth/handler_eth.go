@@ -18,13 +18,13 @@ package eth
 
 import (
 	"fmt"
-	"domiconexec/common"
-	"domiconexec/core"
-	"domiconexec/core/types"
-	"domiconexec/eth/protocols/eth"
-	"domiconexec/log"
-	"domiconexec/p2p/enode"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/eth/protocols/eth"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 // ethHandler implements the eth.Backend interface to handle the various network
@@ -45,12 +45,6 @@ type NilPool struct{}
 // NilPool Get always returns nil
 func (n NilPool) Get(hash common.Hash) *types.Transaction { return nil }
 
-func (h *ethHandler) TxPool() eth.TxPool {
-	if h.noTxGossip {
-		return &NilPool{}
-	}
-	return h.txpool
-}
 
 // RunPeer is invoked when a peer joins on the `eth` protocol.
 func (h *ethHandler) RunPeer(peer *eth.Peer, hand eth.Handler) error {
@@ -79,29 +73,6 @@ func (h *ethHandler) AcceptTxs() bool {
 func (h *ethHandler) Handle(peer *eth.Peer, packet eth.Packet) error {
 	// Consume any broadcasts and announces, forwarding the rest to the downloader
 	switch packet := packet.(type) {
-	//case *eth.NewBlockHashesPacket:
-	//	hashes, numbers := packet.Unpack()
-	//	return h.handleBlockAnnounces(peer, hashes, numbers)
-	//
-	//case *eth.NewBlockPacket:
-	//	return h.handleBlockBroadcast(peer, packet.Block, packet.TD)
-
-	//case *eth.NewPooledTransactionHashesPacket67:
-	//	return h.txFetcher.Notify(peer.ID(), nil, nil, *packet)
-	//
-	//case *eth.NewPooledTransactionHashesPacket68:
-	//	return h.txFetcher.Notify(peer.ID(), packet.Types, packet.Sizes, packet.Hashes)
-
-	//case *eth.TransactionsPacket:
-	//	for _, tx := range *packet {
-	//		if tx.Type() == types.BlobTxType {
-	//			return errors.New("disallowed broadcast blob transaction")
-	//		}
-	//	}
-	//	return h.txFetcher.Enqueue(peer.ID(), *packet, false)
-	//
-	//case *eth.PooledTransactionsResponse:
-	//	return h.txFetcher.Enqueue(peer.ID(), *packet, true)
 
 	case *eth.FileDataPacket:
 		return h.fdFetcher.Enqueue(peer.ID(), *packet, true)
@@ -138,3 +109,4 @@ func (h *ethHandler) Handle(peer *eth.Peer, packet eth.Packet) error {
 		return fmt.Errorf("unexpected eth packet type: %T", packet)
 	}
 }
+

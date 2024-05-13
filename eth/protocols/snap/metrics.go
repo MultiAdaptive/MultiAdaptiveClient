@@ -17,7 +17,7 @@
 package snap
 
 import (
-	metrics "domiconexec/metrics"
+	metrics "github.com/ethereum/go-ethereum/metrics"
 )
 
 var (

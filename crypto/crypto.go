@@ -29,9 +29,9 @@ import (
 	"math/big"
 	"os"
 
-	"domiconexec/common"
-	"domiconexec/common/math"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
 )
 

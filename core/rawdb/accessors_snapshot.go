@@ -19,9 +19,9 @@ package rawdb
 import (
 	"encoding/binary"
 
-	"domiconexec/common"
-	"domiconexec/ethdb"
-	"domiconexec/log"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // ReadSnapshotDisabled retrieves if the snapshot maintenance is disabled.

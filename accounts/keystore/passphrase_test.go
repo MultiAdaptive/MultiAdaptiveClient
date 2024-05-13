@@ -20,7 +20,7 @@ import (
 	"os"
 	"testing"
 
-	"domiconexec/common"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (

@@ -21,7 +21,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"domiconexec/common/hexutil"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // Tests that data bitset encoding and decoding works and is bijective.

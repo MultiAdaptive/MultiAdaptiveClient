@@ -17,8 +17,8 @@
 package snapshot
 
 import (
-	"domiconexec/common"
-	"domiconexec/ethdb"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb"
 )
 
 // holdableIterator is a wrapper of underlying database iterator. It extends

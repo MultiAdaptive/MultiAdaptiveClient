@@ -28,10 +28,10 @@ import (
 	"fmt"
 	"hash"
 
-	"domiconexec/common/mclock"
-	"domiconexec/p2p/enode"
-	"domiconexec/p2p/enr"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/common/mclock"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/p2p/enr"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 // TODO concurrent WHOAREYOU tie-breaker

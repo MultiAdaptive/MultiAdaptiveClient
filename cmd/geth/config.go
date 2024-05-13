@@ -26,20 +26,22 @@ import (
 	"strings"
 	"unicode"
 
-	"domiconexec/accounts"
-	"domiconexec/accounts/external"
-	"domiconexec/accounts/keystore"
-	"domiconexec/accounts/scwallet"
-	"domiconexec/accounts/usbwallet"
-	"domiconexec/cmd/utils"
-	"domiconexec/eth/ethconfig"
-	"domiconexec/internal/ethapi"
-	"domiconexec/internal/flags"
-	"domiconexec/internal/version"
-	"domiconexec/log"
-	"domiconexec/metrics"
-	"domiconexec/node"
-	"domiconexec/params"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/external"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/accounts/scwallet"
+	"github.com/ethereum/go-ethereum/accounts/usbwallet"
+	"github.com/ethereum/go-ethereum/cmd/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/eth/ethconfig"
+	"github.com/ethereum/go-ethereum/internal/ethapi"
+	"github.com/ethereum/go-ethereum/internal/flags"
+	"github.com/ethereum/go-ethereum/internal/version"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/ethereum/go-ethereum/node"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/naoina/toml"
 	"github.com/urfave/cli/v2"
 )
@@ -171,13 +173,17 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 		cfg.Eth.OverrideCancun = &v
 	}
 
+	if ctx.IsSet(utils.OverrideOptimismCanyon.Name) {
+		v := ctx.Uint64(utils.OverrideOptimismCanyon.Name)
+		cfg.Eth.OverrideOptimismCanyon = &v
+	}
+
 	if ctx.IsSet(utils.OverrideVerkle.Name) {
 		v := ctx.Uint64(utils.OverrideVerkle.Name)
 		cfg.Eth.OverrideVerkle = &v
 	}
+
 	backend, eth := utils.RegisterEthService(stack, &cfg.Eth)
-
-
 
 	// Create gauge with geth system and build information
 	if eth != nil { // The 'eth' backend may be nil in light mode
@@ -192,25 +198,19 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 			"protocols": strings.Join(protos, ","),
 		})
 	}
-	//// Configure log filter RPC API.
-	//filterSystem := utils.RegisterFilterAPI(stack, backend, &cfg.Eth)
-	//
-	//// Configure GraphQL if requested.
-	//if ctx.IsSet(utils.GraphQLEnabledFlag.Name) {
-	//	utils.RegisterGraphQLService(stack, backend, filterSystem, &cfg.Node)
-	//}
-	//// Add the Ethereum Stats daemon if requested.
-	//if cfg.Ethstats.URL != "" {
-	//	utils.RegisterEthStatsService(stack, backend, cfg.Ethstats.URL)
-	//}
-	//// Configure full-sync tester service if requested
-	//if ctx.IsSet(utils.SyncTargetFlag.Name) {
-	//	hex := hexutil.MustDecode(ctx.String(utils.SyncTargetFlag.Name))
-	//	if len(hex) != common.HashLength {
-	//		utils.Fatalf("invalid sync target length: have %d, want %d", len(hex), common.HashLength)
-	//	}
-	//	utils.RegisterFullSyncTester(stack, eth, common.BytesToHash(hex))
-	//}
+
+	// Add the Ethereum Stats daemon if requested.
+	if cfg.Ethstats.URL != "" {
+		utils.RegisterEthStatsService(stack, backend, cfg.Ethstats.URL)
+	}
+	// Configure full-sync tester service if requested
+	if ctx.IsSet(utils.SyncTargetFlag.Name) {
+		hex := hexutil.MustDecode(ctx.String(utils.SyncTargetFlag.Name))
+		if len(hex) != common.HashLength {
+			utils.Fatalf("invalid sync target length: have %d, want %d", len(hex), common.HashLength)
+		}
+		//utils.RegisterFullSyncTester(stack, eth, common.BytesToHash(hex))
+	}
 
 	return stack, backend
 }

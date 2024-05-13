@@ -21,17 +21,17 @@ import (
 	"math/big"
 	"time"
 
-	"domiconexec/common"
-	"domiconexec/core"
-	"domiconexec/core/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/types"
 
-	"domiconexec/log"
-	pool "domiconexec/core/filedatapool"
-	"domiconexec/metrics"
-	"domiconexec/p2p"
-	"domiconexec/p2p/enode"
-	"domiconexec/p2p/enr"
-	"domiconexec/params"
+	"github.com/ethereum/go-ethereum/log"
+	pool "github.com/ethereum/go-ethereum/core/txpool/filedatapool"
+	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/p2p/enr"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 const (
@@ -73,9 +73,6 @@ type Backend interface {
 	Chain() *core.BlockChain
 
 	// TxPool retrieves the transaction pool object to serve data.
-	TxPool() TxPool
-
-	// TxPool retrieves the transaction pool object to serve data.
 	FildDataPool() FileDataPool
 
 	// AcceptTxs retrieves whether transaction processing is enabled on the node
@@ -97,11 +94,6 @@ type Backend interface {
 	Handle(peer *Peer, packet Packet) error
 }
 
-// TxPool defines the methods needed by the protocol handler to serve transactions.
-type TxPool interface {
-	// Get retrieves the transaction from the local txpool with the given hash.
-	Get(hash common.Hash) *types.Transaction
-}
 
 // FileDataPool defines the methods needed by the protocol handler to serve fileData.
 type FileDataPool interface {
@@ -125,7 +117,7 @@ func MakeProtocols(backend Backend, network uint64, dnsdisc enode.Iterator) []p2
 			Version: version,
 			Length:  protocolLengths[version],
 			Run: func(p *p2p.Peer, rw p2p.MsgReadWriter) error {
-				peer := NewPeer(version, p, rw, backend.TxPool(), backend.FildDataPool())
+				peer := NewPeer(version, p, rw, backend.FildDataPool())
 				defer peer.Close()
 
 				return backend.RunPeer(peer, func(peer *Peer) error {
@@ -160,10 +152,9 @@ func nodeInfo(chain *core.BlockChain, network uint64) *NodeInfo {
 	head := chain.CurrentBlock()
 	hash := head.Hash()
 
-	//TODO should fix this
 	return &NodeInfo{
 		Network:    network,
-		//Difficulty: chain.GetTd(hash, head.Number.Uint64()),
+		Difficulty: chain.GetTd(),
 		Genesis:    chain.Genesis().Hash(),
 		Config:     chain.Config(),
 		Head:       hash,

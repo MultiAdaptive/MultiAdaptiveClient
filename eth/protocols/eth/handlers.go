@@ -20,283 +20,13 @@ import (
 	"errors"
 	"fmt"
 
-	"domiconexec/common"
-	"domiconexec/core"
-	"domiconexec/core/filedatapool"
-	"domiconexec/core/types"
-	"domiconexec/log"
-	"domiconexec/rlp"
-	"domiconexec/trie"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/txpool/filedatapool"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
 )
-
-
-func handleGetReceipts(backend Backend, msg Decoder, peer *Peer) error {
-	// Decode the block receipts retrieval message
-	var query GetReceiptsPacket
-	if err := msg.Decode(&query); err != nil {
-		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
-	}
-	response := ServiceGetReceiptsQuery(backend.Chain(), query.GetReceiptsRequest)
-	return peer.ReplyReceiptsRLP(query.RequestId, response)
-}
-
-// ServiceGetReceiptsQuery assembles the response to a receipt query. It is
-// exposed to allow external packages to test protocol behavior.
-func ServiceGetReceiptsQuery(chain *core.BlockChain, query GetReceiptsRequest) []rlp.RawValue {
-	// Gather state data until the fetch or network limits is reached
-	var (
-		//bytes    int
-		receipts []rlp.RawValue
-	)
-	//for lookups, hash := range query {
-	//	if bytes >= softResponseLimit || len(receipts) >= maxReceiptsServe ||
-	//		lookups >= 2*maxReceiptsServe {
-	//		break
-	//	}
-	//	// Retrieve the requested block's receipts
-	//	results := chain.GetReceiptsByHash(hash)
-	//	if results == nil {
-	//		if header := chain.GetHeaderByHash(hash); header == nil || header.ReceiptHash != types.EmptyRootHash {
-	//			continue
-	//		}
-	//	}
-	//	// If known, encode and queue for response packet
-	//	if encoded, err := rlp.EncodeToBytes(results); err != nil {
-	//		log.Error("Failed to encode receipt", "err", err)
-	//	} else {
-	//		receipts = append(receipts, encoded)
-	//		bytes += len(encoded)
-	//	}
-	//}
-	return receipts
-}
-
-func handleNewBlockhashes(backend Backend, msg Decoder, peer *Peer) error {
-	// A batch of new block announcements just arrived
-	ann := new(NewBlockHashesPacket)
-	if err := msg.Decode(ann); err != nil {
-		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
-	}
-	// Mark the hashes as present at the remote node
-	for _, block := range *ann {
-		peer.markBlock(block.Hash)
-	}
-	// Deliver them all to the backend for queuing
-	return backend.Handle(peer, ann)
-}
-
-func handleNewBlock(backend Backend, msg Decoder, peer *Peer) error {
-	// Retrieve and decode the propagated block
-	ann := new(NewBlockPacket)
-	if err := msg.Decode(ann); err != nil {
-		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
-	}
-	if err := ann.sanityCheck(); err != nil {
-		return err
-	}
-	if hash := types.CalcUncleHash(ann.Block.Uncles()); hash != ann.Block.UncleHash() {
-		log.Warn("Propagated block has invalid uncles", "have", hash, "exp", ann.Block.UncleHash())
-		return nil // TODO(karalabe): return error eventually, but wait a few releases
-	}
-	if hash := types.DeriveSha(ann.Block.Transactions(), trie.NewStackTrie(nil)); hash != ann.Block.TxHash() {
-		log.Warn("Propagated block has invalid body", "have", hash, "exp", ann.Block.TxHash())
-		return nil // TODO(karalabe): return error eventually, but wait a few releases
-	}
-	ann.Block.ReceivedAt = msg.Time()
-	ann.Block.ReceivedFrom = peer
-
-	// Mark the peer as owning the block
-	peer.markBlock(ann.Block.Hash())
-
-	return backend.Handle(peer, ann)
-}
-
-func handleBlockHeaders(backend Backend, msg Decoder, peer *Peer) error {
-	// A batch of headers arrived to one of our previous requests
-	res := new(BlockHeadersPacket)
-	if err := msg.Decode(res); err != nil {
-		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
-	}
-	metadata := func() interface{} {
-		hashes := make([]common.Hash, len(res.BlockHeadersRequest))
-		for i, header := range res.BlockHeadersRequest {
-			hashes[i] = header.Hash()
-		}
-		return hashes
-	}
-	return peer.dispatchResponse(&Response{
-		id:   res.RequestId,
-		code: BlockHeadersMsg,
-		Res:  &res.BlockHeadersRequest,
-	}, metadata)
-}
-
-func handleBlockBodies(backend Backend, msg Decoder, peer *Peer) error {
-	// A batch of block bodies arrived to one of our previous requests
-	res := new(BlockBodiesPacket)
-	if err := msg.Decode(res); err != nil {
-		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
-	}
-	metadata := func() interface{} {
-		var (
-			txsHashes        = make([]common.Hash, len(res.BlockBodiesResponse))
-			uncleHashes      = make([]common.Hash, len(res.BlockBodiesResponse))
-			withdrawalHashes = make([]common.Hash, len(res.BlockBodiesResponse))
-		)
-		hasher := trie.NewStackTrie(nil)
-		for i, body := range res.BlockBodiesResponse {
-			txsHashes[i] = types.DeriveSha(types.Transactions(body.Transactions), hasher)
-			uncleHashes[i] = types.CalcUncleHash(body.Uncles)
-			if body.Withdrawals != nil {
-				withdrawalHashes[i] = types.DeriveSha(types.Withdrawals(body.Withdrawals), hasher)
-			}
-		}
-		return [][]common.Hash{txsHashes, uncleHashes, withdrawalHashes}
-	}
-	return peer.dispatchResponse(&Response{
-		id:   res.RequestId,
-		code: BlockBodiesMsg,
-		Res:  &res.BlockBodiesResponse,
-	}, metadata)
-}
-
-func handleReceipts(backend Backend, msg Decoder, peer *Peer) error {
-	// A batch of receipts arrived to one of our previous requests
-	res := new(ReceiptsPacket)
-	if err := msg.Decode(res); err != nil {
-		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
-	}
-	metadata := func() interface{} {
-		hasher := trie.NewStackTrie(nil)
-		hashes := make([]common.Hash, len(res.ReceiptsResponse))
-		for i, receipt := range res.ReceiptsResponse {
-			hashes[i] = types.DeriveSha(types.Receipts(receipt), hasher)
-		}
-		return hashes
-	}
-	return peer.dispatchResponse(&Response{
-		id:   res.RequestId,
-		code: ReceiptsMsg,
-		Res:  &res.ReceiptsResponse,
-	}, metadata)
-}
-
-func handleNewPooledTransactionHashes67(backend Backend, msg Decoder, peer *Peer) error {
-	// New transaction announcement arrived, make sure we have
-	// a valid and fresh chain to handle them
-	if !backend.AcceptTxs() {
-		return nil
-	}
-	ann := new(NewPooledTransactionHashesPacket67)
-	if err := msg.Decode(ann); err != nil {
-		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
-	}
-	// Schedule all the unknown hashes for retrieval
-	for _, hash := range *ann {
-		peer.markTransaction(hash)
-	}
-	return backend.Handle(peer, ann)
-}
-
-func handleNewPooledTransactionHashes68(backend Backend, msg Decoder, peer *Peer) error {
-	// New transaction announcement arrived, make sure we have
-	// a valid and fresh chain to handle them
-	if !backend.AcceptTxs() {
-		return nil
-	}
-	ann := new(NewPooledTransactionHashesPacket68)
-	if err := msg.Decode(ann); err != nil {
-		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
-	}
-	if len(ann.Hashes) != len(ann.Types) || len(ann.Hashes) != len(ann.Sizes) {
-		return fmt.Errorf("%w: message %v: invalid len of fields: %v %v %v", errDecode, msg, len(ann.Hashes), len(ann.Types), len(ann.Sizes))
-	}
-	// Schedule all the unknown hashes for retrieval
-	for _, hash := range ann.Hashes {
-		peer.markTransaction(hash)
-	}
-	return backend.Handle(peer, ann)
-}
-
-func handleGetPooledTransactions(backend Backend, msg Decoder, peer *Peer) error {
-	// Decode the pooled transactions retrieval message
-	var query GetPooledTransactionsPacket
-	if err := msg.Decode(&query); err != nil {
-		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
-	}
-	hashes, txs := answerGetPooledTransactions(backend, query.GetPooledTransactionsRequest)
-	return peer.ReplyPooledTransactionsRLP(query.RequestId, hashes, txs)
-}
-
-func answerGetPooledTransactions(backend Backend, query GetPooledTransactionsRequest) ([]common.Hash, []rlp.RawValue) {
-	// Gather transactions until the fetch or network limits is reached
-	var (
-		bytes  int
-		hashes []common.Hash
-		txs    []rlp.RawValue
-	)
-	for _, hash := range query {
-		if bytes >= softResponseLimit {
-			break
-		}
-		// Retrieve the requested transaction, skipping if unknown to us
-		tx := backend.TxPool().Get(hash)
-		if tx == nil {
-			continue
-		}
-		// If known, encode and queue for response packet
-		if encoded, err := rlp.EncodeToBytes(tx); err != nil {
-			log.Error("Failed to encode transaction", "err", err)
-		} else {
-			hashes = append(hashes, hash)
-			txs = append(txs, encoded)
-			bytes += len(encoded)
-		}
-	}
-	return hashes, txs
-}
-
-func handleTransactions(backend Backend, msg Decoder, peer *Peer) error {
-	// Transactions arrived, make sure we have a valid and fresh chain to handle them
-	if !backend.AcceptTxs() {
-		return nil
-	}
-	// Transactions can be processed, parse all of them and deliver to the pool
-	var txs TransactionsPacket
-	if err := msg.Decode(&txs); err != nil {
-		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
-	}
-	for i, tx := range txs {
-		// Validate and mark the remote transaction
-		if tx == nil {
-			return fmt.Errorf("%w: transaction %d is nil", errDecode, i)
-		}
-		peer.markTransaction(tx.Hash())
-	}
-	return backend.Handle(peer, &txs)
-}
-
-func handlePooledTransactions(backend Backend, msg Decoder, peer *Peer) error {
-	// Transactions arrived, make sure we have a valid and fresh chain to handle them
-	if !backend.AcceptTxs() {
-		return nil
-	}
-	// Transactions can be processed, parse all of them and deliver to the pool
-	var txs PooledTransactionsPacket
-	if err := msg.Decode(&txs); err != nil {
-		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
-	}
-	for i, tx := range txs.PooledTransactionsResponse {
-		// Validate and mark the remote transaction
-		if tx == nil {
-			return fmt.Errorf("%w: transaction %d is nil", errDecode, i)
-		}
-		peer.markTransaction(tx.Hash())
-	}
-	requestTracker.Fulfil(peer.id, peer.version, PooledTransactionsMsg, txs.RequestId)
-
-	return backend.Handle(peer, &txs.PooledTransactionsResponse)
-}
 
 
 var fileDataReceiveTimes uint64
@@ -479,58 +209,57 @@ type BantchFileData struct {
 func ServiceGetFileDatasQuery(chain *core.BlockChain, query GetFileDatasRequest) []*BantchFileData {
 	// Gather state data until the fetch or network limits is reached
 	var (
-		//bytes    int
+		bytes    int
 	)
 
-	//var batch 	uint64
-	//var cap 		uint64
+	var batch 	uint64
+	var cap 		uint64
 
 	resultList := make([]*BantchFileData, 0)
 
-	//for _, hash := range query {
-		//TODO should fix this
-		//// Retrieve the requested block's fileData
-		//results := chain.GetFileDatasByHash(hash)
-		//if results == nil {
-		//	if header := chain.GetHeaderByHash(hash); header == nil{
-		//		continue
-		//	}
-		//}
+	for _, hash := range query {
+		// Retrieve the requested block's fileData
+		results := chain.GetFileDatasByHash(hash)
+		if results == nil {
+			if header := chain.GetBlockByHash(hash); header == nil{
+				continue
+			}
+		}
 
-		//// how many batch of fileDatas should send by one header hash
-		//cap = uint64(len(results))
-		//batchFileDatas := make([][][]byte, 0)
-		//for index,fd := range results{
-		//		encoded,err := rlp.EncodeToBytes(fd)
-		//		if err != nil {
-		//			log.Error("Failed to encode fileData", "err", err)
-		//		}else {
-		//			bytes += len(encoded)
-		//			if bytes >= fileDataSoftResponseLimit || len(batchFileDatas[batch]) >= maxFileDatasServe {
-		//				batch ++
-		//			}
+		// how many batch of fileDatas should send by one header hash
+		cap = uint64(len(results))
+		batchFileDatas := make([][][]byte, 0)
+		for index,fd := range results{
+				encoded,err := rlp.EncodeToBytes(fd)
+				if err != nil {
+					log.Error("Failed to encode fileData", "err", err)
+				}else {
+					bytes += len(encoded)
+					if bytes >= fileDataSoftResponseLimit || len(batchFileDatas[batch]) >= maxFileDatasServe {
+						batch ++
+					}
+
+					list := batchFileDatas[index]
+					if list == nil {
+						list = make([][]byte, 0)
+					}else {
+						list = append(list, encoded)
+					}
+					batchFileDatas[index] = list
+				}
+		}
+		
 		//
-		//			list := batchFileDatas[index]
-		//			if list == nil {
-		//				list = make([][]byte, 0)
-		//			}else {
-		//				list = append(list, encoded)
-		//			}
-		//			batchFileDatas[index] = list
-		//		}
-		//}
+		for _,datas := range batchFileDatas {
+				btFD := &BantchFileData{
+					HeaderHash: hash,
+					Cap: cap,
+					Length: uint64(len(datas)),
+					FileDatas: datas,
+				}
+				resultList = append(resultList, btFD)
+		}
 		
-		////
-		//for _,datas := range batchFileDatas {
-		//		btFD := &BantchFileData{
-		//			HeaderHash: hash,
-		//			Cap: cap,
-		//			Length: uint64(len(datas)),
-		//			FileDatas: datas,
-		//		}
-		//		resultList = append(resultList, btFD)
-		//}
-		
-	//}
+	}
 	return resultList
 } 

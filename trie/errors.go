@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"domiconexec/common"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // ErrCommitted is returned when a already committed trie is requested for usage.

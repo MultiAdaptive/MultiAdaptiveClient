@@ -20,8 +20,8 @@ import (
 	"io"
 	"os"
 
-	"domiconexec/log"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 const freezerVersion = 1 // The initial version tag of freezer table metadata

@@ -23,11 +23,11 @@ import (
 	"testing"
 	"time"
 
-	"domiconexec/common/mclock"
-	"domiconexec/core/rawdb"
-	"domiconexec/p2p/enode"
-	"domiconexec/p2p/enr"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/common/mclock"
+	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/p2p/enr"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 func testSetup(flagPersist []bool, fieldType []reflect.Type) (*Setup, []Flags, []Field) {

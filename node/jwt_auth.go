@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"time"
 
-	"domiconexec/rpc"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/golang-jwt/jwt/v4"
 )
 

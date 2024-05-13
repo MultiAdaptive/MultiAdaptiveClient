@@ -22,8 +22,8 @@ import (
 	"strings"
 	"testing"
 
-	"domiconexec/metrics"
-	"domiconexec/metrics/internal"
+	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/ethereum/go-ethereum/metrics/internal"
 )
 
 func TestMain(m *testing.M) {

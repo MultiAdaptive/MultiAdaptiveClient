@@ -30,13 +30,13 @@ import (
 	"syscall"
 	"time"
 
-	"domiconexec/common"
-	"domiconexec/eth/ethconfig"
-	"domiconexec/ethdb"
-	"domiconexec/internal/debug"
-	"domiconexec/log"
-	"domiconexec/node"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/eth/ethconfig"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/internal/debug"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/node"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/urfave/cli/v2"
 )
 

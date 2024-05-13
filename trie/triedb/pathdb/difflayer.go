@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"sync"
 
-	"domiconexec/common"
-	"domiconexec/log"
-	"domiconexec/trie/trienode"
-	"domiconexec/trie/triestate"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/trie/trienode"
+	"github.com/ethereum/go-ethereum/trie/triestate"
 )
 
 // diffLayer represents a collection of modifications made to the in-memory tries

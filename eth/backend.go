@@ -18,33 +18,35 @@
 package eth
 
 import (
-	"domiconexec/accounts"
-	"domiconexec/common"
-	"domiconexec/common/hexutil"
-	"domiconexec/core"
-	"domiconexec/core/filedatapool"
-	"domiconexec/core/rawdb"
-	"domiconexec/core/state/pruner"
-	"domiconexec/core/types"
-	"domiconexec/eth/downloader"
-	"domiconexec/eth/ethconfig"
-	"domiconexec/eth/protocols/eth"
-	"domiconexec/eth/protocols/snap"
-	"domiconexec/ethdb"
-	"domiconexec/ethdb/db"
-	"domiconexec/event"
-	"domiconexec/internal/ethapi"
-	"domiconexec/internal/shutdowncheck"
-	"domiconexec/log"
-	"domiconexec/node"
-	"domiconexec/p2p"
-	"domiconexec/p2p/dnsdisc"
-	"domiconexec/p2p/enode"
-	"domiconexec/params"
-	"domiconexec/rlp"
-	"domiconexec/rpc"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/consensus"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/bloombits"
+	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/core/state/pruner"
+	"github.com/ethereum/go-ethereum/core/txpool/filedatapool"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/eth/downloader"
+	"github.com/ethereum/go-ethereum/eth/ethconfig"
+	"github.com/ethereum/go-ethereum/eth/protocols/eth"
+	"github.com/ethereum/go-ethereum/eth/protocols/snap"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/ethdb/db"
+	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/internal/ethapi"
+	"github.com/ethereum/go-ethereum/internal/shutdowncheck"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/node"
+	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/p2p/dnsdisc"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/rpc"
 	"gorm.io/gorm"
 	"math/big"
 	"runtime"
@@ -58,28 +60,42 @@ type Config = ethconfig.Config
 // Ethereum implements the Ethereum full node service.
 type Ethereum struct {
 	config *ethconfig.Config
+
 	// Handlers
+	fdPool *filedatapool.FilePool
 	sqlDb              *gorm.DB
-	fdPool            *filedatapool.FilePool
 	blockchain         *core.BlockChain
 	handler            *handler
 	ethDialCandidates  enode.Iterator
 	snapDialCandidates enode.Iterator
+	merger             *consensus.Merger
+
 	seqRPCService        *rpc.Client
 	historicalRPCService *rpc.Client
 
 	// DB interfaces
 	chainDb ethdb.Database // Block chain database
+
 	eventMux       *event.TypeMux
 	accountManager *accounts.Manager
+
+	bloomRequests     chan chan *bloombits.Retrieval // Channel receiving bloom data retrieval requests
+	closeBloomHandler chan struct{}
+
 	APIBackend *EthAPIBackend
+
 	gasPrice  *big.Int
 	etherbase common.Address
+
 	networkID     uint64
 	netRPCService *ethapi.NetAPI
+
 	p2pServer *p2p.Server
+
 	lock sync.RWMutex // Protects the variadic fields (e.g. gas price and etherbase)
+
 	shutdownTracker *shutdowncheck.ShutdownTracker // Tracks if and when the node has shutdown ungracefully
+
 	nodeCloser func() error
 }
 
@@ -127,11 +143,13 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	}
 	eth := &Ethereum{
 		config:            config,
+		merger:            consensus.NewMerger(chainDb),
 		chainDb:           chainDb,
 		eventMux:          stack.EventMux(),
 		accountManager:    stack.AccountManager(),
+		closeBloomHandler: make(chan struct{}),
 		networkID:         config.NetworkId,
-		etherbase:         config.Etherbase,
+		bloomRequests:     make(chan chan *bloombits.Retrieval),
 		p2pServer:         stack.Server(),
 		shutdownTracker:   shutdowncheck.NewShutdownTracker(chainDb),
 		nodeCloser:        stack.Close,
@@ -165,19 +183,33 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 			StateScheme:         scheme,
 		}
 	)
+	// Override the chain config with provided settings.
+	var overrides core.ChainOverrides
+	if config.OverrideCancun != nil {
+		overrides.OverrideCancun = config.OverrideCancun
+	}
+	if config.OverrideVerkle != nil {
+		overrides.OverrideVerkle = config.OverrideVerkle
+	}
+	if config.OverrideOptimismCanyon != nil {
+		overrides.OverrideOptimismCanyon = config.OverrideOptimismCanyon
+	}
+	overrides.ApplySuperchainUpgrades = config.ApplySuperchainUpgrades
 
-	//TODO
-	//// Core State DB
 	stateSqlDB, err := db.NewSqlDB(stack.Config().DataDir)
 	if err != nil {
 		log.Error("create sql db failed:","err",err.Error())
 	}
 	db.MigrateUp(stateSqlDB)
-	eth.blockchain = core.NewBlockChain(chainDb, cacheConfig, config.Genesis,stateSqlDB)
+
+	eth.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, config.Genesis,stateSqlDB)
+	if err != nil {
+		return nil, err
+	}
 	eth.sqlDb = stateSqlDB
 	//modify by echo
 	//eth.blockchain.SetReceiptChan(fileDataPool.ReceiptCh())
-	if chainConfig := eth.blockchain.Config(); chainConfig != nil { // config.Genesis.Config.ChainID cannot be used because it's based on CLI flags only, thus default to mainnet L1
+	if chainConfig := eth.blockchain.Config(); chainConfig.L1Conf != nil { // config.Genesis.Config.ChainID cannot be used because it's based on CLI flags only, thus default to mainnet L1
 		config.NetworkId = chainConfig.ChainID.Uint64() // optimism defaults eth network ID to chain ID
 		eth.networkID = config.NetworkId
 	}
@@ -198,17 +230,26 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if eth.handler, err = newHandler(&handlerConfig{
 		Database:       chainDb,
 		Chain:          eth.blockchain,
+		//TxPool:         eth.txPool,
 		FileDataPool:  	eth.fdPool,
+		Merger:         eth.merger,
 		Network:        config.NetworkId,
 		Sync:           config.SyncMode,
 		BloomCache:     uint64(cacheLimit),
 		EventMux:       eth.eventMux,
-		SqlDb:          stateSqlDB,
+		//RequiredBlocks: config.RequiredBlocks,
+		//NoTxGossip:     config.RollupDisableTxPoolGossip,
 	}); err != nil {
 		return nil, err
 	}
 
-	eth.APIBackend = &EthAPIBackend{stack.Config().ExtRPCEnabled(), stack.Config().AllowUnprotectedTxs, true, eth}
+	//eth.miner = miner.New(eth, &config.Miner, eth.blockchain.Config(), eth.EventMux(), eth.engine, eth.isLocalBlock)
+	//eth.miner.SetExtra(makeExtraData(config.Miner.ExtraData))
+
+	eth.APIBackend = &EthAPIBackend{stack.Config().ExtRPCEnabled(), stack.Config().AllowUnprotectedTxs, eth}
+	if eth.APIBackend.allowUnprotectedTxs {
+		log.Info("Unprotected transactions allowed")
+	}
 	// Setup DNS discovery iterators.
 	dnsclient := dnsdisc.NewClient(dnsdisc.Config{})
 	eth.ethDialCandidates, err = dnsclient.NewIterator(eth.config.EthDiscoveryURLs...)
@@ -227,12 +268,12 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	stack.RegisterAPIs(eth.APIs())
 	stack.RegisterProtocols(eth.Protocols())
 	stack.RegisterLifecycle(eth)
+
 	// Successful startup; push a marker and check previous unclean shutdowns.
 	eth.shutdownTracker.MarkStartup()
 
 	return eth, nil
 }
-
 
 func makeExtraData(extra []byte) []byte {
 	if len(extra) == 0 {
@@ -256,19 +297,14 @@ func makeExtraData(extra []byte) []byte {
 func (s *Ethereum) APIs() []rpc.API {
 	apis := ethapi.GetAPIs(s.APIBackend)
 
+	//// Append any APIs exposed explicitly by the consensus engine
+	//apis = append(apis, s.engine.APIs(s.BlockChain())...)
+
 	// Append all the local APIs and return
 	return append(apis, []rpc.API{
 		{
 			Namespace: "eth",
 			Service:   NewEthereumAPI(s),
-		},
-		//{
-		//	Namespace: "eth",
-		//	Service:   downloader.NewDownloaderAPI(s.handler.downloader, s.eventMux),
-		//},
-		{
-			Namespace: "admin",
-			Service:   NewAdminAPI(s),
 		}, {
 			Namespace: "net",
 			Service:   s.netRPCService,
@@ -276,9 +312,8 @@ func (s *Ethereum) APIs() []rpc.API {
 	}...)
 }
 
-//TODO should fix this
 func (s *Ethereum) ResetWithGenesisBlock(gb *types.Block) {
-	//s.blockchain.ResetWithGenesisBlock(gb)
+	s.blockchain.ResetWithGenesisBlock(gb)
 }
 
 func (s *Ethereum) Etherbase() (eb common.Address, err error) {
@@ -297,28 +332,32 @@ func (s *Ethereum) SetEtherbase(etherbase common.Address) {
 	s.lock.Lock()
 	s.etherbase = etherbase
 	s.lock.Unlock()
-
-	s.etherbase = etherbase
 }
+
+
+
+//func (s *Ethereum) IsMining() bool      { return s.miner.Mining() }
+//func (s *Ethereum) Miner() *miner.Miner { return s.miner }
 
 func (s *Ethereum) AccountManager() *accounts.Manager  { return s.accountManager }
 func (s *Ethereum) BlockChain() *core.BlockChain       { return s.blockchain }
 //func (s *Ethereum) TxPool() *txpool.TxPool             { return s.txPool }
-//func (s *Ethereum) DB() ethdb.Database 				   { return s.blockchain.Db()}
+func (s *Ethereum) DB() ethdb.Database 				   { return s.blockchain.Db()}
 func (s *Ethereum) FilePool() *filedatapool.FilePool   { return s.fdPool }
 func (s *Ethereum) EventMux() *event.TypeMux           { return s.eventMux }
+//func (s *Ethereum) Engine() consensus.Engine           { return s.engine }
 func (s *Ethereum) ChainDb() ethdb.Database            { return s.chainDb }
 func (s *Ethereum) IsListening() bool                  { return true } // Always listening
 //func (s *Ethereum) Downloader() *downloader.Downloader { return s.handler.downloader }
-//func (s *Ethereum) Synced() bool                       { return s.handler.synced.Load() }
-//func (s *Ethereum) SetSynced()                         { s.handler.enableSyncedFeatures() }
+func (s *Ethereum) Synced() bool                       { return s.handler.synced.Load() }
+func (s *Ethereum) SetSynced()                         { s.handler.enableSyncedFeatures() }
 func (s *Ethereum) ArchiveMode() bool                  { return s.config.NoPruning }
 //func (s *Ethereum) BloomIndexer() *core.ChainIndexer   { return s.bloomIndexer }
-//func (s *Ethereum) Merger() *consensus.Merger          { return s.merger }
-//func (s *Ethereum) SyncMode() downloader.SyncMode {
-//	mode, _ := s.handler.chainSync.modeAndLocalHead()
-//	return mode
-//}
+func (s *Ethereum) Merger() *consensus.Merger          { return s.merger }
+func (s *Ethereum) SyncMode() downloader.SyncMode {
+	//mode, _ := s.handler.chainSync.modeAndLocalHead()
+	return downloader.FullSync
+}
 
 // Protocols returns all the currently configured
 // network protocols to start.
@@ -363,10 +402,10 @@ func (s *Ethereum) Stop() error {
 	s.handler.Stop()
 	db.CloseDB(s.sqlDb)
 	// Then stop everything else.
-	//s.bloomIndexer.Close()
-	//close(s.closeBloomHandler)
+	close(s.closeBloomHandler)
+	//s.txPool.Close()
 	s.fdPool.Close()
-	//s.blockchain.Stop()
+	s.blockchain.Stop()
 	if s.seqRPCService != nil {
 		s.seqRPCService.Close()
 	}
@@ -382,7 +421,7 @@ func (s *Ethereum) Stop() error {
 
 	return nil
 }
-//
+
 //// HandleRequiredProtocolVersion handles the protocol version signal. This implements opt-in halting,
 //// the protocol version data is already logged and metered when signaled through the Engine API.
 //func (s *Ethereum) HandleRequiredProtocolVersion(required params.ProtocolVersion) error {

@@ -23,8 +23,8 @@ import (
 	"math/big"
 	"reflect"
 
-	"domiconexec/common"
-	"domiconexec/crypto"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 // MakeTopics converts a filter query argument list into a filter topic set.

@@ -24,11 +24,11 @@ import (
 	"math/big"
 	"unsafe"
 
-	"domiconexec/common"
-	"domiconexec/common/hexutil"
-	"domiconexec/crypto"
-	"domiconexec/params"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 //go:generate go run github.com/fjl/gencodec -type Receipt -field-override receiptMarshaling -out gen_receipt_json.go
@@ -61,7 +61,7 @@ type Receipt struct {
 	Bloom             Bloom  `json:"logsBloom"         gencodec:"required"`
 	Logs              []*Log `json:"logs"              gencodec:"required"`
 
-	// Implementation fields: These fieldencodeTypeds are added by geth when processing a transaction or retrieving a receipt.
+	// Implementation fields: These fields are added by geth when processing a transaction or retrieving a receipt.
 	// gencodec annotated fields: these are stored in the chain database.
 	TxHash            common.Hash    `json:"transactionHash" gencodec:"required"`
 	ContractAddress   common.Address `json:"contractAddress"`
@@ -84,11 +84,11 @@ type Receipt struct {
 	BlockNumber      *big.Int    `json:"blockNumber,omitempty"`
 	TransactionIndex uint        `json:"transactionIndex"`
 
-	//// OVM legacy: extend receipts with their L1 price (if a rollup tx)
-	//L1GasPrice *big.Int   `json:"l1GasPrice,omitempty"`
-	//L1GasUsed  *big.Int   `json:"l1GasUsed,omitempty"`
-	//L1Fee      *big.Int   `json:"l1Fee,omitempty"`
-	//FeeScalar  *big.Float `json:"l1FeeScalar,omitempty"`
+	// OVM legacy: extend receipts with their L1 price (if a rollup tx)
+	L1GasPrice *big.Int   `json:"l1GasPrice,omitempty"`
+	L1GasUsed  *big.Int   `json:"l1GasUsed,omitempty"`
+	L1Fee      *big.Int   `json:"l1Fee,omitempty"`
+	FeeScalar  *big.Float `json:"l1FeeScalar,omitempty"`
 }
 
 type receiptMarshaling struct {
@@ -103,13 +103,13 @@ type receiptMarshaling struct {
 	BlockNumber       *hexutil.Big
 	TransactionIndex  hexutil.Uint
 
-	//// Optimism
-	//L1GasPrice            *hexutil.Big
-	//L1GasUsed             *hexutil.Big
-	//L1Fee                 *hexutil.Big
-	//FeeScalar             *big.Float
-	//DepositNonce          *hexutil.Uint64
-	//DepositReceiptVersion *hexutil.Uint64
+	// Optimism
+	L1GasPrice            *hexutil.Big
+	L1GasUsed             *hexutil.Big
+	L1Fee                 *hexutil.Big
+	FeeScalar             *big.Float
+	DepositNonce          *hexutil.Uint64
+	DepositReceiptVersion *hexutil.Uint64
 }
 
 // receiptRLP is the consensus encoding of a receipt.
@@ -452,10 +452,10 @@ func decodeLegacyOptimismReceiptRLP(r *ReceiptForStorage, blob []byte) error {
 			return errors.New("cannot parse fee scalar")
 		}
 	}
-	//r.L1GasUsed = stored.L1GasUsed
-	//r.L1GasPrice = stored.L1GasPrice
-	//r.L1Fee = stored.L1Fee
-	//r.FeeScalar = scalar
+	r.L1GasUsed = stored.L1GasUsed
+	r.L1GasPrice = stored.L1GasPrice
+	r.L1Fee = stored.L1Fee
+	r.FeeScalar = scalar
 	return nil
 }
 

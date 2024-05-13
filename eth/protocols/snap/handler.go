@@ -20,17 +20,16 @@ import (
 	"bytes"
 	"fmt"
 	"time"
-
-	"domiconexec/common"
-	"domiconexec/core"
-	"domiconexec/core/types"
-	"domiconexec/log"
-	"domiconexec/metrics"
-	"domiconexec/p2p"
-	"domiconexec/p2p/enode"
-	"domiconexec/p2p/enr"
-	"domiconexec/trie"
-	"domiconexec/trie/trienode"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/p2p/enr"
+	"github.com/ethereum/go-ethereum/trie"
+	"github.com/ethereum/go-ethereum/trie/trienode"
 )
 
 const (
@@ -289,37 +288,37 @@ func ServiceGetAccountRangeQuery(chain *core.BlockChain, req *GetAccountRangePac
 	if err != nil {
 		return nil, nil
 	}
-	//it, err := chain.Snapshots().AccountIterator(req.Root, req.Origin)
+	it, err := chain.Snapshots().AccountIterator(req.Root, req.Origin)
 	if err != nil {
 		return nil, nil
 	}
 	// Iterate over the requested range and pile accounts up
 	var (
 		accounts []*AccountData
-		//size     uint64
+		size     uint64
 		last     common.Hash
 	)
-	//for it.Next() {
-	//	hash, account := it.Hash(), common.CopyBytes(it.Account())
-	//
-	//	// Track the returned interval for the Merkle proofs
-	//	last = hash
-	//
-	//	// Assemble the reply item
-	//	size += uint64(common.HashLength + len(account))
-	//	accounts = append(accounts, &AccountData{
-	//		Hash: hash,
-	//		Body: account,
-	//	})
-	//	// If we've exceeded the request threshold, abort
-	//	if bytes.Compare(hash[:], req.Limit[:]) >= 0 {
-	//		break
-	//	}
-	//	if size > req.Bytes {
-	//		break
-	//	}
-	//}
-	//it.Release()
+	for it.Next() {
+		hash, account := it.Hash(), common.CopyBytes(it.Account())
+
+		// Track the returned interval for the Merkle proofs
+		last = hash
+
+		// Assemble the reply item
+		size += uint64(common.HashLength + len(account))
+		accounts = append(accounts, &AccountData{
+			Hash: hash,
+			Body: account,
+		})
+		// If we've exceeded the request threshold, abort
+		if bytes.Compare(hash[:], req.Limit[:]) >= 0 {
+			break
+		}
+		if size > req.Bytes {
+			break
+		}
+	}
+	it.Release()
 
 	// Generate the Merkle proofs for the first and last account
 	proof := trienode.NewProofSet()
@@ -349,107 +348,105 @@ func ServiceGetStorageRangesQuery(chain *core.BlockChain, req *GetStorageRangesP
 	// TODO(karalabe):   - Dropping the remote peer is less flexible wrt client bugs (slow is better than non-functional)
 
 	// Calculate the hard limit at which to abort, even if mid storage trie
-	//hardLimit := uint64(float64(req.Bytes) * (1 + stateLookupSlack))
+	hardLimit := uint64(float64(req.Bytes) * (1 + stateLookupSlack))
 
 	// Retrieve storage ranges until the packet limit is reached
 	var (
 		slots  [][]*StorageData
 		proofs [][]byte
-		//size   uint64
+		size   uint64
 	)
-	//for _, account := range req.Accounts {
-	//	// If we've exceeded the requested data limit, abort without opening
-	//	// a new storage range (that we'd need to prove due to exceeded size)
-	//	if size >= req.Bytes {
-	//		break
-	//	}
-	//	// The first account might start from a different origin and end sooner
-	//	var origin common.Hash
-	//	if len(req.Origin) > 0 {
-	//		origin, req.Origin = common.BytesToHash(req.Origin), nil
-	//	}
-	//	var limit = common.MaxHash
-	//	if len(req.Limit) > 0 {
-	//		limit, req.Limit = common.BytesToHash(req.Limit), nil
-	//	}
-	//	// Retrieve the requested state and bail out if non existent
-	//	it, err := chai
-	//
-	//	n.Snapshots().StorageIterator(req.Root, account, origin)
-	//	if err != nil {
-	//		return nil, nil
-	//	}
-	//	// Iterate over the requested range and pile slots up
-	//	var (
-	//		storage []*StorageData
-	//		last    common.Hash
-	//		abort   bool
-	//	)
-	//	for it.Next() {
-	//		if size >= hardLimit {
-	//			abort = true
-	//			break
-	//		}
-	//		hash, slot := it.Hash(), common.CopyBytes(it.Slot())
-	//
-	//		// Track the returned interval for the Merkle proofs
-	//		last = hash
-	//
-	//		// Assemble the reply item
-	//		size += uint64(common.HashLength + len(slot))
-	//		storage = append(storage, &StorageData{
-	//			Hash: hash,
-	//			Body: slot,
-	//		})
-	//		// If we've exceeded the request threshold, abort
-	//		if bytes.Compare(hash[:], limit[:]) >= 0 {
-	//			break
-	//		}
-	//	}
-	//	if len(storage) > 0 {
-	//		slots = append(slots, storage)
-	//	}
-	//	it.Release()
-	//
-	//	// Generate the Merkle proofs for the first and last storage slot, but
-	//	// only if the response was capped. If the entire storage trie included
-	//	// in the response, no need for any proofs.
-	//	if origin != (common.Hash{}) || (abort && len(storage) > 0) {
-	//		// Request started at a non-zero hash or was capped prematurely, add
-	//		// the endpoint Merkle proofs
-	//		accTrie, err := trie.NewStateTrie(trie.StateTrieID(req.Root), chain.TrieDB())
-	//		if err != nil {
-	//			return nil, nil
-	//		}
-	//		acc, err := accTrie.GetAccountByHash(account)
-	//		if err != nil || acc == nil {
-	//			return nil, nil
-	//		}
-	//		id := trie.StorageTrieID(req.Root, account, acc.Root)
-	//		stTrie, err := trie.NewStateTrie(id, chain.TrieDB())
-	//		if err != nil {
-	//			return nil, nil
-	//		}
-	//		proof := trienode.NewProofSet()
-	//		if err := stTrie.Prove(origin[:], proof); err != nil {
-	//			log.Warn("Failed to prove storage range", "origin", req.Origin, "err", err)
-	//			return nil, nil
-	//		}
-	//		if last != (common.Hash{}) {
-	//			if err := stTrie.Prove(last[:], proof); err != nil {
-	//				log.Warn("Failed to prove storage range", "last", last, "err", err)
-	//				return nil, nil
-	//			}
-	//		}
-	//		for _, blob := range proof.List() {
-	//			proofs = append(proofs, blob)
-	//		}
-	//		// Proof terminates the reply as proofs are only added if a node
-	//		// refuses to serve more data (exception when a contract fetch is
-	//		// finishing, but that's that).
-	//		break
-	//	}
-	//}
+	for _, account := range req.Accounts {
+		// If we've exceeded the requested data limit, abort without opening
+		// a new storage range (that we'd need to prove due to exceeded size)
+		if size >= req.Bytes {
+			break
+		}
+		// The first account might start from a different origin and end sooner
+		var origin common.Hash
+		if len(req.Origin) > 0 {
+			origin, req.Origin = common.BytesToHash(req.Origin), nil
+		}
+		var limit = common.MaxHash
+		if len(req.Limit) > 0 {
+			limit, req.Limit = common.BytesToHash(req.Limit), nil
+		}
+		// Retrieve the requested state and bail out if non existent
+		it, err := chain.Snapshots().StorageIterator(req.Root, account, origin)
+		if err != nil {
+			return nil, nil
+		}
+		// Iterate over the requested range and pile slots up
+		var (
+			storage []*StorageData
+			last    common.Hash
+			abort   bool
+		)
+		for it.Next() {
+			if size >= hardLimit {
+				abort = true
+				break
+			}
+			hash, slot := it.Hash(), common.CopyBytes(it.Slot())
+
+			// Track the returned interval for the Merkle proofs
+			last = hash
+
+			// Assemble the reply item
+			size += uint64(common.HashLength + len(slot))
+			storage = append(storage, &StorageData{
+				Hash: hash,
+				Body: slot,
+			})
+			// If we've exceeded the request threshold, abort
+			if bytes.Compare(hash[:], limit[:]) >= 0 {
+				break
+			}
+		}
+		if len(storage) > 0 {
+			slots = append(slots, storage)
+		}
+		it.Release()
+
+		// Generate the Merkle proofs for the first and last storage slot, but
+		// only if the response was capped. If the entire storage trie included
+		// in the response, no need for any proofs.
+		if origin != (common.Hash{}) || (abort && len(storage) > 0) {
+			// Request started at a non-zero hash or was capped prematurely, add
+			// the endpoint Merkle proofs
+			accTrie, err := trie.NewStateTrie(trie.StateTrieID(req.Root), chain.TrieDB())
+			if err != nil {
+				return nil, nil
+			}
+			acc, err := accTrie.GetAccountByHash(account)
+			if err != nil || acc == nil {
+				return nil, nil
+			}
+			id := trie.StorageTrieID(req.Root, account, acc.Root)
+			stTrie, err := trie.NewStateTrie(id, chain.TrieDB())
+			if err != nil {
+				return nil, nil
+			}
+			proof := trienode.NewProofSet()
+			if err := stTrie.Prove(origin[:], proof); err != nil {
+				log.Warn("Failed to prove storage range", "origin", req.Origin, "err", err)
+				return nil, nil
+			}
+			if last != (common.Hash{}) {
+				if err := stTrie.Prove(last[:], proof); err != nil {
+					log.Warn("Failed to prove storage range", "last", last, "err", err)
+					return nil, nil
+				}
+			}
+			for _, blob := range proof.List() {
+				proofs = append(proofs, blob)
+			}
+			// Proof terminates the reply as proofs are only added if a node
+			// refuses to serve more data (exception when a contract fetch is
+			// finishing, but that's that).
+			break
+		}
+	}
 	return slots, proofs
 }
 
@@ -473,11 +470,6 @@ func ServiceGetByteCodesQuery(chain *core.BlockChain, req *GetByteCodesPacket) [
 			// least sent them back a correct response without db lookups
 			codes = append(codes, []byte{})
 		}
-		//TODO should fix this
-		//else if blob, err := chain.ContractCode(hash); err == nil {
-		//	codes = append(codes, blob)
-		//	bytes += uint64(len(blob))
-		//}
 		if bytes > req.Bytes {
 			break
 		}
@@ -500,7 +492,7 @@ func ServiceGetTrieNodesQuery(chain *core.BlockChain, req *GetTrieNodesPacket, s
 		return nil, nil
 	}
 	// The 'snap' might be nil, in which case we cannot serve storage slots.
-	//snap := chain.Snapshots().Snapshot(req.Root)
+	snap := chain.Snapshots().Snapshot(req.Root)
 	// Retrieve trie nodes until the packet size limit is reached
 	var (
 		nodes [][]byte
@@ -526,23 +518,23 @@ func ServiceGetTrieNodesQuery(chain *core.BlockChain, req *GetTrieNodesPacket, s
 		default:
 			var stRoot common.Hash
 			// Storage slots requested, open the storage trie and retrieve from there
-			//if snap == nil {
-			//	// We don't have the requested state snapshotted yet (or it is stale),
-			//	// but can look up the account via the trie instead.
-			//	account, err := accTrie.GetAccountByHash(common.BytesToHash(pathset[0]))
-			//	loads += 8 // We don't know the exact cost of lookup, this is an estimate
-			//	if err != nil || account == nil {
-			//		break
-			//	}
-			//	stRoot = account.Root
-			//} else {
-			//	account, err := snap.Account(common.BytesToHash(pathset[0]))
-			//	loads++ // always account database reads, even for failures
-			//	if err != nil || account == nil {
-			//		break
-			//	}
-			//	stRoot = common.BytesToHash(account.Root)
-			//}
+			if snap == nil {
+				// We don't have the requested state snapshotted yet (or it is stale),
+				// but can look up the account via the trie instead.
+				account, err := accTrie.GetAccountByHash(common.BytesToHash(pathset[0]))
+				loads += 8 // We don't know the exact cost of lookup, this is an estimate
+				if err != nil || account == nil {
+					break
+				}
+				stRoot = account.Root
+			} else {
+				account, err := snap.Account(common.BytesToHash(pathset[0]))
+				loads++ // always account database reads, even for failures
+				if err != nil || account == nil {
+					break
+				}
+				stRoot = common.BytesToHash(account.Root)
+			}
 			id := trie.StorageTrieID(req.Root, common.BytesToHash(pathset[0]), stRoot)
 			stTrie, err := trie.NewStateTrie(id, triedb)
 			loads++ // always account database reads, even for failures

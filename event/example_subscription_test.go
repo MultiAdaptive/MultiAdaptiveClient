@@ -19,7 +19,7 @@ package event_test
 import (
 	"fmt"
 
-	"domiconexec/event"
+	"github.com/ethereum/go-ethereum/event"
 )
 
 func ExampleNewSubscription() {

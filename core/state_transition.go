@@ -20,12 +20,11 @@ import (
 	"math"
 	"math/big"
 
-	"domiconexec/common"
-	cmath "domiconexec/common/math"
-	"domiconexec/core/types"
-	"domiconexec/params"
+	"github.com/ethereum/go-ethereum/common"
+	cmath "github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
 )
-
 
 // IntrinsicGas computes the 'intrinsic gas' for a message with the given data.
 func IntrinsicGas(data []byte, accessList types.AccessList, isContractCreation bool, isHomestead, isEIP2028 bool, isEIP3860 bool) (uint64, error) {
@@ -144,4 +143,3 @@ func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.In
 	msg.From, err = types.Sender(s, tx)
 	return msg, err
 }
-

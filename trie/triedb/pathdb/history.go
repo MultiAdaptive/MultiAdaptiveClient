@@ -23,11 +23,11 @@ import (
 	"fmt"
 	"time"
 
-	"domiconexec/common"
-	"domiconexec/core/rawdb"
-	"domiconexec/ethdb"
-	"domiconexec/log"
-	"domiconexec/trie/triestate"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/trie/triestate"
 	"golang.org/x/exp/slices"
 )
 

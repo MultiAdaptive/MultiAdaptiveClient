@@ -22,10 +22,10 @@ import (
 	"errors"
 	"fmt"
 
-	"domiconexec/common"
-	"domiconexec/core/types"
-	"domiconexec/log"
-	"domiconexec/trie/trienode"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/trie/trienode"
 )
 
 // Trie is a Merkle Patricia Trie. Use New to create a trie that sits on

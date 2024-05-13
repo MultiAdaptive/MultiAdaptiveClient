@@ -22,10 +22,10 @@ import (
 	"math/big"
 	"sync"
 
-	"domiconexec/common"
-	"domiconexec/eth/protocols/eth"
-	"domiconexec/eth/protocols/snap"
-	"domiconexec/p2p"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/eth/protocols/eth"
+	"github.com/ethereum/go-ethereum/eth/protocols/snap"
+	"github.com/ethereum/go-ethereum/p2p"
 )
 
 var (
@@ -182,21 +182,6 @@ func (ps *peerSet) peer(id string) *ethPeer {
 	return ps.peers[id]
 }
 
-// peersWithoutBlock retrieves a list of peers that do not have a given block in
-// their set of known hashes so it might be propagated to them.
-func (ps *peerSet) peersWithoutBlock(hash common.Hash) []*ethPeer {
-	ps.lock.RLock()
-	defer ps.lock.RUnlock()
-
-	list := make([]*ethPeer, 0, len(ps.peers))
-	for _, p := range ps.peers {
-		if !p.KnownBlock(hash) {
-			list = append(list, p)
-		}
-	}
-	return list
-}
-
 // peerWithOutFileData retrieves a list of peers that do not have a given
 // fileData in their set of known hashes.
 func (ps *peerSet) peerWithOutFileData(hash common.Hash) []*ethPeer {
@@ -224,21 +209,6 @@ func (ps *peerSet) peersToGetFileData() []*ethPeer {
 	return list
 }
 
-
-// peersWithoutTransaction retrieves a list of peers that do not have a given
-// transaction in their set of known hashes.
-func (ps *peerSet) peersWithoutTransaction(hash common.Hash) []*ethPeer {
-	ps.lock.RLock()
-	defer ps.lock.RUnlock()
-
-	list := make([]*ethPeer, 0, len(ps.peers))
-	for _, p := range ps.peers {
-		if !p.KnownTransaction(hash) {
-			list = append(list, p)
-		}
-	}
-	return list
-}
 
 // len returns if the current number of `eth` peers in the set. Since the `snap`
 // peers are tied to the existence of an `eth` connection, that will always be a

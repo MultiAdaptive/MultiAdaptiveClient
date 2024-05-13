@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"sync"
 
-	"domiconexec/common"
-	"domiconexec/crypto"
-	"domiconexec/ethdb"
-	"domiconexec/log"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
 	"golang.org/x/crypto/sha3"
 )
 

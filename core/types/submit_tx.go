@@ -2,8 +2,8 @@ package types
 
 import (
 	"bytes"
-	"domiconexec/common"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rlp"
 	"math/big"
 )
 

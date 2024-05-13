@@ -16,7 +16,7 @@
 
 package params
 
-import "domiconexec/common"
+import "github.com/ethereum/go-ethereum/common"
 
 // MainnetBootnodes are the enode URLs of the P2P bootstrap nodes running on
 // the main Ethereum network.
@@ -98,8 +98,6 @@ func KnownDNSNetwork(genesis common.Hash, protocol string) string {
 		net = "sepolia"
 	case HoleskyGenesisHash:
 		net = "holesky"
-	case DomiconGenesisHash:
-		net = "domicion"
 	default:
 		return ""
 	}

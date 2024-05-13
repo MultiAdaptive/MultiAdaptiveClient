@@ -16,6 +16,11 @@
 
 package eth
 
+import (
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/types"
+)
+
 // AdminAPI is the collection of Ethereum full node related APIs for node
 // administration.
 type AdminAPI struct {
@@ -27,3 +32,13 @@ func NewAdminAPI(eth *Ethereum) *AdminAPI {
 	return &AdminAPI{eth: eth}
 }
 
+
+func hasAllBlocks(chain *core.BlockChain, bs []*types.Block) bool {
+	for _, b := range bs {
+		if !chain.HasBlock(b.Hash(), b.NumberU64()) {
+			return false
+		}
+	}
+
+	return true
+}

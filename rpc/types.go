@@ -23,8 +23,8 @@ import (
 	"math"
 	"strings"
 
-	"domiconexec/common"
-	"domiconexec/common/hexutil"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // API describes the set of methods offered over the RPC interface
@@ -79,6 +79,7 @@ type DataState uint //数据状态
 const (
 	DataState_SAVE   DataState= iota
 	DataState_DEL
+	DataState_MEMORY	
 	DataState_UNKNOW 
 )
 type Result struct{

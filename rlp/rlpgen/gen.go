@@ -23,7 +23,7 @@ import (
 	"go/types"
 	"sort"
 
-	"domiconexec/rlp/internal/rlpstruct"
+	"github.com/ethereum/go-ethereum/rlp/internal/rlpstruct"
 )
 
 // buildContext keeps the data needed for make*Op.

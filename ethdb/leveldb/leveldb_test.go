@@ -19,8 +19,8 @@ package leveldb
 import (
 	"testing"
 
-	"domiconexec/ethdb"
-	"domiconexec/ethdb/dbtest"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/ethdb/dbtest"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/storage"
 )

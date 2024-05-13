@@ -20,11 +20,11 @@ import (
 	"bytes"
 	"fmt"
 
-	"domiconexec/common"
-	"domiconexec/core/types"
-	"domiconexec/crypto"
-	"domiconexec/trie/trienode"
-	"domiconexec/trie/triestate"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/trie/trienode"
+	"github.com/ethereum/go-ethereum/trie/triestate"
 	"golang.org/x/exp/slices"
 )
 

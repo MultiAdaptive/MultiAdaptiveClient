@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"domiconexec/metrics"
+	"github.com/ethereum/go-ethereum/metrics"
 )
 
 func TestCollectRuntimeMetrics(t *testing.T) {

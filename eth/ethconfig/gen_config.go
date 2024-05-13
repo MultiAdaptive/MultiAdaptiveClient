@@ -5,9 +5,9 @@ package ethconfig
 import (
 	"time"
 
-	"domiconexec/core"
-	"domiconexec/eth/downloader"
-
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/eth/downloader"
 )
 
 // MarshalTOML marshals as TOML.
@@ -24,7 +24,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		TransactionHistory                      uint64                 `toml:",omitempty"`
 		StateHistory                            uint64                 `toml:",omitempty"`
 		StateScheme                             string                 `toml:",omitempty"`
-		//RequiredBlocks                          map[uint64]common.Hash `toml:"-"`
+		RequiredBlocks                          map[uint64]common.Hash `toml:"-"`
 		LightServ                               int                    `toml:",omitempty"`
 		LightIngress                            int                    `toml:",omitempty"`
 		LightEgress                             int                    `toml:",omitempty"`
@@ -41,11 +41,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		SnapshotCache                           int
 		Preimages                               bool
 		FilterLogCacheSize                      int
-		//Miner                                   miner.Config
-		//TxPool                                  legacypool.Config
-		//BlobPool                                blobpool.Config
-		//GPO                                     gasprice.Config
-		EnablePreimageRecording                 bool
+		//EnablePreimageRecording                 bool
 		DocRoot                                 string `toml:"-"`
 		RPCGasCap                               uint64
 		RPCEVMTimeout                           time.Duration
@@ -54,12 +50,6 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		OverrideVerkle                          *uint64 `toml:",omitempty"`
 		OverrideOptimismCanyon                  *uint64 `toml:",omitempty"`
 		ApplySuperchainUpgrades                 bool    `toml:",omitempty"`
-		//RollupSequencerHTTP                     string
-		//RollupHistoricalRPC                     string
-		//RollupHistoricalRPCTimeout              time.Duration
-		//RollupDisableTxPoolGossip               bool
-		//RollupDisableTxPoolAdmission            bool
-		//RollupHaltOnIncompatibleProtocolVersion string
 	}
 	var enc Config
 	enc.Genesis = c.Genesis
@@ -73,7 +63,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.TransactionHistory = c.TransactionHistory
 	enc.StateHistory = c.StateHistory
 	enc.StateScheme = c.StateScheme
-	//enc.RequiredBlocks = c.RequiredBlocks
+	enc.RequiredBlocks = c.RequiredBlocks
 	enc.LightServ = c.LightServ
 	enc.LightIngress = c.LightIngress
 	enc.LightEgress = c.LightEgress
@@ -90,11 +80,6 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.SnapshotCache = c.SnapshotCache
 	enc.Preimages = c.Preimages
 	enc.FilterLogCacheSize = c.FilterLogCacheSize
-	//enc.Miner = c.Miner
-	//enc.TxPool = c.TxPool
-	//enc.BlobPool = c.BlobPool
-	//enc.GPO = c.GPO
-	enc.EnablePreimageRecording = c.EnablePreimageRecording
 	enc.DocRoot = c.DocRoot
 	enc.RPCGasCap = c.RPCGasCap
 	enc.RPCEVMTimeout = c.RPCEVMTimeout
@@ -103,12 +88,6 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.OverrideVerkle = c.OverrideVerkle
 	enc.OverrideOptimismCanyon = c.OverrideOptimismCanyon
 	enc.ApplySuperchainUpgrades = c.ApplySuperchainUpgrades
-	//enc.RollupSequencerHTTP = c.RollupSequencerHTTP
-	//enc.RollupHistoricalRPC = c.RollupHistoricalRPC
-	//enc.RollupHistoricalRPCTimeout = c.RollupHistoricalRPCTimeout
-	//enc.RollupDisableTxPoolGossip = c.RollupDisableTxPoolGossip
-	//enc.RollupDisableTxPoolAdmission = c.RollupDisableTxPoolAdmission
-	//enc.RollupHaltOnIncompatibleProtocolVersion = c.RollupHaltOnIncompatibleProtocolVersion
 	return &enc, nil
 }
 
@@ -126,7 +105,7 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		TransactionHistory                      *uint64                `toml:",omitempty"`
 		StateHistory                            *uint64                `toml:",omitempty"`
 		StateScheme                             *string                `toml:",omitempty"`
-		//RequiredBlocks                          map[uint64]common.Hash `toml:"-"`
+		RequiredBlocks                          map[uint64]common.Hash `toml:"-"`
 		LightServ                               *int                   `toml:",omitempty"`
 		LightIngress                            *int                   `toml:",omitempty"`
 		LightEgress                             *int                   `toml:",omitempty"`
@@ -143,10 +122,6 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		SnapshotCache                           *int
 		Preimages                               *bool
 		FilterLogCacheSize                      *int
-		//Miner                                   *miner.Config
-		//TxPool                                  *legacypool.Config
-		//BlobPool                                *blobpool.Config
-		//GPO                                     *gasprice.Config
 		EnablePreimageRecording                 *bool
 		DocRoot                                 *string `toml:"-"`
 		RPCGasCap                               *uint64
@@ -200,9 +175,9 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.StateScheme != nil {
 		c.StateScheme = *dec.StateScheme
 	}
-	//if dec.RequiredBlocks != nil {
-	//	c.RequiredBlocks = dec.RequiredBlocks
-	//}
+	if dec.RequiredBlocks != nil {
+		c.RequiredBlocks = dec.RequiredBlocks
+	}
 	if dec.LightServ != nil {
 		c.LightServ = *dec.LightServ
 	}
@@ -251,21 +226,6 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.FilterLogCacheSize != nil {
 		c.FilterLogCacheSize = *dec.FilterLogCacheSize
 	}
-	//if dec.Miner != nil {
-	//	c.Miner = *dec.Miner
-	//}
-	//if dec.TxPool != nil {
-	//	c.TxPool = *dec.TxPool
-	//}
-	//if dec.BlobPool != nil {
-	//	c.BlobPool = *dec.BlobPool
-	//}
-	//if dec.GPO != nil {
-	//	c.GPO = *dec.GPO
-	//}
-	if dec.EnablePreimageRecording != nil {
-		c.EnablePreimageRecording = *dec.EnablePreimageRecording
-	}
 	if dec.DocRoot != nil {
 		c.DocRoot = *dec.DocRoot
 	}
@@ -290,23 +250,6 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.ApplySuperchainUpgrades != nil {
 		c.ApplySuperchainUpgrades = *dec.ApplySuperchainUpgrades
 	}
-	//if dec.RollupSequencerHTTP != nil {
-	//	c.RollupSequencerHTTP = *dec.RollupSequencerHTTP
-	//}
-	//if dec.RollupHistoricalRPC != nil {
-	//	c.RollupHistoricalRPC = *dec.RollupHistoricalRPC
-	//}
-	//if dec.RollupHistoricalRPCTimeout != nil {
-	//	c.RollupHistoricalRPCTimeout = *dec.RollupHistoricalRPCTimeout
-	//}
-	//if dec.RollupDisableTxPoolGossip != nil {
-	//	c.RollupDisableTxPoolGossip = *dec.RollupDisableTxPoolGossip
-	//}
-	//if dec.RollupDisableTxPoolAdmission != nil {
-	//	c.RollupDisableTxPoolAdmission = *dec.RollupDisableTxPoolAdmission
-	//}
-	//if dec.RollupHaltOnIncompatibleProtocolVersion != nil {
-	//	c.RollupHaltOnIncompatibleProtocolVersion = *dec.RollupHaltOnIncompatibleProtocolVersion
-	//}
+
 	return nil
 }

@@ -21,7 +21,7 @@ import (
 	"os"
 	"runtime/trace"
 
-	"domiconexec/log"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // StartGoTrace turns on tracing, writing to the given file.

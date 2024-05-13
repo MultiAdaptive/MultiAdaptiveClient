@@ -20,11 +20,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"domiconexec/common"
-	"domiconexec/ethdb"
-	"domiconexec/log"
-	"domiconexec/params"
-	"domiconexec/rlp"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 // ReadDatabaseVersion retrieves the version number of the database.
@@ -64,9 +64,6 @@ func ReadChainConfig(db ethdb.KeyValueReader, hash common.Hash) *params.ChainCon
 		log.Error("Invalid chain config JSON", "hash", hash, "err", err)
 		return nil
 	}
-	//if config.Optimism != nil {
-	//	config.Clique = nil // get rid of legacy clique data in chain config (optimism goerli issue)
-	//}
 	return &config
 }
 

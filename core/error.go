@@ -19,7 +19,7 @@ package core
 import (
 	"errors"
 
-	"domiconexec/core/types"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 var (

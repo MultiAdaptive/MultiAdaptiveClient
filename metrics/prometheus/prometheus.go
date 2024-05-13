@@ -22,8 +22,8 @@ import (
 	"net/http"
 	"sort"
 
-	"domiconexec/log"
-	"domiconexec/metrics"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/metrics"
 )
 
 // Handler returns an HTTP handler which dump metrics in Prometheus format.

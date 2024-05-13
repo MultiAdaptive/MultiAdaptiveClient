@@ -21,9 +21,9 @@ import (
 	"errors"
 	"math/big"
 
-	"domiconexec"
-	"domiconexec/common"
-	"domiconexec/core/types"
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 var (

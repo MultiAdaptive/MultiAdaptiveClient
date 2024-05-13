@@ -21,9 +21,9 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	"domiconexec/common"
-	"domiconexec/crypto"
-	"domiconexec/metrics"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/metrics"
 )
 
 // The fields below define the low level database schema prefixing.
