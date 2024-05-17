@@ -54,7 +54,7 @@ func (p *Peer) broadcastFileData() {
 			// Pile fileData until we reach our allowed network limit
 			var (
 				hashesCount uint64
-				fds         []*types.FileData
+				fds         []*types.DA
 				//size        common.StorageSize
 			)
 			for i := 0; i < len(queue) ; i++ {

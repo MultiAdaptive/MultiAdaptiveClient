@@ -65,10 +65,14 @@ type fileDataPool interface {
 
 	// Get retrieves the fileData from local fileDataPool with given
 	// tx hash.
-	Get(hash common.Hash) (*types.FileData,pool.DISK_FILEDATA_STATE,error)
+	Get(hash common.Hash) (*types.DA,pool.DISK_FILEDATA_STATE,error)
+
+	GetDAByCommit(commit []byte) (*types.DA,error)
+
+	SendNewFileDataEvent(fileData []*types.DA)
 
 	// Add should add the given transactions to the pool.
-	Add(fds []*types.FileData, local bool, sync bool) []error
+	Add(fds []*types.DA, local bool, sync bool) []error
 
 	// SubscribenFileDatas subscribes to new fileData events. The subscriber
 	// can decide whether to receive notifications only for newly seen fileDatas
@@ -110,14 +114,9 @@ type handler struct {
 	maxPeers int
 
 	noTxGossip bool
-
-	//downloader   *downloader.Downloader
-	//blockFetcher *fetcher.BlockFetcher
-	//txFetcher    *fetcher.TxFetcher
 	fdFetcher    *fetcher.FileDataFetcher
 	peers        *peerSet
 	merger       *consensus.Merger
-
 	eventMux      *event.TypeMux
 	txsCh         chan core.NewTxsEvent
 	txsSub        event.Subscription
@@ -125,11 +124,7 @@ type handler struct {
 	fdHashCh      chan core.FileDataHashEvent
 	fdsSub        event.Subscription
 	fdHashSub     event.Subscription
-	//minedBlockSub *event.TypeMuxSubscription
 
-	//requiredBlocks map[uint64]common.Hash
-
-	// channels for fetcher, syncer, txsyncLoop
 	quitSync chan struct{}
 
 	chainSync *chainSyncer
@@ -187,7 +182,7 @@ func newHandler(config *handlerConfig) (*handler, error) {
 		}
 		return p.RequestFileDatas(hashes)
 	}
-	addFds := func(fds []*types.FileData) []error {
+	addFds := func(fds []*types.DA) []error {
 		return h.fileDataPool.Add(fds, false, false)
 	}
 	h.fdFetcher = fetcher.NewFdFetcher(h.fileDataPool.Has,addFds,fetchFd,h.removePeer)
@@ -207,6 +202,7 @@ func (h *handler) protoTracker() {
 		case <-h.handlerDoneCh:
 			active--
 		case <-h.quitSync:
+			log.Info("protoTracker-----退出了")
 			// Wait for all active handlers to finish.
 			for ; active > 0; active-- {
 				<-h.handlerDoneCh
@@ -364,7 +360,6 @@ func (h *handler) unregisterPeer(id string) {
 
 func (h *handler) Start(maxPeers int) {
 	h.maxPeers = maxPeers
-
 	// broadcast fileDatas  (only new ones, not resurrected ones)
 	h.wg.Add(2)
 	h.fdsCh = make(chan core.NewFileDataEvent, fdChanSize)
@@ -403,7 +398,7 @@ func (h *handler) Stop() {
 }
 
 // TODO fix
-func (h *handler) BroadcastFileData(fds types.FileDatas){
+func (h *handler) BroadcastFileData(fds types.DAs){
 	var (
 		directCount int // Number of fileData sent directly to peers (duplicates included)
 		directPeers int // Number of peers that were sent fileData directly

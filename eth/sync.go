@@ -34,7 +34,7 @@ const (
 	defaultMinSyncPeers = 5                // Amount of peers desired to start syncing
 	QuickReqTime        = 1 * time.Second
 	LongReqTime         = 5 * time.Second
-	SyncChunkSize       = 1024
+	SyncChunkSize       = 10
 )
 
 
@@ -47,7 +47,7 @@ type chainSyncer struct {
 	handler    *handler
 	db         *gorm.DB
 	chain      *core.BlockChain
-	//stopCh     chan struct{}
+	cancel     context.CancelFunc
 	doneCh     chan error
 }
 
@@ -57,12 +57,15 @@ func newChainSync(ctx context.Context,sqlDb *gorm.DB,url string,handler *handler
 		log.Error("NewChainSync Dial url failed","err",err.Error(),"url",url)
 		return nil
 	}
+	ctx, cancel := context.WithCancel(context.Background())
+
 	return &chainSyncer{
 		ctx: ctx,
 		handler: handler,
 		ethclient: eth,
 		db: sqlDb,
 		chain: chain,
+		cancel: cancel,
 	}
 }
 func (cs *chainSyncer) startSync() {
@@ -97,6 +100,8 @@ func (cs *chainSyncer) loop() {
 			}
 
 		case  <-cs.handler.quitSync:
+			log.Info("chainSyncer---loop quit")
+			cs.cancel()
 			if cs.doneCh != nil {
 				<-cs.doneCh
 			}
@@ -113,7 +118,6 @@ func (cs *chainSyncer) doSync() error {
 	if currentBlock == nil || currentBlock.Number == nil {
 		num,err := db.GetLastBlockNum(cs.db)
 		if err != nil {
-			log.Error("chainSyncer----local db err","err",err.Error())
 			return err
 		}
 		currentHeader = num
@@ -123,21 +127,20 @@ func (cs *chainSyncer) doSync() error {
 
 	l1Num,err := cs.ethclient.BlockNumber(cs.ctx)
 	if err != nil {
-		log.Info("doSync-----","err",err.Error())
 		return err
 	}
-	log.Info("doSync-----","l1num",l1Num)
+	log.Info("doSync-----","l1num",l1Num,"currentHeader",currentHeader)
 	cs.forced = true
 
 	//当前高度为零 可以直接从genesis开始同步
 	if currentHeader == 0 {
 		requireTime := time.NewTimer(QuickReqTime)
 		startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
-		blocks := make([]*types.Block,SyncChunkSize)
 		var shouldBreak bool
-		//TODO should fix this bug
 		for i := startNum;true;i += SyncChunkSize {
-			for j := i;j<SyncChunkSize;j++ {
+			blocks := make([]*types.Block,SyncChunkSize)
+			for j := i;j< i+SyncChunkSize;j++ {
+				log.Info("doSync---------","j",j,"l1Num",l1Num)
 				if j > l1Num  {
 					shouldBreak = true
 					break
@@ -147,13 +150,21 @@ func (cs *chainSyncer) doSync() error {
 				case <-requireTime.C:
 					block,err := cs.ethclient.BlockByNumber(cs.ctx,new(big.Int).SetUint64(toBlockNum))
 					if err == nil {
-						blocks[j] = block
+						blocks[j-i] = block
+						requireTime.Reset(QuickReqTime)
+						log.Info("doSync-----","toBlockNum",toBlockNum,"block hash",block.Hash().String(),"index",j-i)
+					}else {
+						cs.forced = false
+						return err
 					}
-				default:
+				case <- cs.ctx.Done():
+					log.Info("chainSyncer-----","chainSyncer stop")
+					return nil
 				}
 			}
 			cs.processBlocks(blocks)
 			if shouldBreak {
+				cs.forced = false
 				break
 			}
 		}
@@ -164,11 +175,17 @@ func (cs *chainSyncer) doSync() error {
 		switch flag {
 		case true:
 			//回滚了删除从org开始的数据重新同步
-			for i:=latestBlock.NumberU64();i > org.NumberU64();i-- {
+			for i :=latestBlock.NumberU64();i > org.NumberU64();i-- {
 				db.DeleteBlockByNum(cs.db,uint64(i))
 			}
-			db.SetLastBlocNum(cs.db,org.NumberU64())
-
+			num,err := db.GetLastBlockNum(cs.db)
+			db.Begin(cs.db)
+			if err != nil {
+				db.AddLastBlockNum(db.Tx,org.NumberU64())
+			}else {
+				db.UpDataLastBlocNum(db.Tx,num,org.NumberU64())
+			}
+			db.Commit(db.Tx)
 		case false:
 			//没回滚继续同步
 			//cs.startSyncWithNum(uint64(org.BlockNum+1))
@@ -178,7 +195,7 @@ func (cs *chainSyncer) doSync() error {
 	return nil
 }
 
-func (cs *chainSyncer) startSyncWithNum(num uint64) {
+func (cs *chainSyncer) startSyncWithNum(num uint64) error {
 	requerTimer := time.NewTimer(QuickReqTime)
 	for  {
 		select {
@@ -187,46 +204,60 @@ func (cs *chainSyncer) startSyncWithNum(num uint64) {
 			if err == nil && block != nil{
 				currentNum,_ := cs.ethclient.BlockNumber(context.Background())
 				if block.NumberU64() == currentNum {
-					requerTimer = time.NewTimer(LongReqTime)
+					cs.forced = false
+					return nil
 				}else if(block.NumberU64() < currentNum) {
 					num++
+					requerTimer.Reset(QuickReqTime)
 				}else {
-					return
+					return nil
 				}
 				cs.processBlocks([]*types.Block{block})
 			}
-
+		case <-cs.ctx.Done():
+			return nil
 		}
 	}
 }
 
 func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	//save to db
-	err := db.AddBatchBlocks(cs.db,blocks)
+	db.Begin(cs.db)
+	err := db.AddBatchBlocks(db.Tx,blocks)
 	if err != nil {
+		log.Error("processBlocks-----","AddBatchBlocks---err",err.Error())
 		return err
 	}
-
 	commitCache := db.NewOrderedMap()
 	var latestNum uint64
 	trans := make([]*types.Transaction,0)
 	length := len(blocks)
 	//get tx
 	for _,bc := range blocks{
-		if latestNum < bc.NumberU64() {
-			latestNum = bc.NumberU64()
-		}
-		for _,tx := range bc.Transactions(){
-			switch tx.To().String() {
-			case cs.chain.Config().L1Conf.DomiconCommitmentProxy:
-				//get data from trans data
-				trans = append(trans,tx)
-				txData := tx.Data()
-				commitment := slice(txData)
-				commitCache.Set(tx.Hash().String(),commitment)
+		if bc != nil{
+			if latestNum < bc.NumberU64() {
+				latestNum = bc.NumberU64()
+			}
+			for _,tx := range bc.Transactions(){
+				if tx.To() != nil {
+					switch tx.To().String() {
+					case cs.chain.Config().L1Conf.DomiconCommitmentProxy:
+						//get data from trans data
+						trans = append(trans,tx)
+						txData := tx.Data()
+						if len(txData) != 0 {
+							commitment := slice(txData)
+							log.Info("查看一下----","commitment",common.Bytes2Hex(commitment))
+							commitCache.Set(tx.Hash().String(),commitment)
+						}
+					}
+				}
+			}
+			err := db.AddBatchTransactions(db.Tx,trans,bc.Number().Int64())
+			if err != nil{
+				 log.Error("AddBatchTransactions----","err",err.Error())
 			}
 		}
-		db.AddBatchTransactions(cs.db,trans,bc.Number().Int64())
 	}
 
 	checkHash := commitCache.Keys()
@@ -242,26 +273,45 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			commitCache.Del(k)
 		}
 	}
-	db.AddBatchReceipts(cs.db,receipts)
+	err = db.AddBatchReceipts(db.Tx,receipts)
+	if err != nil {
+		log.Error("AddBatchReceipts--","err",err.Error())
+	}
 
-	//write commitment to db
+	finalKeys := commitCache.Keys()
+	daDatas := make([]*types.DA,0)
+	for _,txHash := range finalKeys{
+		commitment,flag := commitCache.Get(txHash)
+		if flag {
+			//new commit get from memory pool
+			da,err := cs.handler.fileDataPool.GetDAByCommit(commitment)
+			if err == nil && da != nil {
+				daDatas = append(daDatas,da)
+			}
+		}
+	}
+	//send new commitment event
+	if len(daDatas) != 0 {
+		//db.AddBatchCommitment()
 
 
-	//更新最后的区块号
-	db.SetLastBlocNum(cs.db,latestNum)
+		cs.handler.fileDataPool.SendNewFileDataEvent(daDatas)
+	}
+	db.Commit(db.Tx)
 	cs.chain.SetCurrentBlock(blocks[length-1])
 	return nil
 }
 
 func slice(data []byte) []byte {
 	dataLength := len(data)
-	return data[dataLength-65:]
+	return data[dataLength-64:dataLength-16]
 }
 
 //false 没有回滚
 func (cs *chainSyncer) checkReorg(block *types.Block) (bool,*types.Block) {
 	var parentHash common.Hash
 	blockNum := block.NumberU64()
+	time.After(QuickReqTime)
 	l1Block,err := cs.ethclient.BlockByNumber(cs.ctx,block.Number())
 	if err != nil {
 		log.Error("checkReorg------BlockByNumber","num",blockNum)

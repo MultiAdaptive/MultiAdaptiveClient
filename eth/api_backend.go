@@ -107,27 +107,27 @@ func (b *EthAPIBackend) GetTd(ctx context.Context) *big.Int {
 // 上传文件的接口
 func (b *EthAPIBackend) UploadFileData(data []byte) error {
 	//decode data to struct
-	fd := new(types.FileData)
+	fd := new(types.DA)
 	err := rlp.DecodeBytes(data, fd)
 	if err != nil {
 		return err
 	}
-	return b.eth.fdPool.Add([]*types.FileData{fd}, true, false)[0]
+	return b.eth.fdPool.Add([]*types.DA{fd}, true, false)[0]
 	//return nil
 }
 
 func (b *EthAPIBackend) UploadFileDataByParams(sender, submitter common.Address, index, length, gasPrice uint64, commitment, data, signData []byte, txHash common.Hash) error {
-	fd := types.NewFileData(sender, submitter, index, length, gasPrice, commitment, data, signData, txHash)
+	fd := types.NewFileData(sender, index, length, commitment, data, signData, txHash)
 	if b.eth.seqRPCService != nil {
-		if err := b.eth.fdPool.Add([]*types.FileData{fd}, true, false)[0]; err != nil {
+		if err := b.eth.fdPool.Add([]*types.DA{fd}, true, false)[0]; err != nil {
 			log.Warn("successfully sent tx to sequencer, but failed to persist in local fileData pool", "err", err, "txHash", txHash.String())
 		}
 	}
-	return b.eth.fdPool.Add([]*types.FileData{fd}, true, false)[0]
+	return b.eth.fdPool.Add([]*types.DA{fd}, true, false)[0]
 	//return nil
 }
 
-func (b *EthAPIBackend) GetFileDataByHash(hash common.Hash) (*types.FileData,filedatapool.DISK_FILEDATA_STATE,error) {
+func (b *EthAPIBackend) GetFileDataByHash(hash common.Hash) (*types.DA,filedatapool.DISK_FILEDATA_STATE,error) {
 	fd,state,err := b.eth.fdPool.Get(hash)
 	log.Info("EthAPIBackend-----GetFileDataByHash", "txHash", hash.String())
 	if fd != nil {
@@ -136,7 +136,7 @@ func (b *EthAPIBackend) GetFileDataByHash(hash common.Hash) (*types.FileData,fil
 	return nil,state ,err
 }
 
-func (b *EthAPIBackend) GetFileDataByCommitment(comimt []byte) (*types.FileData, error) {
+func (b *EthAPIBackend) GetFileDataByCommitment(comimt []byte) (*types.DA, error) {
 	fd,_,err := b.eth.fdPool.GetByCommitment(comimt)
 	log.Info("EthAPIBackend-----GetFileDataByCommitment", "comimt", common.Bytes2Hex(comimt))
 	if fd != nil {
@@ -149,7 +149,7 @@ func (b *EthAPIBackend) CheckSelfState(blockNr rpc.BlockNumber) (string,error) {
 	bc := b.eth.BlockChain()
   block := bc.GetBlockByNumber(uint64(blockNr))
 	db := b.eth.chainDb
-	res := make([]*types.FileData, 0)
+	res := make([]*types.DA, 0)
 	var totalCount uint64
 	log.Info("EthAPIBackend-----CheckSelfState", "blockNr", block.Number().Uint64())
 	if block != nil {
@@ -233,7 +233,7 @@ func (b *EthAPIBackend) ChangeCurrentState(state int,number rpc.BlockNumber) boo
 	 return true
 }
 
-func (b *EthAPIBackend) GetPoolFileData(hash common.Hash) *types.FileData {
+func (b *EthAPIBackend) GetPoolFileData(hash common.Hash) *types.DA {
 	fd,_,err := b.eth.fdPool.Get(hash)
 	if err != nil {
 		log.Info("GetPoolFileData---get", "err", err.Error())

@@ -168,7 +168,7 @@ func handleResFileDatas(backend Backend, msg Decoder, peer *Peer) error {
 		}
 		hashes := make([]common.Hash, len(btfd.FileDatas))
 		for inde,data := range btfd.FileDatas {
-			var fd types.FileData 
+			var fd types.DA
 			rlp.DecodeBytes(data,&fd)
 			hashes[inde] = fd.TxHash
 		}

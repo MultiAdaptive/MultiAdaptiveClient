@@ -87,7 +87,7 @@ type BlockChain interface {
 	// GetBlock retrieves a specific block, used during pool resets.
 	GetBlock(hash common.Hash, number uint64) *types.Block
 
-
+	// SqlDB() returns the blockchain sql db
 	SqlDB() *gorm.DB
 }
 
@@ -95,7 +95,7 @@ type DiskDetail struct {
 	TxHash        common.Hash 				`json:"TxHash"`
 	State         DISK_FILEDATA_STATE	            `json:"State"`
 	TimeRecord    time.Time					`json:"TimeRecord"`
-	Data          types.FileData			      `json:"Data"`
+	Data          types.DA			      `json:"Data"`
 }
 
 type HashCollect struct {
@@ -120,7 +120,7 @@ type FilePool struct {
 	subs            event.SubscriptionScope // Subscription scope to unsubscribe all on shutdown
 	all             *lookup
 	diskCache	     *HashCollect  //
-	collector       map[common.Hash]*types.FileData
+	collector       map[common.Hash]*types.DA
 	beats           map[common.Hash]time.Time // Last heartbeat from each known account
 	reorgDoneCh     chan chan struct{}
 	reorgShutdownCh chan struct{}  // requests shutdown of scheduleReorgLoop
@@ -137,7 +137,7 @@ func New(config Config, chain BlockChain) *FilePool {
 		signer:          types.LatestFdSigner(chain.Config()),
 		all:             newLookup(),
 		diskCache:			 newHashCollect(),
-		collector:       make(map[common.Hash]*types.FileData),
+		collector:       make(map[common.Hash]*types.DA),
 		beats:           make(map[common.Hash]time.Time),
 		reorgDoneCh:     make(chan chan struct{}),
 		reorgShutdownCh: make(chan struct{}),
@@ -156,14 +156,8 @@ func (fp *FilePool) Init(head *types.Header) error {
 	// Initialize the state with head block, or fallback to empty one in
 	// case the head state is not available(might occur when node is not
 	// fully synced).
-
-	fp.currentBlock.Store(head)
-
-
-	// // Start the reorg loop early, so it can handle requests generated during
-	// // journal loading.
-	// fp.wg.Add(1)
-	// go fp.scheduleReorgLoop()
+	currentBlock := fp.chain.CurrentBlock()
+	fp.currentBlock.Store(currentBlock)
 
 	// If local fileData and journaling is enabled, load from disk
 	if fp.journal != nil {
@@ -298,6 +292,9 @@ func (fp *FilePool) SaveFileDataToDisk(hash common.Hash) error {
 	//if !ok {
 	//	return errors.New("file pool dont have fileData")
 	//}
+
+
+
 	//diskDb := fp.currentState.Database().DiskDB()
 	//detail := DiskDetail{TxHash: hash,State: DISK_FILEDATA_STATE_SAVE,TimeRecord: time.Now(),Data: *fileData}
 	//data,_ := json.Marshal(detail)
@@ -371,7 +368,7 @@ func (fp *FilePool) Has(hash common.Hash) bool{
 	return fd != nil
 }
 
-func (fp *FilePool) GetByCommitment(comimt []byte) (*types.FileData,DISK_FILEDATA_STATE,error){
+func (fp *FilePool) GetByCommitment(comimt []byte) (*types.DA,DISK_FILEDATA_STATE,error){
 	cmHash := common.BytesToHash(comimt)
 	fd := fp.get(cmHash)
 	if fd != nil {
@@ -387,12 +384,17 @@ func (fp *FilePool) GetByCommitment(comimt []byte) (*types.FileData,DISK_FILEDAT
 	//hash := common.BytesToHash(hashData)
 	//return fp.Get(hash)
 	return nil,DISK_FILEDATA_STATE_DEL,nil
-}  
+}
+
+func (fp *FilePool) GetDAByCommit(commit []byte) (*types.DA,error){
+
+	return nil,nil
+}
 
 
 // Get retrieves the fileData from local fileDataPool with given
 // tx hash.
-func (fp *FilePool) Get(hash common.Hash) (*types.FileData,DISK_FILEDATA_STATE,error){
+func (fp *FilePool) Get(hash common.Hash) (*types.DA,DISK_FILEDATA_STATE,error){
 //	var getTimes uint64
 //Lable:
 //	fd := fp.get(hash)
@@ -443,21 +445,21 @@ func (fp *FilePool) Get(hash common.Hash) (*types.FileData,DISK_FILEDATA_STATE,e
 
 
 // get returns a fileData if it is contained in the pool and nil otherwise.
-func (fp *FilePool) get(hash common.Hash) *types.FileData {
+func (fp *FilePool) get(hash common.Hash) *types.DA {
 	return fp.all.Get(hash)
 }
 
 
 // addRemotesSync is like addRemotes, but waits for pool reorganization. Tests use this method.
-func (fp *FilePool) addRemotesSync(fds []*types.FileData) []error {
+func (fp *FilePool) addRemotesSync(fds []*types.DA) []error {
 	return fp.Add(fds, false, true)
 }
 
 // toJournal retrieves all FileData that should be included in the journal,
 // grouped by origin account and sorted by nonce.
 // The returned FileData set is a copy and can be freely modified by calling code.
-func (fp *FilePool) toJournal() map[common.Hash]*types.FileData {
-	fds := make(map[common.Hash]*types.FileData)
+func (fp *FilePool) toJournal() map[common.Hash]*types.DA {
+	fds := make(map[common.Hash]*types.DA)
 	for hash, fd := range fp.collector {
 		fds[hash] = fd
 	}
@@ -469,7 +471,7 @@ func (fp *FilePool) toJournal() map[common.Hash]*types.FileData {
 //
 // This method is used to add FileData from the RPC API and performs synchronous pool
 // reorganization and event propagation.
-func (fp *FilePool) addLocals(fds []*types.FileData) []error {
+func (fp *FilePool) addLocals(fds []*types.DA) []error {
 	return fp.Add(fds, true, true)
 }
 
@@ -478,11 +480,11 @@ func (fp *FilePool) addLocals(fds []*types.FileData) []error {
 //
 // If sync is set, the method will block until all internal maintenance related
 // to the add is finished. Only use this during tests for determinism!
-func (fp *FilePool) Add(fds []*types.FileData, local, sync bool) []error {
+func (fp *FilePool) Add(fds []*types.DA, local, sync bool) []error {
 	// Filter out known ones without obtaining the pool lock or recovering signatures
 	var (
 		errs = make([]error, len(fds))
-		news = make([]*types.FileData, 0, len(fds))
+		news = make([]*types.DA, 0, len(fds))
 	)
 	for i, fd := range fds {
 		// If the fileData is known, pre-set the error slot
@@ -512,7 +514,7 @@ func (fp *FilePool) Add(fds []*types.FileData, local, sync bool) []error {
 	fp.mu.Unlock()
 
 	var nilSlot = 0
-	var final = make([]*types.FileData, 0)
+	var final = make([]*types.DA, 0)
 	for index, err := range newErrs {
 		if err == nil {
 			final = append(final,news[index])
@@ -524,15 +526,18 @@ func (fp *FilePool) Add(fds []*types.FileData, local, sync bool) []error {
 		nilSlot++
 	}
 
-	if len(final) != 0 {
-		fp.fileDataFeed.Send(core.NewFileDataEvent{Fileds: final})
-	}
 	return errs
+}
+
+func (fp *FilePool) SendNewFileDataEvent(fileData []*types.DA) {
+	if len(fileData) != 0 {
+		fp.fileDataFeed.Send(core.NewFileDataEvent{Fileds: fileData})
+	}
 }
 
 // addFdsLocked attempts to queue a batch of FileDatas if they are valid.
 // The fileData pool lock must be held.
-func (fp *FilePool) addFdsLocked(fds []*types.FileData, local bool) []error {
+func (fp *FilePool) addFdsLocked(fds []*types.DA, local bool) []error {
 	errs := make([]error, len(fds))
 	for i, fd := range fds {
 		_, err := fp.add(fd, local)
@@ -544,7 +549,7 @@ func (fp *FilePool) addFdsLocked(fds []*types.FileData, local bool) []error {
 
 // add validates a fileData and inserts it into the non-executable queue for later
 // saved. 
-func (fp *FilePool) add(fd *types.FileData, local bool) (replaced bool, err error) {
+func (fp *FilePool) add(fd *types.DA, local bool) (replaced bool, err error) {
 	// If the fileData is already known, discard it
 	hash := fd.TxHash
 	if fp.all.Get(hash) != nil {
@@ -567,7 +572,7 @@ func (fp *FilePool) add(fd *types.FileData, local bool) (replaced bool, err erro
 
 // journalFd adds the specified fileData to the local disk journal if it is
 // deemed to have been sent from a local account.
-func (fp *FilePool) journalFd(txHash common.Hash, fd *types.FileData) {
+func (fp *FilePool) journalFd(txHash common.Hash, fd *types.DA) {
 	// Only journal if it's enabled and the fileData is local
 	_, flag := fp.collector[txHash]
 	if fp.journal == nil || (!fp.config.JournalRemote && !flag) {
@@ -582,7 +587,7 @@ func (fp *FilePool) journalFd(txHash common.Hash, fd *types.FileData) {
 // rules, but does not check state-dependent validation such as sufficient balance.
 // This check is meant as an early check which only needs to be performed once,
 // and does not require the pool mutex to be held.
-func (fp *FilePool) validateFileDataSignature(fd *types.FileData, local bool) error {
+func (fp *FilePool) validateFileDataSignature(fd *types.DA, local bool) error {
 	if fd.Length != uint64(len(fd.Data)) {
 		return errors.New("fileData data length not match legth")
 	}
@@ -637,20 +642,20 @@ func (fp *FilePool) Close() error {
 type lookup struct {
 	slots   int
 	lock      sync.RWMutex
-	collector map[common.Hash]*types.FileData
+	collector map[common.Hash]*types.DA
 }
 
 // newLookup returns a new lookup structure.
 func newLookup() *lookup {
 	return &lookup{
-		collector: make(map[common.Hash]*types.FileData),
+		collector: make(map[common.Hash]*types.DA),
 	}
 }
 
 // Range calls f on each key and value present in the map. The callback passed
 // should return the indicator whether the iteration needs to be continued.
 // Callers need to specify which set (or both) to be iterated.
-func (t *lookup) Range(f func(hash common.Hash, fd *types.FileData) bool) {
+func (t *lookup) Range(f func(hash common.Hash, fd *types.DA) bool) {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 	for key, value := range t.collector {
@@ -661,7 +666,7 @@ func (t *lookup) Range(f func(hash common.Hash, fd *types.FileData) bool) {
 }
 
 // Get returns a fileData if it exists in the lookup, or nil if not found.
-func (t *lookup) Get(hash common.Hash) *types.FileData {
+func (t *lookup) Get(hash common.Hash) *types.DA {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
@@ -680,7 +685,7 @@ func (t *lookup) Count() int {
 }
 
 // Add adds a fileData to the lookup.
-func (t *lookup) Add(fd *types.FileData) {
+func (t *lookup) Add(fd *types.DA) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 

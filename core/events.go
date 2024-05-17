@@ -31,7 +31,7 @@ type NewMinedBlockEvent struct{ Block *types.Block }
 type RemovedLogsEvent struct{ Logs []*types.Log }
 
 // NewFileDataEvent is posted when a batch of FileDatas enter the FileData pool.
-type NewFileDataEvent struct{ Fileds []*types.FileData }
+type NewFileDataEvent struct{ Fileds []*types.DA }
 
 // FileDataHashEvent is posted when a batch of FileDatas hash enter the FileData pool.
 type FileDataHashEvent struct{ Hashes []common.Hash }

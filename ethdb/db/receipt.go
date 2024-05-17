@@ -1,26 +1,73 @@
 package db
 
-/*
-tx_hash             VARCHAR NOT NULL PRIMARY KEY REFERENCES transaction (hash) ON DELETE CASCADE,
-                  type                integer,
-			post_state          BYTEA,
-                  status              BIGINT,
-                  cumulative_gas_used BIGINT,
-                  gas_used            BIGINT,
-                  block_num           BIGINT  NOT NULL REFERENCES block (block_num) ON DELETE CASCADE,
-                  tx_index            integer,
-                  contract_address    VARCHAR
-*/
+import (
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"gorm.io/gorm"
+)
 
-//type Receipt struct {
-//	TxHash            common.Hash
-//	Type              uint8  `json:"type,omitempty"`
-//	PostState         []byte `json:"root"`
-//	Status            uint64 `json:"status"`
-//	CumulativeGasUsed uint64     `json:"cumulativeGasUsed" gencodec:"required"`
-//	GasUsed           uint64     `json:"gasUsed" gencodec:"required"`
-//	BlockNumber      *big.Int     `json:"blockNumber,omitempty"`
-//	TransactionIndex uint        `json:"transactionIndex"`
-//	ContractAddress   common.Address `json:"contractAddress"`
-//}
+// 创建交易表格收据表格模型
+type Receipt struct {
+	gorm.Model
+	TxHash             string `gorm:"primaryKey"`
+	TxType             int
+	PostState          []byte
+	Status             int64
+	CumulativeGasUsed  int64
+	GasUsed            int64
+	BlockNum           int64 `gorm:"not null"`
+	TxIndex            int
+	ContractAddress    string
+}
 
+
+func AddReceipt(tx *gorm.DB,receipt Receipt) error {
+	res := tx.Create(&receipt)
+	if res.Error != nil {
+		tx.Rollback()
+		return  res.Error
+	}
+	return nil
+}
+
+func AddBatchReceipts(tx *gorm.DB,receipts []*types.Receipt) error{
+	// 遍历每个区块，依次插入数据库
+	for _, rec := range receipts {
+		wr := Receipt{
+			TxHash: rec.TxHash.String(),
+			TxType: int(rec.Type),
+			Status: int64(rec.Status),
+			CumulativeGasUsed: int64(rec.CumulativeGasUsed),
+			GasUsed: int64(rec.GasUsed),
+			BlockNum: rec.BlockNumber.Int64(),
+			ContractAddress: rec.ContractAddress.String(),
+		}
+		result := tx.Create(&wr)
+		if result.Error != nil {
+			// 插入失败，回滚事务并返回错误
+			tx.Rollback()
+			return result.Error
+		}
+	}
+	return nil
+}
+
+func DeleteReceiptByHash(db *gorm.DB,txHash common.Hash) error {
+	var receipt Receipt
+	err := db.Where("tx_hash",txHash).Delete(&receipt).Error
+	if err != nil {
+		db.Rollback()
+		return err
+	}
+	return nil
+}
+
+func DeleteReceiptByNum(db *gorm.DB,num uint64) error {
+	var receipt Receipt
+	err := db.Where("block_num",num).Delete(&receipt).Error
+	if err != nil {
+		db.Rollback()
+		return err
+	}
+	return nil
+}

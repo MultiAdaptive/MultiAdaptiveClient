@@ -95,9 +95,9 @@ func (h *ethHandler) Handle(peer *eth.Peer, packet eth.Packet) error {
 			log.Error("handle---FileDatasResponse msg decode","err",err.Error())
 		}
 		//decode to fileData
-		fds := make([]*types.FileData, len(btfd.FileDatas))
+		fds := make([]*types.DA, len(btfd.FileDatas))
 		for indx,data := range btfd.FileDatas {
-			var fd types.FileData	
+			var fd types.DA
 			err = rlp.DecodeBytes(data,&fd)
 			if err == nil {
 				fds[indx] = &fd

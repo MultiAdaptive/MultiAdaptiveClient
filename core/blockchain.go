@@ -271,12 +271,16 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, genesis *Genesis
 func (bc *BlockChain) SetCurrentBlock(block *types.Block) error {
 	rawdb.WriteBlock(bc.db,block)
 	db.Begin(bc.sqlDb)
-	err := db.AddBlock(bc.sqlDb,block)
+	num,err := db.GetLastBlockNum(bc.sqlDb)
 	if err != nil {
-		return err
+		db.AddLastBlockNum(db.Tx,block.NumberU64())
+	}else {
+		db.UpDataLastBlocNum(db.Tx,num,block.NumberU64())
 	}
+	db.Commit(db.Tx)
 	bc.currentBlock.Store(block.Header())
 	bc.currentSnapBlock.Store(block.Header())
+	//log.Info("BlockChain-----current block is set","num",block.NumberU64())
 	return nil
 }
 
@@ -298,22 +302,36 @@ func (bc *BlockChain) empty() bool {
 // loadLastState loads the last known chain state from the database. This method
 // assumes that the chain manager mutex is held.
 func (bc *BlockChain) loadLastState() error {
-	// Restore the last known head block
-	head := rawdb.ReadHeadBlockHash(bc.db)
-	if head == (common.Hash{}) {
-		// Corrupt or empty database, init from scratch
-		log.Warn("Empty database, resetting chain")
-		return bc.Reset()
+	var headBlock *types.Block
+	lastNum,err := db.GetLastBlockNum(bc.sqlDb)
+	if err != nil {
+		log.Info("loadLastState","GetLastBlockNum-----lastNum",lastNum,"err",err.Error())
+		// Restore the last known head block
+		head := rawdb.ReadHeadBlockHash(bc.db)
+		if head == (common.Hash{}) {
+			// Corrupt or empty database, init from scratch
+			log.Warn("Empty database, resetting chain")
+			return bc.Reset()
+		}
+		// Make sure the entire head block is available
+		headBlock = bc.GetBlockByHash(head)
+		if headBlock == nil {
+			// Corrupt or empty database, init from scratch
+			log.Warn("Head block missing, resetting chain", "hash", head)
+			return bc.Reset()
+		}
+	}else {
+		log.Info("get latest block num","num",lastNum)
+		headBlock,err = db.GetBlockByNum(bc.sqlDb,lastNum)
+		if err != nil {
+			log.Warn("Head block missing, resetting chain err",err.Error())
+			return bc.Reset()
+		}
 	}
-	// Make sure the entire head block is available
-	headBlock := bc.GetBlockByHash(head)
-	if headBlock == nil {
-		// Corrupt or empty database, init from scratch
-		log.Warn("Head block missing, resetting chain", "hash", head)
-		return bc.Reset()
-	}
+
 	log.Info("Loaded most recent local block", "number", headBlock.Number(), "hash", headBlock.Hash(), "age", common.PrettyAge(time.Unix(int64(headBlock.Time()), 0)))
 	// Everything seems to be fine, set as the head block
+	
 	bc.currentBlock.Store(headBlock.Header())
 	bc.currentSnapBlock.Store(headBlock.Header())
 	return nil

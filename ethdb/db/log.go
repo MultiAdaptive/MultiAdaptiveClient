@@ -1,24 +1,51 @@
 package db
 
-/*
-tx_hash   VARCHAR NOT NULL REFERENCES transaction (hash) ON DELETE CASCADE,
-			log_index integer,
-			address   VARCHAR NOT NULL,
-                  data      VARCHAR,
-                  topic0    VARCHAR NOT NULL,
-                  topic1    VARCHAR,
-                  topic2    VARCHAR,
-                  topic3    VARCHAR,
-*/
-//type Log struct {
-//	// hash of the transaction
-//	TxHash common.Hash `json:"transactionHash" gencodec:"required" rlp:"-"`
-//	// index of the log in the block
-//	Index uint `json:"logIndex" rlp:"-"`
-//	// address of the contract that generated the event
-//	Address common.Address `json:"address" gencodec:"required"`
-//	// supplied by the contract, usually ABI-encoded
-//	Data []byte `json:"data" gencodec:"required"`
-//	// list of topics provided by the contract.
-//	Topics []common.Hash `json:"topics" gencodec:"required"`
-//}
+import (
+	"github.com/ethereum/go-ethereum/common"
+	"gorm.io/gorm"
+)
+
+// 创建日志表格模型
+type Log struct {
+	gorm.Model
+	TxHash   string `gorm:"primaryKey"`
+	LogIndex int
+	Address  string `gorm:"not null"`
+	Data     string
+	Topic0   string `gorm:"not null"`
+	Topic1   string
+	Topic2   string
+	Topic3   string
+}
+
+func AddLog(tx *gorm.DB,log Log) error {
+	res:= tx.Create(&log)
+	if res.Error != nil {
+		tx.Rollback()
+		return res.Error
+	}
+	return nil
+}
+
+func AddBatchLogs(tx *gorm.DB,logs []Log) error {
+	// 遍历每个区块，依次插入数据库
+	for _, logIns := range logs {
+		result := tx.Create(&logIns)
+		if result.Error != nil {
+			// 插入失败，回滚事务并返回错误
+			tx.Rollback()
+			return result.Error
+		}
+	}
+	return nil
+}
+
+func DeleteLogWithTxHash(db *gorm.DB,txHash common.Hash) error {
+	var log Log
+	err := db.Where("tx_hash",txHash).Delete(&log).Error
+	if err != nil {
+		db.Rollback()
+		return err
+	}
+	return nil
+}

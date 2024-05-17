@@ -202,6 +202,10 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	}
 	db.MigrateUp(stateSqlDB)
 
+	lastNum,err := db.GetLastBlockNum(stateSqlDB)
+	if err == nil {
+		db.CleanUpDB(stateSqlDB,lastNum)
+	}
 	eth.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, config.Genesis,stateSqlDB)
 	if err != nil {
 		return nil, err
@@ -401,6 +405,7 @@ func (s *Ethereum) Stop() error {
 	s.snapDialCandidates.Close()
 	s.handler.Stop()
 	db.CloseDB(s.sqlDb)
+	log.Info("db is closed")
 	// Then stop everything else.
 	close(s.closeBloomHandler)
 	//s.txPool.Close()

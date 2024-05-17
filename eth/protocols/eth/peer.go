@@ -196,7 +196,7 @@ func (p *Peer) markFileData(hash common.Hash) {
 
 // SendFileDatas sends fileData to the peer and includes the hashes
 // in its fileData hash set for future reference.
-func (p *Peer) SendFileDatas(fds []*types.FileData) error {
+func (p *Peer) SendFileDatas(fds []*types.DA) error {
 	var txHash common.Hash
 	for _, fd := range fds {
 		txHash = fd.TxHash

@@ -36,7 +36,7 @@ func newFdJournal(path string) *journal {
 
 // load parses a fileData journal dump from disk, loading its contents into
 // the specified pool.
-func (journal *journal) load(add func([]*types.FileData) []error) error {
+func (journal *journal) load(add func([]*types.DA) []error) error {
 	// Open the journal for loading any past fileDatas
 	input, err := os.Open(journal.path)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -59,7 +59,7 @@ func (journal *journal) load(add func([]*types.FileData) []error) error {
 	// Create a method to load a limited batch of fileDatas and bump the
 	// appropriate progress counters. Then use this method to load all the
 	// journaled fileDatas in small-ish batches.
-	loadBatch := func(files types.FileDatas) {
+	loadBatch := func(files types.DAs) {
 		for _, err := range add(files) {
 			if err != nil {
 				log.Debug("Failed to add journaled fileData", "err", err)
@@ -69,11 +69,11 @@ func (journal *journal) load(add func([]*types.FileData) []error) error {
 	}
 	var (
 		failure error
-		batch   types.FileDatas
+		batch   types.DAs
 	)
 	for {
 		// Parse the next FileData and terminate on error
-		fd := new(types.FileData)
+		fd := new(types.DA)
 		if err = stream.Decode(fd); err != nil {
 			if err != io.EOF {
 				failure = err
@@ -97,7 +97,7 @@ func (journal *journal) load(add func([]*types.FileData) []error) error {
 }
 
 // insert adds the specified fileData to the local disk journal.
-func (journal *journal) insert(fd *types.FileData) error {
+func (journal *journal) insert(fd *types.DA) error {
 	if journal.writer == nil {
 		return errNoActiveJournal
 	}
@@ -109,7 +109,7 @@ func (journal *journal) insert(fd *types.FileData) error {
 
 // rotate regenerates the fileData journal based on the current contents of
 // the fileData pool.
-func (journal *journal) rotate(all map[common.Hash]*types.FileData) error {
+func (journal *journal) rotate(all map[common.Hash]*types.DA) error {
 	// Close the current journal (if any is open)
 	if journal.writer != nil {
 		if err := journal.writer.Close(); err != nil {

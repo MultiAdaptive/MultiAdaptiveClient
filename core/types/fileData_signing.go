@@ -85,7 +85,7 @@ func LatestFdSignerForChainID(chainID *big.Int) FdSigner {
 }
 
 // SignFd signs the fileData using the given signer and private key.
-func SignFd(fd *FileData, s FdSigner, prv *ecdsa.PrivateKey) (*FileData, error) {
+func SignFd(fd *DA, s FdSigner, prv *ecdsa.PrivateKey) (*DA, error) {
 	h := s.Hash(fd)
 	sig, err := crypto.Sign(h[:], prv)
 	if err != nil {
@@ -98,7 +98,7 @@ func SignFd(fd *FileData, s FdSigner, prv *ecdsa.PrivateKey) (*FileData, error) 
 // elliptic curve and an error if it failed deriving or upon an incorrect
 // signature.
 //
-func FdSender(signer FdSigner, fd *FileData) (common.Address, error) {
+func FdSender(signer FdSigner, fd *DA) (common.Address, error) {
 	addr,err := signer.Sender(fd)
 	if err != nil {
 		return common.Address{}, err
@@ -114,17 +114,17 @@ func FdSender(signer FdSigner, fd *FileData) (common.Address, error) {
 // new protocol rules.
 type FdSigner interface {
 	// Sender returns the sender address of the fileData.
-	Sender(fd *FileData) (common.Address, error)
+	Sender(fd *DA) (common.Address, error)
 
 	// SignatureValues returns the raw R, S, V values corresponding to the
 	// given signature.
-	SignatureValues(fd *FileData, sig []byte) (r, s, v *big.Int, err error)
+	SignatureValues(fd *DA, sig []byte) (r, s, v *big.Int, err error)
 	
 	ChainID() *big.Int
 
 	// Hash returns 'signature hash', i.e. the fileData hash that is signed by the
 	// private key. This hash does not uniquely identify the fileData.
-	Hash(fd *FileData) common.Hash
+	Hash(fd *DA) common.Hash
 	
 	// Equal returns true if the given signer is the same as the receiver.
 	Equal(FdSigner) bool
@@ -155,7 +155,7 @@ func (s EIP155FdSigner) Equal(s2 FdSigner) bool {
 	return ok && eip155.chainId.Cmp(s.chainId) == 0
 }
 
-func (s EIP155FdSigner) Sender(fd *FileData) (common.Address, error) {
+func (s EIP155FdSigner) Sender(fd *DA) (common.Address, error) {
 	R, S, V := sliteSignature(fd.SignData)
 	// V = new(big.Int).Sub(V, s.chainIdMul)
 	// V.Sub(V, big8)
@@ -164,7 +164,7 @@ func (s EIP155FdSigner) Sender(fd *FileData) (common.Address, error) {
 
 // SignatureValues returns signature values. This signature
 // needs to be in the [R || S || V] format where V is 0 or 1.
-func (s EIP155FdSigner) SignatureValues(fd *FileData, sig []byte) (R, S, V *big.Int, err error) {
+func (s EIP155FdSigner) SignatureValues(fd *DA, sig []byte) (R, S, V *big.Int, err error) {
 	R, S, V = decodeSignature(sig)
 	// if s.chainId.Sign() != 0 {
 	// 	V = big.NewInt(int64(sig[64] + 35))
@@ -175,11 +175,10 @@ func (s EIP155FdSigner) SignatureValues(fd *FileData, sig []byte) (R, S, V *big.
 
 // Hash returns the hash to be signed by the sender.
 // It does not uniquely identify the transaction.
-func (s EIP155FdSigner) Hash(fd *FileData) common.Hash {
+func (s EIP155FdSigner) Hash(fd *DA) common.Hash {
 	data := make([]byte,0)
 	data = append(data, uint64ToBigEndianHexBytes(s.chainId.Uint64())...)	
 	data = append(data, fd.Sender.Bytes()...)
-	data = append(data, fd.Submitter.Bytes()...)
 	//data = append(data, uint64ToBigEndianHexBytes(fd.GasPrice)...)
 	data = append(data, uint64ToBigEndianHexBytes(fd.Index)...)
 	data = append(data, uint64ToBigEndianHexBytes(fd.Length)...)
@@ -202,11 +201,11 @@ func (s HomesteadFdSigner) Equal(s2 FdSigner) bool {
 
 // SignatureValues returns signature values. This signature
 // needs to be in the [R || S || V] format where V is 0 or 1.
-func (hs HomesteadFdSigner) SignatureValues(fd *FileData, sig []byte) (r, s, v *big.Int, err error) {
+func (hs HomesteadFdSigner) SignatureValues(fd *DA, sig []byte) (r, s, v *big.Int, err error) {
 	return hs.FrontierFdSigner.SignatureValues(fd, sig)
 }
 
-func (hs HomesteadFdSigner) Sender(fd *FileData) (common.Address, error) {
+func (hs HomesteadFdSigner) Sender(fd *DA) (common.Address, error) {
 	r, s ,v := fd.RawSignatureValues()
 	v.Sub(v,new(big.Int).SetUint64(27))
 	return recoverPlain(hs.Hash(fd), r, s, v, true)
@@ -226,7 +225,7 @@ func (s FrontierFdSigner) Equal(s2 FdSigner) bool {
 	return ok
 }
 
-func (fs FrontierFdSigner) Sender(fd *FileData) (common.Address, error) {
+func (fs FrontierFdSigner) Sender(fd *DA) (common.Address, error) {
 	r, s, v := sliteSignature(fd.SignData)
 	v = v.Mul(v,new(big.Int).SetUint64(27))
 	return recoverPlain(fs.Hash(fd), r, s, v, false)
@@ -234,17 +233,17 @@ func (fs FrontierFdSigner) Sender(fd *FileData) (common.Address, error) {
 
 // SignatureValues returns signature values. This signature
 // needs to be in the [R || S || V] format where V is 0 or 1.
-func (fs FrontierFdSigner) SignatureValues(fd *FileData, sig []byte) (r, s, v *big.Int, err error) {
+func (fs FrontierFdSigner) SignatureValues(fd *DA, sig []byte) (r, s, v *big.Int, err error) {
 	r, s, v = decodeSignature(sig)
 	return r, s, v, nil
 }
 
 // Hash returns the hash to be signed by the sender.
 // It does not uniquely identify the transaction.
-func (fs FrontierFdSigner) Hash(fd *FileData) common.Hash {
+func (fs FrontierFdSigner) Hash(fd *DA) common.Hash {
 	data := make([]byte,0)	
 	data = append(data, fd.Sender.Bytes()...)
-	data = append(data, fd.Submitter.Bytes()...)
+	//data = append(data, fd.Submitter.Bytes()...)
 	//data = append(data, uint64ToBigEndianHexBytes(fd.GasPrice)...)
 	data = append(data, uint64ToBigEndianHexBytes(fd.Index)...)
 	data = append(data, uint64ToBigEndianHexBytes(fd.Length)...)

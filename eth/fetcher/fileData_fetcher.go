@@ -148,7 +148,7 @@ type FileDataFetcher struct {
 
 	// Callbacks
 	hasFd    func(common.Hash) bool             // Retrieves a fd from the local fdpool
-	addFds   func([]*types.FileData) []error 	// Insert a batch of fileData into local fdpool
+	addFds   func([]*types.DA) []error 	// Insert a batch of fileData into local fdpool
 	fetchFds func(string, []common.Hash) error  // Retrieves a set of fileData from a remote peer
 	dropPeer func(string)                       // Drops a peer in case of announcement violation
 
@@ -160,14 +160,14 @@ type FileDataFetcher struct {
 
 // NewFdFetcher creates a transaction fetcher to retrieve transaction
 // based on hash announcements.
-func NewFdFetcher(hasFd func(common.Hash) bool, addFds func([]*types.FileData) []error, fetchFds func(string, []common.Hash) error, dropPeer func(string)) *FileDataFetcher {
+func NewFdFetcher(hasFd func(common.Hash) bool, addFds func([]*types.DA) []error, fetchFds func(string, []common.Hash) error, dropPeer func(string)) *FileDataFetcher {
 	return NewFdFetcherForTests(hasFd, addFds, fetchFds, dropPeer, mclock.System{}, nil)
 }
 
 // NewFdFetcherForTests is a testing method to mock out the realtime clock with
 // a simulated version and the internal randomness with a deterministic one.
 func NewFdFetcherForTests(
-	hasFd func(common.Hash) bool, addFds func([]*types.FileData) []error, fetchFds func(string, []common.Hash) error, dropPeer func(string),
+	hasFd func(common.Hash) bool, addFds func([]*types.DA) []error, fetchFds func(string, []common.Hash) error, dropPeer func(string),
 	clock mclock.Clock, rand *mrand.Rand) *FileDataFetcher {
 	return &FileDataFetcher{
 		notify:      make(chan *fdAnnounce),
@@ -237,7 +237,7 @@ func (f *FileDataFetcher) Notify(peer string, types []byte, sizes []uint32, hash
 // and the fetcher. This method may be called by both FileData broadcasts and
 // direct request replies. The differentiation is important so the fetcher can
 // re-schedule missing FileData as soon as possible.
-func (f *FileDataFetcher) Enqueue(peer string, fds []*types.FileData, direct bool) error {
+func (f *FileDataFetcher) Enqueue(peer string, fds []*types.DA, direct bool) error {
 	var (
 		inMeter          = fdReplyInMeter
 		knownMeter       = fdReplyKnownMeter

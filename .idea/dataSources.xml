@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
+    <data-source source="LOCAL" name="state" uuid="c7be8ec0-edfe-4fa8-8344-4b53408c76a2">
+      <driver-ref>sqlite.xerial</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
+      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/ethdb/db/state.db</jdbc-url>
+    </data-source>
+    <data-source source="LOCAL" name="state1" uuid="810b87cc-0bca-4c85-86ef-7ca75fef4e5a">
+      <driver-ref>sqlite.xerial</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
+      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/ethdb/db/state1.db</jdbc-url>
+    </data-source>
+  </component>
+</project>
