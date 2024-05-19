@@ -60,7 +60,6 @@ type Config = ethconfig.Config
 // Ethereum implements the Ethereum full node service.
 type Ethereum struct {
 	config *ethconfig.Config
-
 	// Handlers
 	fdPool *filedatapool.FilePool
 	sqlDb              *gorm.DB
@@ -211,8 +210,6 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		return nil, err
 	}
 	eth.sqlDb = stateSqlDB
-	//modify by echo
-	//eth.blockchain.SetReceiptChan(fileDataPool.ReceiptCh())
 	if chainConfig := eth.blockchain.Config(); chainConfig.L1Conf != nil { // config.Genesis.Config.ChainID cannot be used because it's based on CLI flags only, thus default to mainnet L1
 		config.NetworkId = chainConfig.ChainID.Uint64() // optimism defaults eth network ID to chain ID
 		eth.networkID = config.NetworkId
@@ -223,7 +220,6 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if config.FileDataPool.Journal != "" {
 		config.FileDataPool.Journal = stack.ResolvePath(config.FileDataPool.Journal)
 	}
-
 	fileDataPool := filedatapool.New(config.FileDataPool,eth.blockchain)
 	if err != nil {
 		return nil, err
@@ -234,21 +230,17 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if eth.handler, err = newHandler(&handlerConfig{
 		Database:       chainDb,
 		Chain:          eth.blockchain,
-		//TxPool:         eth.txPool,
 		FileDataPool:  	eth.fdPool,
 		Merger:         eth.merger,
 		Network:        config.NetworkId,
 		Sync:           config.SyncMode,
+		L1ScanUrl:      eth.config.L1ScanUrl,
+		NodeType:       eth.config.NodeType,
 		BloomCache:     uint64(cacheLimit),
 		EventMux:       eth.eventMux,
-		//RequiredBlocks: config.RequiredBlocks,
-		//NoTxGossip:     config.RollupDisableTxPoolGossip,
 	}); err != nil {
 		return nil, err
 	}
-
-	//eth.miner = miner.New(eth, &config.Miner, eth.blockchain.Config(), eth.EventMux(), eth.engine, eth.isLocalBlock)
-	//eth.miner.SetExtra(makeExtraData(config.Miner.ExtraData))
 
 	eth.APIBackend = &EthAPIBackend{stack.Config().ExtRPCEnabled(), stack.Config().AllowUnprotectedTxs, eth}
 	if eth.APIBackend.allowUnprotectedTxs {

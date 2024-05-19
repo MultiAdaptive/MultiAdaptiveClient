@@ -32,8 +32,6 @@ import (
 var Defaults = Config{
 	SyncMode:           downloader.SnapSync,
 	NetworkId:          1,
-	TxLookupLimit:      2350000,
-	TransactionHistory: 2350000,
 	StateHistory:       params.FullImmutabilityThreshold,
 	LightPeers:         100,
 	DatabaseCache:      512,
@@ -41,6 +39,7 @@ var Defaults = Config{
 	TrieDirtyCache:     256,
 	TrieTimeout:        60 * time.Minute,
 	SnapshotCache:      102,
+	NodeType:            "b",
 	FilterLogCacheSize: 32,
 	FileDataPool: 		filedatapool.DefaultConfig,
 	RPCGasCap:          50000000,
@@ -68,9 +67,6 @@ type Config struct {
 	NoPruning  bool // Whether to disable pruning and flush everything to disk
 	NoPrefetch bool // Whether to disable prefetching and only load state on demand
 
-	// Deprecated, use 'TransactionHistory' instead.
-	TxLookupLimit      uint64 `toml:",omitempty"` // The maximum number of blocks from head whose tx indices are reserved.
-	TransactionHistory uint64 `toml:",omitempty"` // The maximum number of blocks from head whose tx indices are reserved.
 	StateHistory       uint64 `toml:",omitempty"` // The maximum number of blocks from head whose state histories are reserved.
 
 	// State scheme represents the scheme used to store ethereum states and trie
@@ -102,6 +98,10 @@ type Config struct {
 	TrieTimeout    time.Duration
 	SnapshotCache  int
 	Preimages      bool
+
+	L1ScanUrl      string  //scan l1 url
+
+	NodeType       string
 
 	// This is the number of blocks for which logs will be cached in the filter system.
 	FilterLogCacheSize int

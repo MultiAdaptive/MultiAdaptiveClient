@@ -46,12 +46,13 @@ type chainSyncer struct {
 	ethclient  *ethclient.Client
 	handler    *handler
 	db         *gorm.DB
+	nodeType   string
 	chain      *core.BlockChain
 	cancel     context.CancelFunc
 	doneCh     chan error
 }
 
-func newChainSync(ctx context.Context,sqlDb *gorm.DB,url string,handler *handler, chain *core.BlockChain) *chainSyncer {
+func newChainSync(ctx context.Context,sqlDb *gorm.DB,url string,handler *handler, chain *core.BlockChain, nodeType string) *chainSyncer {
 	eth,err := ethclient.Dial(url)
 	if err != nil {
 		log.Error("NewChainSync Dial url failed","err",err.Error(),"url",url)
@@ -64,6 +65,7 @@ func newChainSync(ctx context.Context,sqlDb *gorm.DB,url string,handler *handler
 		handler: handler,
 		ethclient: eth,
 		db: sqlDb,
+		nodeType:nodeType,
 		chain: chain,
 		cancel: cancel,
 	}
@@ -298,9 +300,14 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	//send new commitment event
 	if len(daDatas) != 0 {
 		parentHash := common.HexToHash(parentHashData)
-		db.AddBatchCommitment(db.Tx,daDatas,parentHash)
 		cs.handler.fileDataPool.SendNewFileDataEvent(daDatas)
-		cs.handler.fileDataPool.RemoveFileData(daDatas)
+		switch cs.nodeType {
+		case "b":
+
+		case "s":
+			db.AddBatchCommitment(db.Tx,daDatas,parentHash)
+			cs.handler.fileDataPool.RemoveFileData(daDatas)
+		}
 	}
 	db.Commit(db.Tx)
 	cs.chain.SetCurrentBlock(blocks[length-1])

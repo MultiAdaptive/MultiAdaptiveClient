@@ -52,6 +52,7 @@ var (
 	// flags that configure the node
 	nodeFlags = flags.Merge([]cli.Flag{
 		utils.IdentityFlag,
+		utils.L1ScanUrlFlag,
 		utils.UnlockedAccountFlag,
 		utils.PasswordFileFlag,
 		utils.BootnodesFlag,
@@ -70,8 +71,6 @@ var (
 		utils.ExitWhenSyncedFlag,
 		utils.GCModeFlag,
 		utils.SnapshotFlag,
-		utils.TxLookupLimitFlag,
-		utils.TransactionHistoryFlag,
 		utils.StateHistoryFlag,
 		utils.LightServeFlag,
 		utils.LightIngressFlag,

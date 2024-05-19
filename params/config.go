@@ -386,35 +386,12 @@ type ChainConfig struct {
 	// even without having seen the TTD locally (safer long term).
 	TerminalTotalDifficultyPassed bool `json:"terminalTotalDifficultyPassed,omitempty"`
 
-	//// Various consensus engines
-	//Ethash    *EthashConfig `json:"ethash,omitempty"`
-	//Clique    *CliqueConfig `json:"clique,omitempty"`
 	IsDevMode bool          `json:"isDev,omitempty"`
 
-	//// Optimism config, nil if not active
-	//Optimism *OptimismConfig `json:"optimism,omitempty"`
 	//L1 Scan config
 	L1Conf    *L1Config       `json:"l1Conf,omitempty"`
 }
 
-// EthashConfig is the consensus engine configs for proof-of-work based sealing.
-type EthashConfig struct{}
-
-// String implements the stringer interface, returning the consensus engine details.
-func (c *EthashConfig) String() string {
-	return "ethash"
-}
-
-// CliqueConfig is the consensus engine configs for proof-of-authority based sealing.
-type CliqueConfig struct {
-	Period uint64 `json:"period"` // Number of seconds between blocks to enforce
-	Epoch  uint64 `json:"epoch"`  // Epoch length to reset votes and checkpoint
-}
-
-// String implements the stringer interface, returning the consensus engine details.
-func (c *CliqueConfig) String() string {
-	return "clique"
-}
 
 type L1Config struct {
 	GenesisBlockNumber      uint64 `json:"genesisBlockNumber"`
@@ -426,18 +403,6 @@ type L1Config struct {
 
 func (l1 *L1Config) String() string {
 	return "L1Config"
-}
-
-// OptimismConfig is the optimism config.
-type OptimismConfig struct {
-	EIP1559Elasticity        uint64 `json:"eip1559Elasticity"`
-	EIP1559Denominator       uint64 `json:"eip1559Denominator"`
-	EIP1559DenominatorCanyon uint64 `json:"eip1559DenominatorCanyon"`
-}
-
-// String implements the stringer interface, returning the optimism fee config details.
-func (o *OptimismConfig) String() string {
-	return "optimism"
 }
 
 // Description returns a human-readable description of ChainConfig.

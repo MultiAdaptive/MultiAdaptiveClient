@@ -183,6 +183,28 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 		cfg.Eth.OverrideVerkle = &v
 	}
 
+	if ctx.IsSet(utils.L1ScanUrlFlag.Name) {
+		url := utils.L1ScanUrlFlag.Value
+		if url == "" || len(url) == 0{
+			 log.Error("makeFullNode failed","L1ScanUrlFlag value",utils.L1ScanUrlFlag.Value)
+		}
+		cfg.Eth.L1ScanUrl = url
+	}
+
+	if ctx.IsSet(utils.NodeTypeFlag.Name) {
+		ndType := utils.NodeTypeFlag.Value
+		switch ndType {
+		case "d":
+			cfg.Eth.NodeType = ndType
+		case "s":
+			cfg.Eth.NodeType = ndType
+		default:
+			cfg.Eth.NodeType = ethconfig.Defaults.NodeType
+		}
+	}else {
+		cfg.Eth.NodeType = ethconfig.Defaults.NodeType
+	}
+
 	backend, eth := utils.RegisterEthService(stack, &cfg.Eth)
 
 	// Create gauge with geth system and build information

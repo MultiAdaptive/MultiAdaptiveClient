@@ -91,7 +91,6 @@ type fileDataPool interface {
 type handlerConfig struct {
 	Database       ethdb.Database         // Database for direct sync insertions
 	Chain          *core.BlockChain       // Blockchain to serve data from
-	//TxPool         txPool                 // Transaction pool to propagate from
 	//modify by echo 
 	FileDataPool   fileDataPool			  // FileData Pool to propagate from
 	Merger         *consensus.Merger      // The manager for eth1/2 transition
@@ -99,7 +98,8 @@ type handlerConfig struct {
 	Sync           downloader.SyncMode    // Whether to snap or full sync
 	BloomCache     uint64                 // Megabytes to alloc for snap sync bloom
 	EventMux       *event.TypeMux         // Legacy event mux, deprecate for `feed`
-	//RequiredBlocks map[uint64]common.Hash // Hard coded map of required block hashes for sync challenges
+	L1ScanUrl      string               //l1 scan url
+	NodeType       string               //local node type
 	NoTxGossip     bool                   // Disable P2P transaction gossip
 }
 
@@ -188,7 +188,7 @@ func newHandler(config *handlerConfig) (*handler, error) {
 		return h.fileDataPool.Add(fds, false, false)
 	}
 	h.fdFetcher = fetcher.NewFdFetcher(h.fileDataPool.Has,addFds,fetchFd,h.removePeer)
-	h.chainSync = newChainSync(context.Background(),h.chain.SqlDB(),"https://eth-sepolia.g.alchemy.com/v2/-t67_L9EE802yd-RZYxsZ38XRcJOCHfq",h,h.chain)
+	h.chainSync = newChainSync(context.Background(),h.chain.SqlDB(),config.L1ScanUrl,h,h.chain,config.NodeType)
 	return h, nil
 }
 

@@ -161,6 +161,14 @@ var (
 		Category: flags.EthCategory,
 	}
 
+	NodeTypeFlag = &cli.StringFlag{
+		Name: "nodeType",
+		Usage: "regist local node type,value type :`b` - broadcast node; `s` - save node",
+		Value: ethconfig.Defaults.NodeType,
+		Category: flags.EthCategory,
+	}
+
+
 	// Dev mode
 	DeveloperFlag = &cli.BoolFlag{
 		Name:     "dev",
@@ -284,12 +292,6 @@ var (
 		Name:     "history.state",
 		Usage:    "Number of recent blocks to retain state history for (default = 90,000 blocks, 0 = entire chain)",
 		Value:    ethconfig.Defaults.StateHistory,
-		Category: flags.StateCategory,
-	}
-	TransactionHistoryFlag = &cli.Uint64Flag{
-		Name:     "history.transactions",
-		Usage:    "Number of recent blocks to maintain transactions index for (default = about one year, 0 = entire chain)",
-		Value:    ethconfig.Defaults.TransactionHistory,
 		Category: flags.StateCategory,
 	}
 	// Light server and client settings
@@ -422,7 +424,6 @@ var (
 	}
 
 	// Miner settings
-
 	MinerEtherbaseFlag = &cli.StringFlag{
 		Name:     "miner.etherbase",
 		Usage:    "0x prefixed public address for block mining rewards",
@@ -1455,9 +1456,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 
 	// Set configurations from CLI flags
 	setEtherbase(ctx, cfg)
-	//setTxPool(ctx, &cfg.TxPool)
 	setFileDataPool(ctx,&cfg.FileDataPool)
-
 
 	// Cap the cache allowance and tune the garbage collector
 	mem, err := gopsutil.VirtualMemory()
@@ -1516,20 +1515,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	if ctx.IsSet(StateSchemeFlag.Name) {
 		cfg.StateScheme = ctx.String(StateSchemeFlag.Name)
 	}
-	// Parse transaction history flag, if user is still using legacy config
-	// file with 'TxLookupLimit' configured, copy the value to 'TransactionHistory'.
-	if cfg.TransactionHistory == ethconfig.Defaults.TransactionHistory && cfg.TxLookupLimit != ethconfig.Defaults.TxLookupLimit {
-		log.Warn("The config option 'TxLookupLimit' is deprecated and will be removed, please use 'TransactionHistory'")
-		cfg.TransactionHistory = cfg.TxLookupLimit
-	}
 
-	if ctx.String(GCModeFlag.Name) == "archive" && cfg.TransactionHistory != 0 {
-		cfg.TransactionHistory = 0
-		log.Warn("Disabled transaction unindexing for archive node")
-	}
-	if ctx.IsSet(LightServeFlag.Name) && cfg.TransactionHistory != 0 {
-		log.Warn("LES server cannot serve old transaction status and cannot connect below les/4 protocol version if transaction lookup index is limited")
-	}
 	if ctx.IsSet(CacheFlag.Name) || ctx.IsSet(CacheTrieFlag.Name) {
 		cfg.TrieCleanCache = ctx.Int(CacheFlag.Name) * ctx.Int(CacheTrieFlag.Name) / 100
 	}

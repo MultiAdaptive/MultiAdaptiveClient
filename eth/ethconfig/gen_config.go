@@ -59,8 +59,6 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.SnapDiscoveryURLs = c.SnapDiscoveryURLs
 	enc.NoPruning = c.NoPruning
 	enc.NoPrefetch = c.NoPrefetch
-	enc.TxLookupLimit = c.TxLookupLimit
-	enc.TransactionHistory = c.TransactionHistory
 	enc.StateHistory = c.StateHistory
 	enc.StateScheme = c.StateScheme
 	enc.RequiredBlocks = c.RequiredBlocks
@@ -163,12 +161,7 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.NoPrefetch != nil {
 		c.NoPrefetch = *dec.NoPrefetch
 	}
-	if dec.TxLookupLimit != nil {
-		c.TxLookupLimit = *dec.TxLookupLimit
-	}
-	if dec.TransactionHistory != nil {
-		c.TransactionHistory = *dec.TransactionHistory
-	}
+
 	if dec.StateHistory != nil {
 		c.StateHistory = *dec.StateHistory
 	}
