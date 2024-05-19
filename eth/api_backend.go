@@ -19,7 +19,6 @@ package eth
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math/big"
 	"time"
 
@@ -137,46 +136,12 @@ func (b *EthAPIBackend) GetFileDataByHash(hash common.Hash) (*types.DA,filedatap
 }
 
 func (b *EthAPIBackend) GetFileDataByCommitment(comimt []byte) (*types.DA, error) {
-	fd,_,err := b.eth.fdPool.GetByCommitment(comimt)
+	fd,err := b.eth.fdPool.GetDAByCommit(comimt)
 	log.Info("EthAPIBackend-----GetFileDataByCommitment", "comimt", common.Bytes2Hex(comimt))
 	if fd != nil {
 		return fd, nil
 	}
 	return nil, err
-}
-
-func (b *EthAPIBackend) CheckSelfState(blockNr rpc.BlockNumber) (string,error) {
-	bc := b.eth.BlockChain()
-  block := bc.GetBlockByNumber(uint64(blockNr))
-	db := b.eth.chainDb
-	res := make([]*types.DA, 0)
-	var totalCount uint64
-	log.Info("EthAPIBackend-----CheckSelfState", "blockNr", block.Number().Uint64())
-	if block != nil {
-		for i := 1; i < int(block.NumberU64()); i++ {
-			currentNum := i
-			currentBlock := bc.GetBlockByNumber(uint64(currentNum))
-			txs := currentBlock.Body().Transactions
-			for i := 0; i < len(txs); i++ {
-				tx := txs[i]
-				if tx.Type() == types.SubmitTxType {
-					totalCount+=1
-				}
-			}
-			headHash := currentBlock.Hash()
-			fds := rawdb.ReadFileDatas(db,headHash,uint64(currentNum))
-			if len(fds)!= 0 {
-				 res = append(res, fds...)
-			}
-		}
-	}
-
-	infoStr := fmt.Sprintf("check goal block number is :%d should have:%d local data have:%d",blockNr.Int64(),int(totalCount),len(res))
-	if len(res) == int(totalCount) {
-		return infoStr,nil
-	}
-	
-	return infoStr,errors.New("dont have full fileDatas with local node")
 }
 
 func (b *EthAPIBackend) BatchFileDataByHashes(hashes rpc.TxHashes) ([]uint, []error) {
@@ -198,39 +163,6 @@ func (b *EthAPIBackend) BatchFileDataByHashes(hashes rpc.TxHashes) ([]uint, []er
 		errs[inde] = err
 	}
 	return flags, errs
-}
-
-func (b *EthAPIBackend) BatchSaveFileDataWithHashes(hashes rpc.TxHashes) ([]bool, []error) {
-	flags := make([]bool, len(hashes.TxHashes))
-	errs := make([]error, len(hashes.TxHashes))
-	for index, hash := range hashes.TxHashes {
-		log.Info("BatchSaveFileDataWithHashes-----","hash",hash.String())
-		err := b.eth.fdPool.SaveFileDataToDisk(hash)
-		if err != nil {
-			flags[index] = false 
-			errs[index] = err
-		}
-		flags[index] = true
-	}
-	return flags, errs
-}
-
-func (b *EthAPIBackend) DiskSaveFileDataWithHash(hash common.Hash) (bool, error) {
-	err := b.eth.fdPool.SaveFileDataToDisk(hash)
-	if err != nil {
-		return false, err
-	}
-	return true, err
-}
-
-func (b *EthAPIBackend) DiskSaveFileDatas(hashed []common.Hash,blockNrOrHash rpc.BlockNumberOrHash) (bool, error) {
-	flag,err := b.eth.fdPool.SaveBatchFileDatasToDisk(hashed,*blockNrOrHash.BlockHash,uint64(*blockNrOrHash.BlockNumber))
-	return flag,err
-}
-
-// ChangeCurrentState implements ethapi.Backend.
-func (b *EthAPIBackend) ChangeCurrentState(state int,number rpc.BlockNumber) bool{
-	 return true
 }
 
 func (b *EthAPIBackend) GetPoolFileData(hash common.Hash) *types.DA {

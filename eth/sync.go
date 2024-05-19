@@ -290,12 +290,17 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			}
 		}
 	}
+
+	parentHashData,err := db.GetMaxIDDAStateHash(cs.db)
+	if err != nil {
+		parentHashData = ""
+	}
 	//send new commitment event
 	if len(daDatas) != 0 {
-		//db.AddBatchCommitment()
-
-
+		parentHash := common.HexToHash(parentHashData)
+		db.AddBatchCommitment(db.Tx,daDatas,parentHash)
 		cs.handler.fileDataPool.SendNewFileDataEvent(daDatas)
+		cs.handler.fileDataPool.RemoveFileData(daDatas)
 	}
 	db.Commit(db.Tx)
 	cs.chain.SetCurrentBlock(blocks[length-1])

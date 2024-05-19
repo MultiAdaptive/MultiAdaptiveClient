@@ -71,6 +71,8 @@ type fileDataPool interface {
 
 	SendNewFileDataEvent(fileData []*types.DA)
 
+	RemoveFileData(das []*types.DA)
+
 	// Add should add the given transactions to the pool.
 	Add(fds []*types.DA, local bool, sync bool) []error
 

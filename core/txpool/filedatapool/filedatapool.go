@@ -3,6 +3,8 @@ package filedatapool
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
+	"github.com/ethereum/go-ethereum/ethdb/db"
 	"gorm.io/gorm"
 	"errors"
 	"os"
@@ -287,69 +289,6 @@ func (fp *FilePool) SubscribenFileDatasHash(ch chan<- core.FileDataHashEvent) ev
 	return fp.fileDataHashFeed.Subscribe(ch)
 }
 
-func (fp *FilePool) SaveFileDataToDisk(hash common.Hash) error {
-	//fileData, ok := fp.all.collector[hash]
-	//if !ok {
-	//	return errors.New("file pool dont have fileData")
-	//}
-
-
-
-	//diskDb := fp.currentState.Database().DiskDB()
-	//detail := DiskDetail{TxHash: hash,State: DISK_FILEDATA_STATE_SAVE,TimeRecord: time.Now(),Data: *fileData}
-	//data,_ := json.Marshal(detail)
-	//rawdb.WriteFileDataDetail(diskDb,data,hash)
-	//rawdb.WriteCommitToHash(diskDb,fileData.Commitment,hash)
-	//fp.diskCache.Hashes = append(fp.diskCache.Hashes, hash)
-	//log.Info("SaveFileDataToDisk----","txHash",hash.String())
-	//fp.removeFileData(hash)
-	//cmHash := common.BytesToHash(fileData.Commitment)
-	//fp.removeFileData(cmHash)
-	return nil
-}
-
-func (fp *FilePool) SaveBatchFileDatasToDisk(hashes []common.Hash,blcHash common.Hash,blcNr uint64) (bool,error) {
-	log.Info("SaveBatchFileDatasToDisk----","hashes length",len(hashes),"block num",blcNr,"blcHash",blcHash.Hex())	
-	//list := make([]*types.FileData,0)
-	//for _,hash := range hashes {
-	//	fd, ok := fp.all.collector[hash]
-	//	if !ok {
-	//		return false,errors.New("don not have that fileDATA")
-	//	}
-	//	block := fp.chain.GetBlock(blcHash,blcNr)
-	//	if block == nil {
-	//		return false,nil
-	//	}
-	//	list = append(list, fd)
-	//	state,err := fp.chain.StateAt(block.Header().Root)
-	//	if err == nil {
-	//		fp.currentState = state
-	//		fp.currentHead.Store(block.Header())
-	//	}
-	//}
-	//
-	//db := fp.currentState.Database().DiskDB()
-	//rawdb.WriteFileDatas(db,blcHash,blcNr,list)
-	
-	//for _,hash := range hashes {
-	//	fd,ok := fp.all.collector[hash]
-	//	if ok {
-	//		detail := DiskDetail{TxHash: hash,State: DISK_FILEDATA_STATE_SAVE,TimeRecord: time.Now(),Data: *fd}
-	//		data,err := json.Marshal(detail)
-	//		if err != nil {
-	//			log.Info("SaveBatchFileDatasToDisk-----EncodeToBytes bantch","err",err.Error())
-	//		}
-	//		rawdb.WriteFileDataDetail(db,data,hash)
-	//		rawdb.WriteCommitToHash(db,fd.Commitment,fd.TxHash)
-	//		log.Info("SaveBatchFileDatasToDisk----","txHash",fd.TxHash.String())
-	//	}
-	//	fp.diskCache.Hashes = append(fp.diskCache.Hashes, hash)
-	//	fp.removeFileData(hash)
-	//	cmHash := common.BytesToHash(fd.Commitment)
-	//	fp.removeFileData(cmHash)
-	//}
-	return true,nil
-}
 
 func (fp *FilePool) removeFileData(hash common.Hash) error {
 	fd := fp.all.Get(hash)
@@ -368,78 +307,51 @@ func (fp *FilePool) Has(hash common.Hash) bool{
 	return fd != nil
 }
 
-func (fp *FilePool) GetByCommitment(comimt []byte) (*types.DA,DISK_FILEDATA_STATE,error){
-	cmHash := common.BytesToHash(comimt)
+func (fp *FilePool) GetDAByCommit(commit []byte) (*types.DA,error){
+	cmHash := common.BytesToHash(commit)
 	fd := fp.get(cmHash)
 	if fd != nil {
-		return fd,DISK_FILEDATA_STATE_SAVE,nil
+		return fd,nil
 	}
 
-	//diskDb := fp.currentState.Database().DiskDB()
-	//hashData,err := rawdb.ReadCommitToHash(diskDb,comimt)
-	//if err != nil && len(hashData) == 0 {
-	//	log.Info("GetByCommitment---err","comimt",&comimt)
-	//	return nil,DISK_FILEDATA_STATE_UNKNOW,errors.New("dont have that commit")
-	//}
-	//hash := common.BytesToHash(hashData)
-	//return fp.Get(hash)
-	return nil,DISK_FILEDATA_STATE_DEL,nil
-}
-
-func (fp *FilePool) GetDAByCommit(commit []byte) (*types.DA,error){
-
-	return nil,nil
+	da,err := db.GetCommitmentByCommitment(fp.chain.SqlDB(),commit)
+	if err != nil {
+		return nil, err
+	}
+	return da,nil
 }
 
 
 // Get retrieves the fileData from local fileDataPool with given
 // tx hash.
 func (fp *FilePool) Get(hash common.Hash) (*types.DA,DISK_FILEDATA_STATE,error){
-//	var getTimes uint64
-//Lable:
-//	fd := fp.get(hash)
-//	if fd == nil {
-//		diskDb := fp.currentState.Database().DiskDB()
-//		data,err := rawdb.ReadFileDataDetail(diskDb,hash)
-//		if err != nil {
-//				log.Info("FilePool 读取磁盘失败","err",err.Error())
-//		}
-//		if len(data) == 0{
-//				log.Info("本地节点没有从需要从远端要--------","hash",hash.String())
-//				if getTimes < 1 {
-//					fp.fileDataHashFeed.Send(core.FileDataHashEvent{Hashes: []common.Hash{hash}})
-//					log.Info("本地节点没有从需要从远端要---进来了么")
-//				}
-//				time.Sleep(200 * time.Millisecond)
-//				getTimes ++
-//				if getTimes <= 1 {
-//					goto Lable
-//				}
-//
-//				currentPath, _ := os.Getwd()
-//				file, err := os.OpenFile(currentPath+"/unknowTxHash.txt", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
-//				str := fmt.Sprintf("can not find fileData by TxHash is： %s time to ask ： %s",hash.Hex(),time.Now().String())
-//				writeStr := str + "\n"
-//				if _, err := file.WriteString(writeStr); err != nil {
-//					log.Info("WriteString unknowTxHash err",err.Error())
-//				}
-//    		file.Close()
-//
-//				return nil,DISK_FILEDATA_STATE_UNKNOW,err
-//		}
-//
-//		if len(data) > 0 {
-//			var detail DiskDetail
-//			err := json.Unmarshal(data,&detail)
-//			if err != nil {
-//				return nil,DISK_FILEDATA_STATE_UNKNOW,err
-//			}
-//			if detail.State == DISK_FILEDATA_STATE_DEL {
-//				return &detail.Data,detail.State,errors.New("fileData already del")
-//			}
-//			return &detail.Data,detail.State,nil
-//		}
-//	}
+	var getTimes uint64
+Lable:
+	fd := fp.get(hash)
+	if fd == nil {
+		da,err := db.GetCommitmentByHash(fp.chain.SqlDB(),hash)
+		if err != nil || da == nil {
+			log.Info("本地节点没有从需要从远端要--------","hash",hash.String())
+			if getTimes < 1 {
+				fp.fileDataHashFeed.Send(core.FileDataHashEvent{Hashes: []common.Hash{hash}})
+				log.Info("本地节点没有从需要从远端要---进来了么")
+			}
+			time.Sleep(200 * time.Millisecond)
+			getTimes ++
+			if getTimes <= 1 {
+				goto Lable
+			}
+			currentPath, _ := os.Getwd()
+			file, _ := os.OpenFile(currentPath+"/unknowTxHash.txt", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+			str := fmt.Sprintf("can not find fileData by TxHash is： %s time to ask ： %s",hash.Hex(),time.Now().String())
+			writeStr := str + "\n"
+			if _, err := file.WriteString(writeStr); err != nil {
+				log.Info("WriteString unknowTxHash err",err.Error())
+			}
+			file.Close()
+		}
+
+	}
 	return nil,DISK_FILEDATA_STATE_SAVE,nil
 }
 
@@ -535,6 +447,13 @@ func (fp *FilePool) SendNewFileDataEvent(fileData []*types.DA) {
 	}
 }
 
+func (fp *FilePool) RemoveFileData(das []*types.DA) {
+	for _,da := range das{
+		delete(fp.all.collector, da.TxHash)
+		delete(fp.all.collector, common.BytesToHash(da.Commitment))
+	}
+}
+
 // addFdsLocked attempts to queue a batch of FileDatas if they are valid.
 // The fileData pool lock must be held.
 func (fp *FilePool) addFdsLocked(fds []*types.DA, local bool) []error {
@@ -613,7 +532,7 @@ func (fp *FilePool) validateFileDataSignature(fd *types.DA, local bool) error {
 	}
 
 	fixedArray := digst.Bytes()
-  slice := fixedArray[:]
+      slice := fixedArray[:]
 	if !bytes.Equal(slice, fd.Commitment) {
 		generateCommit := hex.EncodeToString(slice)
 		orginCommit := hex.EncodeToString(fd.Commitment)

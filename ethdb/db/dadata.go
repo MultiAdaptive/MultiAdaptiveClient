@@ -79,6 +79,26 @@ func AddBatchCommitment(tx *gorm.DB,das []*types.DA,parentHash common.Hash) erro
 	return nil
 }
 
+func GetCommitmentByCommitment(db *gorm.DB,commitment []byte) (*types.DA,error) {
+	var da DA
+	tx := db.First(&da,"commitment = ?",common.Bytes2Hex(commitment))
+	if tx.Error == nil {
+		return &types.DA{
+			Sender: common.HexToAddress(da.Sender),
+			Index: uint64(da.Index),
+			Length: uint64(da.Length),
+			Commitment: common.Hex2Bytes(da.Commitment),
+			Data: common.Hex2Bytes(da.Data),
+			SignData: common.Hex2Bytes(da.SignData),
+			TxHash: common.HexToHash(da.TxHash),
+		},tx.Error
+	}
+	errstr := fmt.Sprintf("can not find DA with given commitment :%d",common.Bytes2Hex(commitment))
+	return nil,errors.New(errstr)
+
+}
+
+
 func GetCommitmentByHash(db *gorm.DB,txHash common.Hash) (*types.DA,error){
 	var da DA
 	tx := db.First(&da,"tx_hash = ?",txHash)
@@ -97,4 +117,12 @@ func GetCommitmentByHash(db *gorm.DB,txHash common.Hash) (*types.DA,error){
 	return nil,errors.New(errstr)
 }
 
+// 获取ID最大的DA记录
+func GetMaxIDDAStateHash(db *gorm.DB) (string, error) {
+	var da DA
+	if err := db.Order("id DESC").First(&da).Error; err != nil {
+		return "", err
+	}
+	return da.StateHash, nil
+}
 

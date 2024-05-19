@@ -38,3 +38,5 @@ func GetLastBlockNum(db *gorm.DB) (uint64,error) {
 	}
 	return syncInfo.LastBlockNum, nil
 }
+
+
