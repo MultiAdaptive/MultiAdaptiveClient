@@ -260,14 +260,6 @@ func NewLondonSigner(chainId *big.Int) Signer {
 }
 
 func (s londonSigner) Sender(tx *Transaction) (common.Address, error) {
-	if tx.Type() == DepositTxType {
-		switch tx.inner.(type) {
-		case *DepositTx:
-			return tx.inner.(*DepositTx).From, nil
-		case *depositTxWithNonce:
-			return tx.inner.(*depositTxWithNonce).From, nil
-		}
-	}
 	if tx.Type() == SubmitTxType {
 		return tx.inner.(*SubmitTx).From, nil
 	}
@@ -290,9 +282,6 @@ func (s londonSigner) Equal(s2 Signer) bool {
 }
 
 func (s londonSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
-	if tx.Type() == DepositTxType {
-		return nil, nil, nil, fmt.Errorf("deposits do not have a signature")
-	}
 	if tx.Type() == SubmitTxType {
 		return nil, nil, nil, fmt.Errorf("submits do not have a signature")
 	}
@@ -313,9 +302,6 @@ func (s londonSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big
 // Hash returns the hash to be signed by the sender.
 // It does not uniquely identify the transaction.
 func (s londonSigner) Hash(tx *Transaction) common.Hash {
-	if tx.Type() == DepositTxType {
-		panic("deposits cannot be signed and do not have a signing hash")
-	}
 	if tx.Type() == SubmitTxType {
 		panic("submits cannot be signed and do not have a signing hash")
 	}

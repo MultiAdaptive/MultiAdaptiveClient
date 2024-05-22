@@ -138,7 +138,7 @@ func New(config Config, chain BlockChain) *FilePool {
 		chainconfig:     chain.Config(),
 		signer:          types.LatestFdSigner(chain.Config()),
 		all:             newLookup(),
-		diskCache:			 newHashCollect(),
+		diskCache:	       newHashCollect(),
 		collector:       make(map[common.Hash]*types.DA),
 		beats:           make(map[common.Hash]time.Time),
 		reorgDoneCh:     make(chan chan struct{}),
@@ -400,15 +400,20 @@ func (fp *FilePool) Add(fds []*types.DA, local, sync bool) []error {
 	)
 	for i, fd := range fds {
 		// If the fileData is known, pre-set the error slot
-		if fp.all.Get(fd.TxHash) != nil {
+		var hashData  common.Hash
+		if len(fd.TxHash) != 0 {
+			hashData = fd.TxHash
+			txHash := fd.TxHash.String()
+			log.Info("FilePool----Add","txHash",txHash)
+		}else {
+			hashData = common.BytesToHash(fd.Commitment)
+			log.Info("FilePool----Add","commitHash",hashData.Hex())
+		}
+		if fp.all.Get(hashData) != nil {
 			errs[i] = ErrAlreadyKnown
 			knownFdMeter.Mark(1)
 			continue
 		}
-
-		txHash := fd.TxHash.String()
-
-		log.Info("FilePool----Add","txHash",txHash)
 		// Exclude fileDatas with basic errors, e.g invalid signatures
 		if err := fp.validateFileDataSignature(fd, local); err != nil {
 			errs[i] = err
@@ -449,7 +454,9 @@ func (fp *FilePool) SendNewFileDataEvent(fileData []*types.DA) {
 
 func (fp *FilePool) RemoveFileData(das []*types.DA) {
 	for _,da := range das{
-		delete(fp.all.collector, da.TxHash)
+		if len(da.TxHash) != 0 {
+			delete(fp.all.collector, da.TxHash)
+		}
 		delete(fp.all.collector, common.BytesToHash(da.Commitment))
 	}
 }
@@ -469,15 +476,19 @@ func (fp *FilePool) addFdsLocked(fds []*types.DA, local bool) []error {
 // add validates a fileData and inserts it into the non-executable queue for later
 // saved. 
 func (fp *FilePool) add(fd *types.DA, local bool) (replaced bool, err error) {
+	var hash common.Hash
 	// If the fileData is already known, discard it
-	hash := fd.TxHash
+	if len(fd.TxHash) != 0 {
+		hash = fd.TxHash
+	}else {
+		hash = common.BytesToHash(fd.Commitment)
+	}
 	if fp.all.Get(hash) != nil {
 		log.Trace("Discarding already known fileData", "hash", hash)
 		knownFdMeter.Mark(1)
 		return false, ErrAlreadyKnown
 	}
 
-	//
 	if uint64(fp.all.Slots()+1) > fp.config.GlobalSlots {
 		return false,ErrFdPoolOverflow
 	}

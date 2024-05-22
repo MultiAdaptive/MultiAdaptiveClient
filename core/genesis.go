@@ -255,8 +255,6 @@ func (e *GenesisMismatchError) Error() string {
 type ChainOverrides struct {
 	OverrideCancun *uint64
 	OverrideVerkle *uint64
-	// optimism
-	OverrideOptimismCanyon  *uint64
 	ApplySuperchainUpgrades bool
 }
 

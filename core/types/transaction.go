@@ -27,7 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
@@ -207,8 +206,6 @@ func (tx *Transaction) decodeTyped(b []byte) (TxData, error) {
 		inner = new(DynamicFeeTx)
 	case BlobTxType:
 		inner = new(BlobTx)
-	case DepositTxType:
-		inner = new(DepositTx)
 	case SubmitTxType:
 		inner = new(SubmitTx)
 	default:
@@ -334,27 +331,16 @@ func (tx *Transaction) To() *common.Address {
 // e.g. a user deposit event, or a L1 info deposit included in a specific L2 block height.
 // Non-deposit transactions return a zeroed hash.
 func (tx *Transaction) SourceHash() common.Hash {
-	if dep, ok := tx.inner.(*DepositTx); ok {
-		return dep.SourceHash
-	}
 	if dep, ok := tx.inner.(*SubmitTx); ok {
 		return dep.SourceHash
 	}
 	return common.Hash{}
 }
 
-// Mint returns the ETH to mint in the deposit tx.
-// This returns nil if there is nothing to mint, or if this is not a deposit tx.
-func (tx *Transaction) Mint() *big.Int {
-	if dep, ok := tx.inner.(*DepositTx); ok {
-		return dep.Mint
-	}
-	return nil
-}
 
 // IsDepositTx returns true if the transaction is a deposit tx type.
 func (tx *Transaction) IsDepositTx() bool {
-	return tx.Type() == DepositTxType || tx.Type() == SubmitTxType
+	return tx.Type() == SubmitTxType
 }
 
 func (tx *Transaction) IsSubmitTx() bool {
@@ -375,30 +361,6 @@ func (tx *Transaction) Cost() *big.Int {
 	}
 	total.Add(total, tx.Value())
 	return total
-}
-
-// RollupDataGas is the amount of gas it takes to confirm the tx on L1 as a rollup
-func (tx *Transaction) RollupDataGas() RollupGasData {
-	if tx.Type() == DepositTxType || tx.Type() == SubmitTxType {
-		return RollupGasData{}
-	}
-	if v := tx.rollupGas.Load(); v != nil {
-		return v.(RollupGasData)
-	}
-	data, err := tx.MarshalBinary()
-	if err != nil { // Silent error, invalid txs will not be marshalled/unmarshalled for batch submission anyway.
-		log.Error("failed to encode tx for L1 cost computation", "err", err)
-	}
-	var out RollupGasData
-	for _, byt := range data {
-		if byt == 0 {
-			out.Zeroes++
-		} else {
-			out.Ones++
-		}
-	}
-	tx.rollupGas.Store(out)
-	return out
 }
 
 // RawSignatureValues returns the V, R, S signature values of the transaction.
@@ -431,7 +393,7 @@ func (tx *Transaction) GasTipCapIntCmp(other *big.Int) int {
 // Note: if the effective gasTipCap is negative, this method returns both error
 // the actual negative value, _and_ ErrGasFeeCapTooLow
 func (tx *Transaction) EffectiveGasTip(baseFee *big.Int) (*big.Int, error) {
-	if tx.Type() == DepositTxType || tx.Type() == SubmitTxType {
+	if tx.Type() == SubmitTxType {
 		return new(big.Int), nil
 	}
 	if baseFee == nil {

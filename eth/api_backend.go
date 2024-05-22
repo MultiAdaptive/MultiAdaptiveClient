@@ -40,9 +40,7 @@ import (
 type EthAPIBackend struct {
 	extRPCEnabled       bool
 	allowUnprotectedTxs bool
-	//disableTxPool       bool
 	eth                 *Ethereum
-	//gpo                 *gasprice.Oracle
 }
 
 // ChainConfig returns the active chain configuration.
@@ -64,8 +62,6 @@ func (b *EthAPIBackend) HeaderByNumber(ctx context.Context, number rpc.BlockNumb
 	if number == rpc.LatestBlockNumber {
 		return b.eth.blockchain.CurrentBlock(), nil
 	}
-
-	//return b.eth.blockchain.GetHeaderByNumber(uint64(number)), nil
 	return nil,nil
 }
 
@@ -112,18 +108,43 @@ func (b *EthAPIBackend) UploadFileData(data []byte) error {
 		return err
 	}
 	return b.eth.fdPool.Add([]*types.DA{fd}, true, false)[0]
-	//return nil
 }
 
-func (b *EthAPIBackend) UploadFileDataByParams(sender, submitter common.Address, index, length, gasPrice uint64, commitment, data, signData []byte, txHash common.Hash) error {
-	fd := types.NewFileData(sender, index, length, commitment, data, signData, txHash)
-	if b.eth.seqRPCService != nil {
-		if err := b.eth.fdPool.Add([]*types.DA{fd}, true, false)[0]; err != nil {
-			log.Warn("successfully sent tx to sequencer, but failed to persist in local fileData pool", "err", err, "txHash", txHash.String())
+func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte) ([]byte,error) {
+	fd := types.NewDA(sender, index, length, commitment, data, dasKey)
+	//flag,err := b.eth.singer.Verify(fd)
+	//if err != nil || flag == false {
+	//	return nil, err
+	//}else {
+	//	b.eth.fdPool.Add([]*types.DA{fd},true,false)
+		return b.eth.singer.Sign(fd)
+	//}
+}
+
+func (b *EthAPIBackend) BatchSendDA(datas [][]byte) ([][]byte,[]error) {
+	var da types.DA
+	signHashes := make([][]byte,len(datas))
+	errlist   := make([]error,len(datas))
+	for index,data := range datas{
+		err := rlp.DecodeBytes(data,&da)
+		if err == nil{
+			flag,err := b.eth.singer.Verify(&da)
+			if err != nil || flag == false {
+				errlist[index] = err
+				continue
+			}else {
+				b.eth.fdPool.Add([]*types.DA{&da},true,false)
+				sign,err :=  b.eth.singer.Sign(&da)
+				if err != nil {
+					errlist[index] = err
+					continue
+				}else {
+					signHashes[index] = sign
+				}
+			}
 		}
 	}
-	return b.eth.fdPool.Add([]*types.DA{fd}, true, false)[0]
-	//return nil
+	return signHashes,errlist
 }
 
 func (b *EthAPIBackend) GetFileDataByHash(hash common.Hash) (*types.DA,filedatapool.DISK_FILEDATA_STATE,error) {

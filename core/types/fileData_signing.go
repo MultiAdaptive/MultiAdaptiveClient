@@ -28,12 +28,6 @@ import (
 func MakeFdSigner(config *params.ChainConfig, blockNumber *big.Int, blockTime uint64) FdSigner {
 	var signer FdSigner
 	switch {
-	// case config.IsCancun(blockNumber, blockTime):
-	// 	signer = NewCancunFdSigner(config.ChainID)
-	// case config.IsLondon(blockNumber):
-	// 	signer = NewLondonFdSigner(config.ChainID)
-	// case config.IsBerlin(blockNumber):
-	// 	signer = NewEIP2930FdSigner(config.ChainID)
 	case config.IsEIP155(blockNumber):
 		signer = NewEIP155FdSigner(config.ChainID)
 	case config.IsHomestead(blockNumber):

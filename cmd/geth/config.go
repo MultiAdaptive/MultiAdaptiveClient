@@ -168,15 +168,6 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, gethConfig) {
 // makeFullNode loads geth configuration and creates the Ethereum backend.
 func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 	stack, cfg := makeConfigNode(ctx)
-	if ctx.IsSet(utils.OverrideCancun.Name) {
-		v := ctx.Uint64(utils.OverrideCancun.Name)
-		cfg.Eth.OverrideCancun = &v
-	}
-
-	if ctx.IsSet(utils.OverrideOptimismCanyon.Name) {
-		v := ctx.Uint64(utils.OverrideOptimismCanyon.Name)
-		cfg.Eth.OverrideOptimismCanyon = &v
-	}
 
 	if ctx.IsSet(utils.OverrideVerkle.Name) {
 		v := ctx.Uint64(utils.OverrideVerkle.Name)
@@ -184,7 +175,7 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 	}
 
 	if ctx.IsSet(utils.L1ScanUrlFlag.Name) {
-		url := utils.L1ScanUrlFlag.Value
+		url := ctx.String(utils.L1ScanUrlFlag.Name)
 		if url == "" || len(url) == 0{
 			 log.Error("makeFullNode failed","L1ScanUrlFlag value",utils.L1ScanUrlFlag.Value)
 		}
@@ -192,7 +183,7 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 	}
 
 	if ctx.IsSet(utils.NodeTypeFlag.Name) {
-		ndType := utils.NodeTypeFlag.Value
+		ndType := ctx.String(utils.NodeTypeFlag.Name)
 		switch ndType {
 		case "d":
 			cfg.Eth.NodeType = ndType

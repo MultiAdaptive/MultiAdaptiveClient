@@ -37,22 +37,15 @@ type Backend interface {
 	// General Ethereum API
 	//SyncProgress() ethereum.SyncProgress
 
-	//SuggestGasTipCap(ctx context.Context) (*big.Int, error)
-	//FeeHistory(ctx context.Context, blockCount uint64, lastBlock rpc.BlockNumber, rewardPercentiles []float64) (*big.Int, [][]*big.Int, []*big.Int, []float64, error)
 	ChainDb() ethdb.Database
 	AccountManager() *accounts.Manager
 	ExtRPCEnabled() bool
 	RPCGasCap() uint64            // global gas cap for eth_call over rpc: DoS protection
-	//RPCEVMTimeout() time.Duration // global timeout for eth_call over rpc: DoS protection
 	RPCTxFeeCap() float64         // global tx fee cap for all transaction related APIs
 	UnprotectedAllowed() bool     // allows only for EIP155 transactions.
 
 	// Blockchain API
 	SetHead(number uint64)
-	//HeaderByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Header, error)
-	//HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error)
-	//HeaderByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*types.Header, error)
-	//CurrentHeader() *types.Header
 	CurrentBlock() *types.Header
 	BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Block, error)
 	BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error)
@@ -60,12 +53,10 @@ type Backend interface {
 	GetTd(ctx context.Context) *big.Int
 
 	// FileData pool API
-	UploadFileDataByParams(sender, submitter common.Address, index, length, gasPrice uint64, commitment, data, signData []byte, txHash common.Hash) error
-	UploadFileData(data []byte) error
+	SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte) ([]byte,error)
 	GetFileDataByHash(hash common.Hash) (*types.DA,filedatapool.DISK_FILEDATA_STATE,error)
 	GetFileDataByCommitment(comimt []byte) (*types.DA, error)
 	SubscribeNewFileDataEvent(chan<- core.NewFileDataEvent) event.Subscription
-	
 	ChainConfig() *params.ChainConfig
 
 	HistoricalRPCService() *rpc.Client

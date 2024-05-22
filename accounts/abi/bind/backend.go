@@ -53,17 +53,6 @@ type ContractCaller interface {
 	CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error)
 }
 
-// PendingContractCaller defines methods to perform contract calls on the pending state.
-// Call will try to discover this interface when access to the pending state is requested.
-// If the backend does not support the pending state, Call returns ErrNoPendingState.
-type PendingContractCaller interface {
-	// PendingCodeAt returns the code of the given account in the pending state.
-	PendingCodeAt(ctx context.Context, contract common.Address) ([]byte, error)
-
-	// PendingCallContract executes an Ethereum contract call against the pending state.
-	PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error)
-}
-
 // ContractTransactor defines the methods needed to allow operating with a contract
 // on a write only basis. Besides the transacting method, the remainder are helpers
 // used when the user does not provide some needed values, but rather leaves it up
@@ -72,20 +61,6 @@ type ContractTransactor interface {
 	// HeaderByNumber returns a block header from the current canonical chain. If
 	// number is nil, the latest known header is returned.
 	HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error)
-
-	// PendingCodeAt returns the code of the given account in the pending state.
-	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
-
-	// PendingNonceAt retrieves the current pending nonce associated with an account.
-	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
-
-	// SuggestGasPrice retrieves the currently suggested gas price to allow a timely
-	// execution of a transaction.
-	SuggestGasPrice(ctx context.Context) (*big.Int, error)
-
-	// SuggestGasTipCap retrieves the currently suggested 1559 priority fee to allow
-	// a timely execution of a transaction.
-	SuggestGasTipCap(ctx context.Context) (*big.Int, error)
 
 	// EstimateGas tries to estimate the gas needed to execute a specific
 	// transaction based on the current pending state of the backend blockchain.

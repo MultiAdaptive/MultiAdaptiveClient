@@ -109,8 +109,6 @@ type Message struct {
 	IsSystemTx    bool // IsSystemTx indicates the message, if also a deposit, does not emit gas usage.
 	IsDepositTx   bool // IsDepositTx indicates the message is force-included and can persist a mint.
 	IsSubmitTx    bool
-	Mint          *big.Int            // Mint is the amount to mint before EVM processing, or nil if there is no minting.
-	RollupDataGas types.RollupGasData // RollupDataGas indicates the rollup cost of the message, 0 if not a rollup or no cost.
 }
 
 // TransactionToMessage converts a transaction into a Message.
@@ -128,9 +126,6 @@ func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.In
 		IsSystemTx:    tx.IsSystemTx(),
 		IsSubmitTx:    tx.IsSubmitTx(),
 		IsDepositTx:   tx.IsDepositTx(),
-		Mint:          tx.Mint(),
-		RollupDataGas: tx.RollupDataGas(),
-
 		SkipAccountChecks: false,
 		BlobHashes:        tx.BlobHashes(),
 		BlobGasFeeCap:     tx.BlobGasFeeCap(),

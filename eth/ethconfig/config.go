@@ -39,9 +39,10 @@ var Defaults = Config{
 	TrieDirtyCache:     256,
 	TrieTimeout:        60 * time.Minute,
 	SnapshotCache:      102,
-	NodeType:            "b",
+	NodeType:           "b",
 	FilterLogCacheSize: 32,
-	FileDataPool: 		filedatapool.DefaultConfig,
+	FileDataPool: 	  filedatapool.DefaultConfig,
+	L1ScanUrl:          "",
 	RPCGasCap:          50000000,
 	RPCEVMTimeout:      5 * time.Second,
 	RPCTxFeeCap:        1, // 1 ether
@@ -101,6 +102,8 @@ type Config struct {
 
 	L1ScanUrl      string  //scan l1 url
 
+	Passphrase     string
+
 	NodeType       string
 
 	// This is the number of blocks for which logs will be cached in the filter system.
@@ -110,9 +113,6 @@ type Config struct {
 
 	// FileData pool options
 	FileDataPool filedatapool.Config
-
-	// Enables tracking of SHA3 preimages in the VM
-	//EnablePreimageRecording bool
 
 	// Miscellaneous options
 	DocRoot string `toml:"-"`
@@ -128,12 +128,12 @@ type Config struct {
 	RPCTxFeeCap float64
 
 	// OverrideCancun (TODO: remove after the fork)
-	OverrideCancun *uint64 `toml:",omitempty"`
+//	OverrideCancun *uint64 `toml:",omitempty"`
 
 	// OverrideVerkle (TODO: remove after the fork)
 	OverrideVerkle *uint64 `toml:",omitempty"`
 
-	OverrideOptimismCanyon *uint64 `toml:",omitempty"`
+	//OverrideOptimismCanyon *uint64 `toml:",omitempty"`
 
 	// ApplySuperchainUpgrades requests the node to load chain-configuration from the superchain-registry.
 	ApplySuperchainUpgrades bool `toml:",omitempty"`

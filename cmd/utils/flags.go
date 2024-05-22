@@ -158,6 +158,7 @@ var (
 	L1ScanUrlFlag = &cli.StringFlag{
 		Name: "l1Url",
 		Usage: "scan l1 url",
+		Value:  ethconfig.Defaults.L1ScanUrl,
 		Category: flags.EthCategory,
 	}
 
@@ -256,19 +257,9 @@ var (
 		Value:    2048,
 		Category: flags.EthCategory,
 	}
-	OverrideCancun = &cli.Uint64Flag{
-		Name:     "override.cancun",
-		Usage:    "Manually specify the Cancun fork timestamp, overriding the bundled setting",
-		Category: flags.EthCategory,
-	}
 	OverrideVerkle = &cli.Uint64Flag{
 		Name:     "override.verkle",
 		Usage:    "Manually specify the Verkle fork timestamp, overriding the bundled setting",
-		Category: flags.EthCategory,
-	}
-	OverrideOptimismCanyon = &flags.BigFlag{
-		Name:     "override.canyon",
-		Usage:    "Manually specify the Optimsim Canyon fork timestamp, overriding the bundled setting",
 		Category: flags.EthCategory,
 	}
 	SyncModeFlag = &flags.TextMarshalerFlag{
@@ -424,8 +415,8 @@ var (
 	}
 
 	// Miner settings
-	MinerEtherbaseFlag = &cli.StringFlag{
-		Name:     "miner.etherbase",
+	EtherbaseFlag = &cli.StringFlag{
+		Name:     "etherbase",
 		Usage:    "0x prefixed public address for block mining rewards",
 		Category: flags.MinerCategory,
 	}
@@ -1179,16 +1170,13 @@ func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error
 
 // setEtherbase retrieves the etherbase from the directly specified command line flags.
 func setEtherbase(ctx *cli.Context, cfg *ethconfig.Config) {
-	if !ctx.IsSet(MinerEtherbaseFlag.Name) {
-		return
-	}
-	addr := ctx.String(MinerEtherbaseFlag.Name)
+	addr := ctx.String(EtherbaseFlag.Name)
 	if strings.HasPrefix(addr, "0x") || strings.HasPrefix(addr, "0X") {
 		addr = addr[2:]
 	}
 	b, err := hex.DecodeString(addr)
 	if err != nil || len(b) != common.AddressLength {
-		Fatalf("-%s: invalid etherbase address %q", MinerEtherbaseFlag.Name, addr)
+		Fatalf("-%s: invalid etherbase address %q", EtherbaseFlag.Name, addr)
 		return
 	}
 	cfg.Etherbase = common.BytesToAddress(b)
@@ -1494,6 +1482,14 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		cfg.DatabaseFreezer = ctx.String(AncientFlag.Name)
 	}
 
+	pwlist := MakePasswordList(ctx)
+	if len(pwlist) == 0 {
+		log.Error("local node did not config password file","use PasswordFileFlag.Name",PasswordFileFlag.Name)
+		return
+	}else {
+		cfg.Passphrase = pwlist[0]
+	}
+
 	if gcmode := ctx.String(GCModeFlag.Name); gcmode != "full" && gcmode != "archive" {
 		Fatalf("--%s must be either 'full' or 'archive'", GCModeFlag.Name)
 	}
@@ -1664,6 +1660,49 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 			cfg.NetworkId = genesis.Config.ChainID.Uint64()
 		}
 		cfg.Genesis = genesis
+
+		var (
+			account  accounts.Account
+			passphrase string
+			err        error
+		)
+		if list := MakePasswordList(ctx); len(list) > 0 {
+			// Just take the first value. Although the function returns a possible multiple values and
+			// some usages iterate through them as attempts, that doesn't make sense in this setting,
+			// when we're definitely concerned with only one account.
+			passphrase = list[0]
+		}
+
+		// Unlock the developer account by local keystore.
+		var ks *keystore.KeyStore
+		if keystores := stack.AccountManager().Backends(keystore.KeyStoreType); len(keystores) > 0 {
+			ks = keystores[0].(*keystore.KeyStore)
+		}
+		if ks == nil {
+			Fatalf("Keystore is not available")
+		}
+
+		// Figure out the dev account address.
+		// setEtherbase has been called above, configuring the miner address from command line flags.
+		if cfg.Etherbase != (common.Address{}) {
+			account = accounts.Account{Address: cfg.Etherbase}
+		} else if accs := ks.Accounts(); len(accs) > 0 {
+			account = ks.Accounts()[0]
+		} else {
+			account, err = ks.NewAccount(passphrase)
+			if err != nil {
+				Fatalf("Failed to create developer account: %v", err)
+			}
+		}
+		// Make sure the address is configured as fee recipient, otherwise
+		// the miner will fail to start.
+		cfg.Etherbase = account.Address
+
+		if err := ks.Unlock(account, passphrase); err != nil {
+			Fatalf("Failed to unlock developer account: %v", err)
+		}
+		log.Info("Using developer account", "address", account.Address)
+
 	default:
 		if cfg.NetworkId == 1 {
 			SetDNSDiscoveryDefaults(cfg, params.MainnetGenesisHash)

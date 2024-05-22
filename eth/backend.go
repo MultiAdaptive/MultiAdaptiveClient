@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -48,6 +49,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 	"gorm.io/gorm"
+	"io/ioutil"
 	"math/big"
 	"runtime"
 	"sync"
@@ -85,6 +87,8 @@ type Ethereum struct {
 
 	gasPrice  *big.Int
 	etherbase common.Address
+
+	singer  *types.SingerTool
 
 	networkID     uint64
 	netRPCService *ethapi.NetAPI
@@ -184,14 +188,9 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	)
 	// Override the chain config with provided settings.
 	var overrides core.ChainOverrides
-	if config.OverrideCancun != nil {
-		overrides.OverrideCancun = config.OverrideCancun
-	}
+
 	if config.OverrideVerkle != nil {
 		overrides.OverrideVerkle = config.OverrideVerkle
-	}
-	if config.OverrideOptimismCanyon != nil {
-		overrides.OverrideOptimismCanyon = config.OverrideOptimismCanyon
 	}
 	overrides.ApplySuperchainUpgrades = config.ApplySuperchainUpgrades
 
@@ -225,6 +224,27 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		return nil, err
 	}
 	eth.fdPool = fileDataPool
+
+	keyStores, err := ioutil.ReadDir(stack.KeyStoreDir())
+	if err != nil {
+		log.Error("New----failed","Read KeyStore File err",err.Error())
+	}
+	if len(keyStores) == 0 {
+		log.Error("New----ReadDir","empty keystore")
+		return nil,errors.New("no keystore file is path")
+	}
+	filePath := stack.KeyStoreDir() + "/" + keyStores[0].Name()
+	log.Info("filePath-----","filePath",filePath)
+	keyjson,err := ioutil.ReadFile(filePath)
+	if err != nil {
+		log.Error("New----failed","Read KeyStore File err",err.Error())
+	}
+	// 解密keystore文件，获取私钥
+	key, err := keystore.DecryptKey(keyjson, eth.config.Passphrase)
+	if err != nil {
+		log.Error("New----failed","DecryptKey  err",err.Error())
+	}
+	eth.singer = types.NewSingerTool(eth.blockchain.Config(),key.PrivateKey)
 	// Permit the downloader to use the trie cache allowance during fast sync
 	cacheLimit := cacheConfig.TrieCleanLimit + cacheConfig.TrieDirtyLimit + cacheConfig.SnapshotLimit
 	if eth.handler, err = newHandler(&handlerConfig{

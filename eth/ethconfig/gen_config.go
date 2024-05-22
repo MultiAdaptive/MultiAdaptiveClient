@@ -20,8 +20,6 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		SnapDiscoveryURLs                       []string
 		NoPruning                               bool
 		NoPrefetch                              bool
-		TxLookupLimit                           uint64                 `toml:",omitempty"`
-		TransactionHistory                      uint64                 `toml:",omitempty"`
 		StateHistory                            uint64                 `toml:",omitempty"`
 		StateScheme                             string                 `toml:",omitempty"`
 		RequiredBlocks                          map[uint64]common.Hash `toml:"-"`
@@ -41,14 +39,11 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		SnapshotCache                           int
 		Preimages                               bool
 		FilterLogCacheSize                      int
-		//EnablePreimageRecording                 bool
 		DocRoot                                 string `toml:"-"`
 		RPCGasCap                               uint64
 		RPCEVMTimeout                           time.Duration
 		RPCTxFeeCap                             float64
-		OverrideCancun                          *uint64 `toml:",omitempty"`
 		OverrideVerkle                          *uint64 `toml:",omitempty"`
-		OverrideOptimismCanyon                  *uint64 `toml:",omitempty"`
 		ApplySuperchainUpgrades                 bool    `toml:",omitempty"`
 	}
 	var enc Config
@@ -82,9 +77,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.RPCGasCap = c.RPCGasCap
 	enc.RPCEVMTimeout = c.RPCEVMTimeout
 	enc.RPCTxFeeCap = c.RPCTxFeeCap
-	enc.OverrideCancun = c.OverrideCancun
 	enc.OverrideVerkle = c.OverrideVerkle
-	enc.OverrideOptimismCanyon = c.OverrideOptimismCanyon
 	enc.ApplySuperchainUpgrades = c.ApplySuperchainUpgrades
 	return &enc, nil
 }
@@ -125,16 +118,9 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		RPCGasCap                               *uint64
 		RPCEVMTimeout                           *time.Duration
 		RPCTxFeeCap                             *float64
-		OverrideCancun                          *uint64 `toml:",omitempty"`
 		OverrideVerkle                          *uint64 `toml:",omitempty"`
 		OverrideOptimismCanyon                  *uint64 `toml:",omitempty"`
 		ApplySuperchainUpgrades                 *bool   `toml:",omitempty"`
-		RollupSequencerHTTP                     *string
-		RollupHistoricalRPC                     *string
-		RollupHistoricalRPCTimeout              *time.Duration
-		RollupDisableTxPoolGossip               *bool
-		RollupDisableTxPoolAdmission            *bool
-		RollupHaltOnIncompatibleProtocolVersion *string
 	}
 	var dec Config
 	if err := unmarshal(&dec); err != nil {
@@ -231,14 +217,8 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.RPCTxFeeCap != nil {
 		c.RPCTxFeeCap = *dec.RPCTxFeeCap
 	}
-	if dec.OverrideCancun != nil {
-		c.OverrideCancun = dec.OverrideCancun
-	}
 	if dec.OverrideVerkle != nil {
 		c.OverrideVerkle = dec.OverrideVerkle
-	}
-	if dec.OverrideOptimismCanyon != nil {
-		c.OverrideOptimismCanyon = dec.OverrideOptimismCanyon
 	}
 	if dec.ApplySuperchainUpgrades != nil {
 		c.ApplySuperchainUpgrades = *dec.ApplySuperchainUpgrades
