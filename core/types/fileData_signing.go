@@ -171,13 +171,29 @@ func (s EIP155FdSigner) SignatureValues(fd *DA, sig []byte) (R, S, V *big.Int, e
 // It does not uniquely identify the transaction.
 func (s EIP155FdSigner) Hash(fd *DA) common.Hash {
 	data := make([]byte,0)
-	data = append(data, uint64ToBigEndianHexBytes(s.chainId.Uint64())...)	
-	data = append(data, fd.Sender.Bytes()...)
-	//data = append(data, uint64ToBigEndianHexBytes(fd.GasPrice)...)
-	data = append(data, uint64ToBigEndianHexBytes(fd.Index)...)
-	data = append(data, uint64ToBigEndianHexBytes(fd.Length)...)
-	data = append(data, fd.Commitment...)
+	chainId := transTo32Byte(uint64ToBigEndianHexBytes(s.chainId.Uint64()))
+	indexByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Index))
+	lengthByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Length))
+	addrByte := transTo32Byte(fd.Sender.Bytes())
+	commitXByte := fd.Commitment.X.Bytes()
+	commitYByte := fd.Commitment.Y.Bytes()
+	data = append(data,chainId[:]...)
+	data = append(data,addrByte[:]...)
+	data = append(data,indexByte[:]...)
+	data = append(data,lengthByte[:]...)
+	data = append(data,commitXByte[:]...)
+	data = append(data,commitYByte[:]...)
 	return crypto.Keccak256Hash(data)
+}
+
+func transTo32Byte(data []byte) [32]byte {
+	var byteData [32]byte
+	byteDataLength := len(byteData)
+	dataLength := len(data)
+	for i,b := range data {
+		byteData[byteDataLength-dataLength+i] = b
+	}
+	return byteData
 }
 
 // HomesteadFdSigner implements Signer interface using the
@@ -235,13 +251,17 @@ func (fs FrontierFdSigner) SignatureValues(fd *DA, sig []byte) (r, s, v *big.Int
 // Hash returns the hash to be signed by the sender.
 // It does not uniquely identify the transaction.
 func (fs FrontierFdSigner) Hash(fd *DA) common.Hash {
-	data := make([]byte,0)	
-	data = append(data, fd.Sender.Bytes()...)
-	//data = append(data, fd.Submitter.Bytes()...)
-	//data = append(data, uint64ToBigEndianHexBytes(fd.GasPrice)...)
-	data = append(data, uint64ToBigEndianHexBytes(fd.Index)...)
-	data = append(data, uint64ToBigEndianHexBytes(fd.Length)...)
-	data = append(data, fd.Commitment...)
+	data := make([]byte,0)
+	indexByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Index))
+	lengthByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Length))
+	addrByte := transTo32Byte(fd.Sender.Bytes())
+	commitXByte := fd.Commitment.X.Bytes()
+	commitYByte := fd.Commitment.Y.Bytes()
+	data = append(data,addrByte[:]...)
+	data = append(data,indexByte[:]...)
+	data = append(data,lengthByte[:]...)
+	data = append(data,commitXByte[:]...)
+	data = append(data,commitYByte[:]...)
 	return crypto.Keccak256Hash(data)
 }
 

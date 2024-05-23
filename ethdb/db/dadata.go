@@ -1,8 +1,10 @@
 package db
 
 import (
+	"encoding/hex"
 	"fmt"
 	"errors"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"gorm.io/gorm"
@@ -24,11 +26,11 @@ type DA struct {
 	BlockNum    int64
 }
 
-
 func AddCommitment(tx *gorm.DB,da *types.DA,parentHash common.Hash) error {
 	currentParentHash := parentHash
 	dataCollect := make([]byte,0)
-	dataCollect = append(dataCollect,da.Commitment...)
+	dataCollect = append(dataCollect,da.Commitment.X.Marshal()...)
+	dataCollect = append(dataCollect,da.Commitment.Y.Marshal()...)
 	dataCollect = append(dataCollect,da.Sender.Bytes()...)
 	dataCollect = append(dataCollect,currentParentHash.Bytes()...)
 	stateHash := common.BytesToHash(dataCollect)
@@ -37,7 +39,7 @@ func AddCommitment(tx *gorm.DB,da *types.DA,parentHash common.Hash) error {
 		Index: int64(da.Index),
 		Length: int64(da.Length),
 		TxHash: da.TxHash.Hex(),
-		Commitment: common.Bytes2Hex(da.Commitment),
+		Commitment: common.Bytes2Hex(da.Commitment.Marshal()),
 		Data: common.Bytes2Hex(da.Data),
 		SignData: common.Bytes2Hex(da.SignData),
 		ParentStateHash: currentParentHash.Hex(),
@@ -52,7 +54,8 @@ func AddBatchCommitment(tx *gorm.DB,das []*types.DA,parentHash common.Hash) erro
 	dataCollect := make([]byte,0)
 	// 遍历每个区块，依次插入数据库
 	for _, da := range das {
-		dataCollect = append(dataCollect,da.Commitment...)
+		dataCollect = append(dataCollect,da.Commitment.X.Marshal()...)
+		dataCollect = append(dataCollect,da.Commitment.Y.Marshal()...)
 		dataCollect = append(dataCollect,da.Sender.Bytes()...)
 		dataCollect = append(dataCollect,currentParentHash.Bytes()...)
 		stateHash := common.BytesToHash(dataCollect)
@@ -62,7 +65,7 @@ func AddBatchCommitment(tx *gorm.DB,das []*types.DA,parentHash common.Hash) erro
 			Index: int64(da.Index),
 			Length: int64(da.Length),
 			Data: common.Bytes2Hex(da.Data),
-			Commitment: common.Bytes2Hex(da.Commitment),
+			Commitment: common.Bytes2Hex(da.Commitment.Marshal()),
 			SignData: common.Bytes2Hex(da.SignData),
 			ParentStateHash: currentParentHash.String(),
 			StateHash: stateHash.Hex(),
@@ -83,11 +86,15 @@ func GetCommitmentByCommitment(db *gorm.DB,commitment []byte) (*types.DA,error) 
 	var da DA
 	tx := db.First(&da,"commitment = ?",common.Bytes2Hex(commitment))
 	if tx.Error == nil {
+		var digest kzg.Digest
+		str, _ := hex.DecodeString(da.Commitment)
+		digest.SetBytes(str)
+
 		return &types.DA{
 			Sender: common.HexToAddress(da.Sender),
 			Index: uint64(da.Index),
 			Length: uint64(da.Length),
-			Commitment: common.Hex2Bytes(da.Commitment),
+			Commitment: digest,
 			Data: common.Hex2Bytes(da.Data),
 			SignData: common.Hex2Bytes(da.SignData),
 			TxHash: common.HexToHash(da.TxHash),
@@ -95,19 +102,20 @@ func GetCommitmentByCommitment(db *gorm.DB,commitment []byte) (*types.DA,error) 
 	}
 	errstr := fmt.Sprintf("can not find DA with given commitment :%d",common.Bytes2Hex(commitment))
 	return nil,errors.New(errstr)
-
 }
-
 
 func GetCommitmentByHash(db *gorm.DB,txHash common.Hash) (*types.DA,error){
 	var da DA
 	tx := db.First(&da,"tx_hash = ?",txHash)
 	if tx.Error == nil {
+		var digest kzg.Digest
+		str, _ := hex.DecodeString(da.Commitment)
+		digest.SetBytes(str)
 		return &types.DA{
 			Sender: common.HexToAddress(da.Sender),
 			Index: uint64(da.Index),
 			Length: uint64(da.Length),
-			Commitment: common.Hex2Bytes(da.Commitment),
+			Commitment: digest,
 			Data: common.Hex2Bytes(da.Data),
 			SignData: common.Hex2Bytes(da.SignData),
 			TxHash: common.HexToHash(da.TxHash),

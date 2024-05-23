@@ -22,6 +22,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -110,15 +111,17 @@ func (b *EthAPIBackend) UploadFileData(data []byte) error {
 	return b.eth.fdPool.Add([]*types.DA{fd}, true, false)[0]
 }
 
-func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte) ([]byte,error) {
-	fd := types.NewDA(sender, index, length, commitment, data, dasKey)
-	//flag,err := b.eth.singer.Verify(fd)
-	//if err != nil || flag == false {
-	//	return nil, err
-	//}else {
-	//	b.eth.fdPool.Add([]*types.DA{fd},true,false)
+func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,dasKey [32]byte) ([]byte,error) {
+	var digest kzg.Digest
+	digest.SetBytes(commitment)
+	fd := types.NewDA(sender, index, length, digest, data, dasKey)
+	flag,err := b.eth.singer.Verify(fd)
+	if err != nil || flag == false {
+		return nil, err
+	}else {
+		b.eth.fdPool.Add([]*types.DA{fd},true,false)
 		return b.eth.singer.Sign(fd)
-	//}
+	}
 }
 
 func (b *EthAPIBackend) BatchSendDA(datas [][]byte) ([][]byte,[]error) {

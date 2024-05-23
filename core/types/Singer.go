@@ -45,12 +45,11 @@ func (s *SingerTool) Verify(da *DA) (bool,error) {
 	if err != nil {
 		return false,errors.New("GenerateDataCommit failed")
 	}
+	x := digst.X.Marshal()
+	y := digst.Y.Marshal()
 
-	fixedArray := digst.Bytes()
-	slice := fixedArray[:]
-
-	if !bytes.Equal(slice,da.Commitment) {
-		return false,errors.New("commit is not match with da")
+	if (bytes.Compare(x,da.Commitment.X.Marshal()) == 0) && (bytes.Compare(y,da.Commitment.Y.Marshal()) == 0){
+		return true,nil
 	}
-	return true,nil
+	return false,errors.New("commit is not match with da")
 }

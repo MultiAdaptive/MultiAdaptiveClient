@@ -2,6 +2,7 @@ package types
 
 import (
 	"errors"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
 	"math/big"
@@ -18,20 +19,21 @@ type DA struct {
 	Sender     common.Address  	                  `json:"Sender"` //文件发送者
 	Index      uint64						`json:"Index"`//文件发送者类nonce 相同的index认为是重复交易
 	Length     uint64						`json:"Length"`//长度
-	Commitment []byte						`json:"Commitment"`//对应data的commitment
 	Data       []byte						`json:"Data"`//上传的的文件
+	Commitment kzg.Digest                           `json:"Commitment"`
 	SignData   []byte                               `json:"SignData"`
 	DasKey     [32]byte                              `json:"DasKey"`
 	TxHash     common.Hash                           `json:"TxHash"`
 }
 
-func NewDA(sender common.Address,index,length uint64,commitment, data []byte, dasKey [32]byte) *DA {
+func NewDA(sender common.Address,index,length uint64,commitment kzg.Digest, data []byte, dasKey [32]byte) *DA {
 	return &DA{
 		Sender:     sender,
 		Index:      index,
 		Length:	length,
 		Commitment: commitment,
 		Data:       data,
+		DasKey:     dasKey,
 	}
 }
 

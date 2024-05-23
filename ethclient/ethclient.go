@@ -622,7 +622,7 @@ func (ec *Client) SendTransaction(ctx context.Context, tx *types.Transaction) er
 
 
 func (ec *Client) SendDAByParams(ctx context.Context,sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte) ([]byte,error)  {
-	var result hexutil.Bytes
+	var result []byte
 	err := ec.c.CallContext(ctx,&result,"eth_sendDAByParams",sender,index,length,commitment,data,dasKey)
 	return result,err
 }

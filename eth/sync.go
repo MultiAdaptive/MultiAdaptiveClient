@@ -287,18 +287,18 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		if flag {
 			//new commit get from memory pool
 			da,err := cs.handler.fileDataPool.GetDAByCommit(commitment)
+			da.TxHash = common.HexToHash(txHash)
 			if err == nil && da != nil {
 				daDatas = append(daDatas,da)
 			}
 		}
 	}
 
-	parentHashData,err := db.GetMaxIDDAStateHash(cs.db)
-	if err != nil {
-		parentHashData = ""
-	}
-	//send new commitment event
 	if len(daDatas) != 0 {
+		parentHashData,err := db.GetMaxIDDAStateHash(cs.db)
+		if err != nil {
+			parentHashData = ""
+		}
 		parentHash := common.HexToHash(parentHashData)
 		cs.handler.fileDataPool.SendNewFileDataEvent(daDatas)
 		switch cs.nodeType {
@@ -309,6 +309,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			cs.handler.fileDataPool.RemoveFileData(daDatas)
 		}
 	}
+
 	db.Commit(db.Tx)
 	cs.chain.SetCurrentBlock(blocks[length-1])
 	return nil

@@ -2,7 +2,6 @@ package filedatapool
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/ethdb/db"
 	"gorm.io/gorm"
@@ -406,7 +405,7 @@ func (fp *FilePool) Add(fds []*types.DA, local, sync bool) []error {
 			txHash := fd.TxHash.String()
 			log.Info("FilePool----Add","txHash",txHash)
 		}else {
-			hashData = common.BytesToHash(fd.Commitment)
+			hashData = common.BytesToHash(fd.Commitment.Marshal())
 			log.Info("FilePool----Add","commitHash",hashData.Hex())
 		}
 		if fp.all.Get(hashData) != nil {
@@ -457,7 +456,7 @@ func (fp *FilePool) RemoveFileData(das []*types.DA) {
 		if len(da.TxHash) != 0 {
 			delete(fp.all.collector, da.TxHash)
 		}
-		delete(fp.all.collector, common.BytesToHash(da.Commitment))
+		delete(fp.all.collector, common.BytesToHash(da.Commitment.Marshal()))
 	}
 }
 
@@ -481,7 +480,7 @@ func (fp *FilePool) add(fd *types.DA, local bool) (replaced bool, err error) {
 	if len(fd.TxHash) != 0 {
 		hash = fd.TxHash
 	}else {
-		hash = common.BytesToHash(fd.Commitment)
+		hash = common.BytesToHash(fd.Commitment.Marshal())
 	}
 	if fp.all.Get(hash) != nil {
 		log.Trace("Discarding already known fileData", "hash", hash)
@@ -541,17 +540,13 @@ func (fp *FilePool) validateFileDataSignature(fd *types.DA, local bool) error {
 	if err != nil {
 		return errors.New("GenerateDataCommit failed")
 	}
+	x := digst.X.Marshal()
+	y := digst.Y.Marshal()
 
-	fixedArray := digst.Bytes()
-      slice := fixedArray[:]
-	if !bytes.Equal(slice, fd.Commitment) {
-		generateCommit := hex.EncodeToString(slice)
-		orginCommit := hex.EncodeToString(fd.Commitment)
-		log.Info("validateFileDataSignature---Commitment","generateCommit",generateCommit,"orginCommit",orginCommit)
-		return errors.New("commitment is not match the data")
-	}	
-
-	return nil
+	if (bytes.Compare(x,fd.Commitment.X.Marshal()) == 0) && (bytes.Compare(y,fd.Commitment.Y.Marshal()) == 0){
+		return nil
+	}
+	return errors.New("commit is not match with da")
 }
 
 // Close terminates the fileData pool.
@@ -623,7 +618,7 @@ func (t *lookup) Add(fd *types.DA) {
 	slotsGauge.Update(int64(t.slots))
 	log.Info("Add-----加进来了")
 	t.collector[fd.TxHash] = fd
-	hash := common.BytesToHash(fd.Commitment)
+	hash := common.BytesToHash(fd.Commitment.Marshal())
 	t.collector[hash] = fd
 }
 
