@@ -70,35 +70,22 @@ type Ethereum struct {
 	ethDialCandidates  enode.Iterator
 	snapDialCandidates enode.Iterator
 	merger             *consensus.Merger
-
-	seqRPCService        *rpc.Client
 	historicalRPCService *rpc.Client
-
 	// DB interfaces
 	chainDb ethdb.Database // Block chain database
-
 	eventMux       *event.TypeMux
 	accountManager *accounts.Manager
-
 	bloomRequests     chan chan *bloombits.Retrieval // Channel receiving bloom data retrieval requests
 	closeBloomHandler chan struct{}
-
 	APIBackend *EthAPIBackend
-
 	gasPrice  *big.Int
 	etherbase common.Address
-
 	singer  *types.SingerTool
-
 	networkID     uint64
 	netRPCService *ethapi.NetAPI
-
 	p2pServer *p2p.Server
-
 	lock sync.RWMutex // Protects the variadic fields (e.g. gas price and etherbase)
-
 	shutdownTracker *shutdowncheck.ShutdownTracker // Tracks if and when the node has shutdown ungracefully
-
 	nodeCloser func() error
 }
 
@@ -422,9 +409,7 @@ func (s *Ethereum) Stop() error {
 	close(s.closeBloomHandler)
 	s.fdPool.Close()
 	s.blockchain.Stop()
-	if s.seqRPCService != nil {
-		s.seqRPCService.Close()
-	}
+
 	if s.historicalRPCService != nil {
 		s.historicalRPCService.Close()
 	}
