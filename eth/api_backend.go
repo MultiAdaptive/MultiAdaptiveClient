@@ -168,27 +168,6 @@ func (b *EthAPIBackend) GetFileDataByCommitment(comimt []byte) (*types.DA, error
 	return nil, err
 }
 
-func (b *EthAPIBackend) BatchFileDataByHashes(hashes rpc.TxHashes) ([]uint, []error) {
-	log.Info("EthAPIBackend-----GetFileDataByHashes", "len(hashes)",len(hashes.TxHashes))
-	flags := make([]uint, len(hashes.TxHashes))
-	errs := make([]error, len(hashes.TxHashes))
-	for inde, hash := range hashes.TxHashes {
-		_, state, err := b.eth.fdPool.Get(hash)
-		switch state {
-		case filedatapool.DISK_FILEDATA_STATE_DEL:
-			flags[inde] = 0
-		case filedatapool.DISK_FILEDATA_STATE_SAVE:	
-			flags[inde] = 1
-		case filedatapool.DISK_FILEDATA_STATE_MEMORY:
-			flags[inde] = 2	
-		case filedatapool.DISK_FILEDATA_STATE_UNKNOW:
-			flags[inde] = 3
-		}
-		errs[inde] = err
-	}
-	return flags, errs
-}
-
 func (b *EthAPIBackend) GetPoolFileData(hash common.Hash) *types.DA {
 	fd,_,err := b.eth.fdPool.Get(hash)
 	if err != nil {

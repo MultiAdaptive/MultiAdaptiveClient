@@ -287,9 +287,11 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		if flag {
 			//new commit get from memory pool
 			da,err := cs.handler.fileDataPool.GetDAByCommit(commitment)
-			da.TxHash = common.HexToHash(txHash)
-			if err == nil && da != nil {
-				daDatas = append(daDatas,da)
+			if err == nil {
+				da.TxHash = common.HexToHash(txHash)
+				if err == nil && da != nil {
+					daDatas = append(daDatas,da)
+				}
 			}
 		}
 	}
