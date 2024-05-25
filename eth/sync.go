@@ -143,7 +143,7 @@ func (cs *chainSyncer) doSync() error {
 			blocks := make([]*types.Block,SyncChunkSize)
 			for j := i;j< i+SyncChunkSize;j++ {
 				log.Info("doSync---------","j",j,"l1Num",l1Num)
-				if j > l1Num  {
+				if j >= l1Num  {
 					shouldBreak = true
 					break
 				}

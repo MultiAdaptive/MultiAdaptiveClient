@@ -46,22 +46,24 @@ func AddBlock(tx *gorm.DB,block *types.Block) error {
 func AddBatchBlocks(tx *gorm.DB,blocks []*types.Block) error {
 	// 遍历每个区块，依次插入数据库
 	for _, block := range blocks {
-		data,err := rlp.EncodeToBytes(block)
-		if err != nil {
-			log.Info("AddBlock----encode","err",err.Error())
-		}
-		wb := Block{
-			BlockNum: block.Number().Int64(),
-			BlockHash: block.Hash().String(),
-			ParentHash: block.ParentHash().String(),
-			ReceivedAt: strconv.FormatUint(block.Time(),10),
-			EncodeData: common.Bytes2Hex(data),
-		}
-		result := tx.Create(&wb)
-		if result.Error != nil {
-			// 插入失败，回滚事务并返回错误
-			tx.Rollback()
-			return result.Error
+		if block != nil {
+			data,err := rlp.EncodeToBytes(block)
+			if err != nil {
+				log.Info("AddBlock----encode","err",err.Error())
+			}
+			wb := Block{
+				BlockNum: block.Number().Int64(),
+				BlockHash: block.Hash().String(),
+				ParentHash: block.ParentHash().String(),
+				ReceivedAt: strconv.FormatUint(block.Time(),10),
+				EncodeData: common.Bytes2Hex(data),
+			}
+			result := tx.Create(&wb)
+			if result.Error != nil {
+				// 插入失败，回滚事务并返回错误
+				tx.Rollback()
+				return result.Error
+			}
 		}
 	}
 	return nil
