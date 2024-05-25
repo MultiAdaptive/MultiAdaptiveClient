@@ -100,6 +100,8 @@ func (cs *chainSyncer) loop() {
 			if !cs.forced {
 				cs.startSync()
 			}
+			cs.force.Reset(forceSyncCycle)
+			log.Info("forcesync cycle time out","is sync",!cs.forced)
 
 		case  <-cs.handler.quitSync:
 			log.Info("chainSyncer---loop quit")
