@@ -168,7 +168,6 @@ var (
 		Category: flags.EthCategory,
 	}
 
-
 	// Dev mode
 	DeveloperFlag = &cli.BoolFlag{
 		Name:     "dev",
