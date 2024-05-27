@@ -154,6 +154,7 @@ func (cs *chainSyncer) doSync() error {
 				log.Info("doSync---------","j",j,"l1Num",l1Num)
 				if j >= l1Num  {
 					shouldBreak = true
+					log.Info("doSync-----shouldBreak----","j",j,"l1Num",l1Num)
 					break
 				}
 				toBlockNum := j
@@ -173,6 +174,7 @@ func (cs *chainSyncer) doSync() error {
 					return nil
 				}
 			}
+			log.Info("doSync-----blocks length","blocks length",len(blocks))
 			cs.processBlocks(blocks)
 			if shouldBreak {
 				cs.forced = false
@@ -330,7 +332,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		}
 	}
 
-	log.Info("processBlocks------all data is set start update chain head")
+	//log.Info("processBlocks------all data is set start update chain head","num",blocks[length-1])
 	cs.chain.SetCurrentBlock(blocks[length-1])
 	return nil
 }

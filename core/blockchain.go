@@ -269,6 +269,9 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, genesis *Genesis
 }
 
 func (bc *BlockChain) SetCurrentBlock(block *types.Block) error {
+	if block == nil {
+		return  errors.New("block is nill")
+	}
 	rawdb.WriteBlock(bc.db,block)
 	db.Begin(bc.sqlDb)
 	num,err := db.GetLastBlockNum(bc.sqlDb)
