@@ -394,11 +394,20 @@ type ChainConfig struct {
 
 
 type L1Config struct {
-	GenesisBlockNumber      uint64 `json:"genesisBlockNumber"`
-	//DomiconCommitment       string `json:"domiconCommitment"`
-	DomiconCommitmentProxy  string `json:"domiconCommitmentProxy"`
-	//DomiconNode             string  `json:"domiconNode"`
-	DomiconNodeProxy        string  `json:"domiconNodeProxy"`
+	GenesisBlockNumber      uint64      `json:"genesisBlockNumber"`
+	DomiconCommitment       string      `json:"domiconCommitment"`
+	DomiconCommitmentProxy  string      `json:"domiconCommitmentProxy"`
+	DomiconNode             string      `json:"domiconNode"`
+	DomiconNodeProxy        string      `json:"domiconNodeProxy"`
+	AddressManager          string      `json:"addressManager"`
+	ChallengeContract       string      `json:"challengeContract"`
+	ChallengeContractProxy  string      `json:"challengeContractProxy"`
+	ProxyAdmin              string      `json:"proxyAdmin"`
+	SafeProxyFactory        string      `json:"safeProxyFactory"`
+	SafeSingleton           string      `json:"safeSingleton"`
+	StorageManagement       string      `json:"storageManagement"`
+	StorageManagementProxy  string      `json:"storageManagementProxy"`
+	SystemOwnerSafe         string      `json:"systemOwnerSafe"`
 }
 
 func (l1 *L1Config) String() string {

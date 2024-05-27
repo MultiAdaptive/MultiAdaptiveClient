@@ -17,6 +17,8 @@
 package eth
 
 import (
+	"errors"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -117,6 +119,9 @@ func (cs *chainSyncer) loop() {
 
 func (cs *chainSyncer) doSync() error {
 	log.Info("chainSyncer---start---doSync")
+	if cs.forced == true {
+		return errors.New("chainSyncer is syncing")
+	}
 	var currentHeader uint64
 	currentBlock := cs.chain.CurrentBlock()
 	if currentBlock == nil || currentBlock.Number == nil {
@@ -320,8 +325,12 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 }
 
 func slice(data []byte) []byte {
-	dataLength := len(data)
-	return data[dataLength-64:dataLength-16]
+	digst := new(kzg.Digest)
+	dataStr := common.Bytes2Hex(data)
+	log.Info("slice------","dataStr",dataStr,"digst",digst.String())
+	digst.X.SetBytes(data[132:132+32])
+	digst.Y.SetBytes(data[132+32:132+64])
+	return digst.Marshal()
 }
 
 //false 没有回滚
