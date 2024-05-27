@@ -143,10 +143,12 @@ func (cs *chainSyncer) doSync() error {
 
 	//当前高度为零 可以直接从genesis开始同步
 	if currentHeader == 0 {
+		log.Info("chainSyncer---start---","currentHeader",currentHeader)
 		requireTime := time.NewTimer(QuickReqTime)
 		startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
 		var shouldBreak bool
 		for i := startNum;true;i += SyncChunkSize {
+			log.Info("chainSyncer---","i----",i)
 			blocks := make([]*types.Block,SyncChunkSize)
 			for j := i;j< i+SyncChunkSize;j++ {
 				log.Info("doSync---------","j",j,"l1Num",l1Num)
@@ -176,8 +178,11 @@ func (cs *chainSyncer) doSync() error {
 				cs.forced = false
 				break
 			}
+			//startNum = cs.chain.CurrentBlock().Number.Uint64()
+		//	log.Info("chainSyncer--------","startNum changed",startNum)
 		}
 	}else {
+		log.Info("chainSyncer---start---","currentHeader",currentHeader)
 		//当前数据库有数据需要检查是否回滚
 		latestBlock,_ := db.GetBlockByNum(cs.db,currentHeader)
 		flag,org := cs.checkReorg(latestBlock)
@@ -239,10 +244,10 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	}
 	commitCache := db.NewOrderedMap()
 	var latestNum uint64
-	trans := make([]*types.Transaction,0)
 	length := len(blocks)
 	//get tx
 	for _,bc := range blocks{
+		trans := make([]*types.Transaction,0)
 		if bc != nil{
 			if latestNum < bc.NumberU64() {
 				latestNum = bc.NumberU64()
@@ -262,9 +267,11 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 					}
 				}
 			}
-			err := db.AddBatchTransactions(db.Tx,trans,bc.Number().Int64())
-			if err != nil{
-				 log.Error("AddBatchTransactions----","err",err.Error())
+			if len(trans) != 0 {
+				err := db.AddBatchTransactions(db.Tx,trans,bc.Number().Int64())
+				if err != nil{
+					log.Error("AddBatchTransactions----","err",err.Error())
+				}
 			}
 		}
 	}
@@ -286,6 +293,9 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	if err != nil {
 		log.Error("AddBatchReceipts--","err",err.Error())
 	}
+	log.Info("AddBatchReceipts-----")
+
+	db.Commit(db.Tx)
 
 	finalKeys := commitCache.Keys()
 	daDatas := make([]*types.DA,0)
@@ -294,16 +304,15 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		if flag {
 			//new commit get from memory pool
 			da,err := cs.handler.fileDataPool.GetDAByCommit(commitment)
-			if err == nil {
+			if err == nil && da != nil {
 				da.TxHash = common.HexToHash(txHash)
-				if err == nil && da != nil {
-					daDatas = append(daDatas,da)
-				}
+				daDatas = append(daDatas,da)
 			}
 		}
 	}
 
 	if len(daDatas) != 0 {
+		log.Info("processBlocks---------find da")
 		parentHashData,err := db.GetMaxIDDAStateHash(cs.db)
 		if err != nil {
 			parentHashData = ""
@@ -314,12 +323,14 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		case "b":
 
 		case "s":
+			db.Begin(cs.db)
 			db.AddBatchCommitment(db.Tx,daDatas,parentHash)
+			db.Commit(db.Tx)
 			cs.handler.fileDataPool.RemoveFileData(daDatas)
 		}
 	}
 
-	db.Commit(db.Tx)
+	log.Info("processBlocks------all data is set start update chain head")
 	cs.chain.SetCurrentBlock(blocks[length-1])
 	return nil
 }

@@ -280,7 +280,7 @@ func (bc *BlockChain) SetCurrentBlock(block *types.Block) error {
 	db.Commit(db.Tx)
 	bc.currentBlock.Store(block.Header())
 	bc.currentSnapBlock.Store(block.Header())
-	//log.Info("BlockChain-----current block is set","num",block.NumberU64())
+	log.Info("BlockChain-----current block is set","num",block.NumberU64())
 	return nil
 }
 
