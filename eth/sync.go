@@ -118,7 +118,6 @@ func (cs *chainSyncer) loop() {
 }
 
 func (cs *chainSyncer) doSync() error {
-	log.Info("chainSyncer---start---doSync")
 	if cs.forced == true {
 		return errors.New("chainSyncer is syncing")
 	}
@@ -143,7 +142,6 @@ func (cs *chainSyncer) doSync() error {
 
 	//当前高度为零 可以直接从genesis开始同步
 	if currentHeader == 0 {
-		log.Info("chainSyncer---start---","currentHeader",currentHeader)
 		requireTime := time.NewTimer(QuickReqTime)
 		startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
 		var shouldBreak bool
@@ -151,7 +149,6 @@ func (cs *chainSyncer) doSync() error {
 			log.Info("chainSyncer---","i----",i)
 			blocks := make([]*types.Block,SyncChunkSize)
 			for j := i;j< i+SyncChunkSize;j++ {
-				log.Info("doSync---------","j",j,"l1Num",l1Num)
 				if j >= l1Num  {
 					shouldBreak = true
 					log.Info("doSync-----shouldBreak----","j",j,"l1Num",l1Num)
@@ -164,7 +161,6 @@ func (cs *chainSyncer) doSync() error {
 					if err == nil {
 						blocks[j-i] = block
 						requireTime.Reset(QuickReqTime)
-						log.Info("doSync-----","toBlockNum",toBlockNum,"block hash",block.Hash().String(),"index",j-i)
 					}else {
 						cs.forced = false
 						return err
@@ -174,14 +170,11 @@ func (cs *chainSyncer) doSync() error {
 					return nil
 				}
 			}
-			log.Info("doSync-----blocks length","blocks length",len(blocks))
 			cs.processBlocks(blocks)
 			if shouldBreak {
 				cs.forced = false
 				break
 			}
-			//startNum = cs.chain.CurrentBlock().Number.Uint64()
-		//	log.Info("chainSyncer--------","startNum changed",startNum)
 		}
 	}else {
 		log.Info("chainSyncer---start---","currentHeader",currentHeader)
@@ -295,8 +288,6 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	if err != nil {
 		log.Error("AddBatchReceipts--","err",err.Error())
 	}
-	log.Info("AddBatchReceipts-----")
-
 	db.Commit(db.Tx)
 
 	finalKeys := commitCache.Keys()
@@ -331,16 +322,12 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			cs.handler.fileDataPool.RemoveFileData(daDatas)
 		}
 	}
-
-	//log.Info("processBlocks------all data is set start update chain head","num",blocks[length-1])
 	cs.chain.SetCurrentBlock(blocks[length-1])
 	return nil
 }
 
 func slice(data []byte) []byte {
 	digst := new(kzg.Digest)
-	dataStr := common.Bytes2Hex(data)
-	log.Info("slice------","dataStr",dataStr,"digst",digst.String())
 	digst.X.SetBytes(data[132:132+32])
 	digst.Y.SetBytes(data[132+32:132+64])
 	return digst.Marshal()
