@@ -32,7 +32,7 @@ func TestEthAPIBackend_SendDAByParams(t *testing.T) {
 	if err != nil {
 		println("err---dial---",err.Error())
 	}
-	index := 0
+	index := 1
 	length := 1024
 	s := strconv.Itoa(index)
 	data := bytes.Repeat([]byte(s), 1024)
