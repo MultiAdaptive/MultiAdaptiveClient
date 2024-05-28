@@ -532,7 +532,7 @@ func (fp *FilePool) validateFileDataSignature(fd *types.DA, local bool) error {
 	}
 	
 	currentPath, _ := os.Getwd()
-	path := strings.Split(currentPath,"/core")[0] + "/srs"
+	path := strings.Split(currentPath,"/build")[0] + "/srs"
 	domiconSDK,err := kzg.InitDomiconSdk(dSrsSize,path)
 	if err != nil {
 		return err
