@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	kzg "github.com/domicon-labs/kzg-sdk"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	//"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/params"
@@ -27,8 +28,19 @@ func NewSingerTool(conf *params.ChainConfig,prv *ecdsa.PrivateKey) *SingerTool {
 func (s *SingerTool) Sign(da *DA) ([]byte,error) {
 	singer := NewEIP155FdSigner(s.config.ChainID)
 	h := singer.Hash(da)
-	return crypto.Sign(h.Bytes(),s.prv)
+	sign,err := crypto.Sign(h.Bytes(),s.prv)
+	v := []byte{sign[64] + 27}
+	newSig := sign[:64]
+	newSig = append(newSig, v...)
+	return newSig,err
 }
+
+func (s *SingerTool) Sender(da *DA) common.Address {
+	singer := NewEIP155FdSigner(s.config.ChainID)
+	addr,_ := singer.Sender(da)
+	return addr
+}
+
 
 func (s *SingerTool) Verify(da *DA) (bool,error) {
 	if da.Length != uint64(len(da.Data)) {
