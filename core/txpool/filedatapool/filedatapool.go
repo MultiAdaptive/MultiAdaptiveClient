@@ -417,6 +417,7 @@ func (fp *FilePool) Add(fds []*types.DA, local, sync bool) []error {
 		if err := fp.validateFileDataSignature(fd, local); err != nil {
 			errs[i] = err
 			invalidFdMeter.Mark(1)
+			log.Info("FilePool----validateFileDataSignature","err",err.Error())
 			continue
 		}
 		news = append(news, fd)
@@ -475,6 +476,7 @@ func (fp *FilePool) addFdsLocked(fds []*types.DA, local bool) []error {
 // add validates a fileData and inserts it into the non-executable queue for later
 // saved. 
 func (fp *FilePool) add(fd *types.DA, local bool) (replaced bool, err error) {
+	log.Info("FilePool----add","fd",common.Bytes2Hex(fd.Commitment.Marshal()))
 	var hash common.Hash
 	// If the fileData is already known, discard it
 	if fd.TxHash.Cmp(common.Hash{}) != 0 {

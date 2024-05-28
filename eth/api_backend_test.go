@@ -28,11 +28,11 @@ func TestEthAPIBackend_SendDAByParams(t *testing.T) {
 		println("kzg init domicon sdk err",err.Error())
 	}
 
-	client,err := ethclient.DialContext(context.TODO(),"http://43.203.215.230:"+port)
+	client,err := ethclient.DialContext(context.TODO(),"http://127.0.0.1:"+port)
 	if err != nil {
 		println("err---dial---",err.Error())
 	}
-	index := 1
+	index := 0
 	length := 1024
 	s := strconv.Itoa(index)
 	data := bytes.Repeat([]byte(s), 1024)
