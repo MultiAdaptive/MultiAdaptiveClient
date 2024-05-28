@@ -299,10 +299,6 @@ func makeExtraData(extra []byte) []byte {
 // NOTE, some of these services probably need to be moved to somewhere else.
 func (s *Ethereum) APIs() []rpc.API {
 	apis := ethapi.GetAPIs(s.APIBackend)
-
-	//// Append any APIs exposed explicitly by the consensus engine
-	//apis = append(apis, s.engine.APIs(s.BlockChain())...)
-
 	// Append all the local APIs and return
 	return append(apis, []rpc.API{
 		{
@@ -337,28 +333,18 @@ func (s *Ethereum) SetEtherbase(etherbase common.Address) {
 	s.lock.Unlock()
 }
 
-
-
-//func (s *Ethereum) IsMining() bool      { return s.miner.Mining() }
-//func (s *Ethereum) Miner() *miner.Miner { return s.miner }
-
 func (s *Ethereum) AccountManager() *accounts.Manager  { return s.accountManager }
 func (s *Ethereum) BlockChain() *core.BlockChain       { return s.blockchain }
-//func (s *Ethereum) TxPool() *txpool.TxPool             { return s.txPool }
 func (s *Ethereum) DB() ethdb.Database 				   { return s.blockchain.Db()}
 func (s *Ethereum) FilePool() *filedatapool.FilePool   { return s.fdPool }
 func (s *Ethereum) EventMux() *event.TypeMux           { return s.eventMux }
-//func (s *Ethereum) Engine() consensus.Engine           { return s.engine }
 func (s *Ethereum) ChainDb() ethdb.Database            { return s.chainDb }
 func (s *Ethereum) IsListening() bool                  { return true } // Always listening
-//func (s *Ethereum) Downloader() *downloader.Downloader { return s.handler.downloader }
 func (s *Ethereum) Synced() bool                       { return s.handler.synced.Load() }
 func (s *Ethereum) SetSynced()                         { s.handler.enableSyncedFeatures() }
 func (s *Ethereum) ArchiveMode() bool                  { return s.config.NoPruning }
-//func (s *Ethereum) BloomIndexer() *core.ChainIndexer   { return s.bloomIndexer }
 func (s *Ethereum) Merger() *consensus.Merger          { return s.merger }
 func (s *Ethereum) SyncMode() downloader.SyncMode {
-	//mode, _ := s.handler.chainSync.modeAndLocalHead()
 	return downloader.FullSync
 }
 
@@ -376,13 +362,8 @@ func (s *Ethereum) Protocols() []p2p.Protocol {
 // Ethereum protocol implementation.
 func (s *Ethereum) Start() error {
 	eth.StartENRUpdater(s.blockchain, s.p2pServer.LocalNode())
-
-	//// Start the bloom bits servicing goroutines
-	//s.startBloomHandlers(params.BloomBitsBlocks)
-
 	// Regularly update shutdown marker
 	s.shutdownTracker.Start()
-
 	// Figure out a max peers count based on the server limits
 	maxPeers := s.p2pServer.MaxPeers
 	if s.config.LightServ > 0 {
@@ -416,7 +397,6 @@ func (s *Ethereum) Stop() error {
 
 	// Clean shutdown marker as the last thing before closing db
 	s.shutdownTracker.Stop()
-
 	s.chainDb.Close()
 	s.eventMux.Stop()
 

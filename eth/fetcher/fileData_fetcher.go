@@ -76,7 +76,7 @@ var (
 	fdReplyOtherRejectMeter = metrics.NewRegisteredMeter("eth/fetcher/filedata/replies/otherreject", nil)
 
 	fdFetcherWaitingPeers   = metrics.NewRegisteredGauge("eth/fetcher/filedata/waiting/peers", nil)
-    fdFetcherWaitingHashes  = metrics.NewRegisteredGauge("eth/fetcher/filedata/waiting/hashes", nil)
+      fdFetcherWaitingHashes  = metrics.NewRegisteredGauge("eth/fetcher/filedata/waiting/hashes", nil)
 	//fdFetcherQueueingPeers  = metrics.NewRegisteredGauge("eth/fetcher/filedata/queueing/peers", nil)
 	//fdFetcherQueueingHashes = metrics.NewRegisteredGauge("eth/fetcher/filedata/queueing/hashes", nil)
 	fdFetcherFetchingPeers  = metrics.NewRegisteredGauge("eth/fetcher/filedata/fetching/peers", nil)

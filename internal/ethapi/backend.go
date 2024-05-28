@@ -55,8 +55,8 @@ type Backend interface {
 	// FileData pool API
 	SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte) ([]byte,error)
 	BatchSendDA(datas [][]byte) ([][]byte,[]error)
-	GetFileDataByHash(hash common.Hash) (*types.DA,filedatapool.DISK_FILEDATA_STATE,error)
-	GetFileDataByCommitment(comimt []byte) (*types.DA, error)
+	GetDAByHash(hash common.Hash) (*types.DA,filedatapool.DISK_FILEDATA_STATE,error)
+	GetDAByCommitment(comimt []byte) (*types.DA, error)
 	SubscribeNewFileDataEvent(chan<- core.NewFileDataEvent) event.Subscription
 	ChainConfig() *params.ChainConfig
 
@@ -72,7 +72,7 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Service:   NewBlockChainAPI(apiBackend),
 		},  {
 			Namespace: "eth",
-			Service:   NewFileDataAPI(apiBackend),
+			Service:   NewDAAPI(apiBackend),
 		}, {
 			Namespace: "debug",
 			Service:   NewDebugAPI(apiBackend),

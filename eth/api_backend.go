@@ -100,17 +100,6 @@ func (b *EthAPIBackend) GetTd(ctx context.Context) *big.Int {
 	return b.eth.blockchain.GetTd()
 }
 
-// 上传文件的接口
-func (b *EthAPIBackend) UploadFileData(data []byte) error {
-	//decode data to struct
-	fd := new(types.DA)
-	err := rlp.DecodeBytes(data, fd)
-	if err != nil {
-		return err
-	}
-	return b.eth.fdPool.Add([]*types.DA{fd}, true, false)[0]
-}
-
 func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,dasKey [32]byte) ([]byte,error) {
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
@@ -152,18 +141,18 @@ func (b *EthAPIBackend) BatchSendDA(datas [][]byte) ([][]byte,[]error) {
 	return signHashes,errlist
 }
 
-func (b *EthAPIBackend) GetFileDataByHash(hash common.Hash) (*types.DA,filedatapool.DISK_FILEDATA_STATE,error) {
+func (b *EthAPIBackend) GetDAByHash(hash common.Hash) (*types.DA,filedatapool.DISK_FILEDATA_STATE,error) {
 	fd,state,err := b.eth.fdPool.Get(hash)
-	log.Info("EthAPIBackend-----GetFileDataByHash", "txHash", hash.String())
+	log.Info("EthAPIBackend-----GetDAByHash", "txHash", hash.String())
 	if fd != nil {
 		return fd,state,nil
 	}
 	return nil,state ,err
 }
 
-func (b *EthAPIBackend) GetFileDataByCommitment(comimt []byte) (*types.DA, error) {
+func (b *EthAPIBackend) GetDAByCommitment(comimt []byte) (*types.DA, error) {
 	fd,err := b.eth.fdPool.GetDAByCommit(comimt)
-	log.Info("EthAPIBackend-----GetFileDataByCommitment", "comimt", common.Bytes2Hex(comimt))
+	log.Info("EthAPIBackend-----GetDAByCommitment", "comimt", common.Bytes2Hex(comimt))
 	if fd != nil {
 		return fd, nil
 	}
@@ -183,11 +172,9 @@ func (b *EthAPIBackend) GetTransaction(ctx context.Context, txHash common.Hash) 
 	return tx, blockHash, blockNumber, index, nil
 }
 
-
 func (b *EthAPIBackend) SubscribeNewFileDataEvent(ch chan<- core.NewFileDataEvent) event.Subscription {
 	return b.eth.fdPool.SubscribenFileDatas(ch)
 }
-
 
 func (b *EthAPIBackend) ChainDb() ethdb.Database {
 	return b.eth.ChainDb()

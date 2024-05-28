@@ -631,7 +631,7 @@ func (s *BlockChainAPI) rpcMarshalBlock(ctx context.Context, b *types.Block, inc
 }
 
 // RPCFileData represents a fileData that will serialize to the RPC representation of a fileData
-type RPCFileData struct {
+type RPCDA struct {
 	Sender     common.Address `json:"sender"`
 	Length     hexutil.Uint64 `json:"length"`
 	Index      hexutil.Uint64 `json:"index"`
@@ -641,8 +641,8 @@ type RPCFileData struct {
 	TxHash     common.Hash    `json:"txhash"`
 }
 
-func NewRPCFileData(fd *types.DA) *RPCFileData {
-	result := &RPCFileData{
+func NewRPCDA(fd *types.DA) *RPCDA {
+	result := &RPCDA{
 		Sender:     fd.Sender,
 		Length:     hexutil.Uint64(fd.Length),
 		Index:      hexutil.Uint64(fd.Index),
@@ -838,38 +838,38 @@ type accessListResult struct {
 	GasUsed    hexutil.Uint64    `json:"gasUsed"`
 }
 
-type FileDataAPI struct {
+type DAAPI struct {
 	b      Backend
 	signer types.Signer
 }
 
-func NewFileDataAPI(b Backend) *FileDataAPI {
+func NewDAAPI(b Backend) *DAAPI {
 	signer := types.LatestSigner(b.ChainConfig())
-	return &FileDataAPI{b, signer}
+	return &DAAPI{b, signer}
 }
 
-func (f *FileDataAPI) SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte) ([]byte,error) {
+func (f *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte) ([]byte,error) {
 	return f.b.SendDAByParams(sender,index,length,commitment,data,dasKey)
 }
 
-func (f *FileDataAPI) GetFileDataByHash(hash common.Hash) (*RPCFileData, error) {
+func (f *DAAPI) GetFileDataByHash(hash common.Hash) (*RPCDA, error) {
 	log.Info("FileDataAPI----", "GetFileDataByHash---called--", hash.String())
-	fd, _, err := f.b.GetFileDataByHash(hash)
+	fd, _, err := f.b.GetDAByHash(hash)
 	if err != nil {
 		return nil, err
 	}
-	rpcFd := NewRPCFileData(fd)
+	rpcFd := NewRPCDA(fd)
 	return rpcFd, nil
 }
 
-func (f *FileDataAPI) GetFileDataByCommitment(comimt string) (*RPCFileData, error) {
+func (f *DAAPI) GetDAByCommitment(comimt string) (*RPCDA, error) {
 	log.Info("FileDataAPI----", "GetFileDataByCommitment---called--comimt", comimt)
 	data := common.Hex2Bytes(comimt)
-	fd, err := f.b.GetFileDataByCommitment(data)
+	fd, err := f.b.GetDAByCommitment(data)
 	if err != nil {
 		return nil, err
 	}
-	rpcFd := NewRPCFileData(fd)
+	rpcFd := NewRPCDA(fd)
 	return rpcFd, nil
 }
 
