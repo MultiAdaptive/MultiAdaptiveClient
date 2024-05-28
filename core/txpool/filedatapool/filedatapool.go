@@ -400,7 +400,7 @@ func (fp *FilePool) Add(fds []*types.DA, local, sync bool) []error {
 	for i, fd := range fds {
 		// If the fileData is known, pre-set the error slot
 		var hashData  common.Hash
-		if len(fd.TxHash) != 0 {
+		if fd.TxHash.Cmp(common.Hash{}) != 0 {
 			hashData = fd.TxHash
 			txHash := fd.TxHash.String()
 			log.Info("FilePool----Add","txHash",txHash)
@@ -477,7 +477,7 @@ func (fp *FilePool) addFdsLocked(fds []*types.DA, local bool) []error {
 func (fp *FilePool) add(fd *types.DA, local bool) (replaced bool, err error) {
 	var hash common.Hash
 	// If the fileData is already known, discard it
-	if len(fd.TxHash) != 0 {
+	if fd.TxHash.Cmp(common.Hash{}) != 0 {
 		hash = fd.TxHash
 	}else {
 		hash = common.BytesToHash(fd.Commitment.Marshal())
@@ -617,7 +617,9 @@ func (t *lookup) Add(fd *types.DA) {
 	t.slots += 1
 	slotsGauge.Update(int64(t.slots))
 	log.Info("Add-----加进来了")
-	t.collector[fd.TxHash] = fd
+	if fd.TxHash.Cmp(common.Hash{}) != 0 {
+		t.collector[fd.TxHash] = fd
+	}
 	hash := common.BytesToHash(fd.Commitment.Marshal())
 	t.collector[hash] = fd
 }

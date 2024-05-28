@@ -88,9 +88,9 @@ func (cs *chainSyncer) loop() {
 	defer cs.force.Stop()
 
 	for  {
-		if !cs.forced {
-			cs.startSync()
-		}
+		//if !cs.forced {
+		//	cs.startSync()
+		//}
 
 		select {
 		case  <-cs.doneCh:
