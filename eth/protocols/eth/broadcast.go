@@ -58,7 +58,7 @@ func (p *Peer) broadcastFileData() {
 				//size        common.StorageSize
 			)
 			for i := 0; i < len(queue) ; i++ {
-				if fd,_,err := p.fdpool.Get(queue[i]); fd != nil && err == nil{
+				if fd,err := p.fdpool.Get(queue[i]); fd != nil && err == nil{
 					fds = append(fds, fd)
 				}
 				hashesCount++
@@ -125,7 +125,7 @@ func (p *Peer) announceFileDatas() {
 				size         common.StorageSize
 			)
 			for count = 0; count < len(queue) && size < maxTxPacketSize; count++ {
-				if fd,_,err := p.fdpool.Get(queue[count]); fd != nil && err == nil {
+				if fd,err := p.fdpool.Get(queue[count]); fd != nil && err == nil {
 					sending = append(sending, queue[count])
 					sizes = append(sizes, uint32(fd.Size()))
 					size += common.HashLength

@@ -626,16 +626,16 @@ type RPCDA struct {
 }
 
 func NewRPCDA(fd *types.DA) *RPCDA {
+	coomitData := fd.Commitment.Marshal()
 	result := &RPCDA{
 		Sender:     fd.Sender,
 		Length:     hexutil.Uint64(fd.Length),
 		Index:      hexutil.Uint64(fd.Index),
-		Commitment: hexutil.Bytes(fd.Commitment.Marshal()),
+		Commitment: hexutil.Bytes(coomitData),
 		Data:       hexutil.Bytes(fd.Data),
 		Sign:       hexutil.Bytes(fd.SignData),
 		TxHash:     fd.TxHash,
 	}
-
 	return result
 }
 
@@ -852,7 +852,7 @@ func (f *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitm
 func (f *DAAPI) GetDAByHash(hash common.Hash) (*RPCDA, error) {
 	log.Info("FileDataAPI----", "GetFileDataByHash---called--", hash.String())
 	fd,err := f.b.GetDAByHash(hash)
-	if err != nil {
+	if err != nil && fd == nil{
 		return nil, err
 	}
 	rpcFd := NewRPCDA(fd)

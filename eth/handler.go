@@ -28,7 +28,6 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/forkid"
 	"github.com/ethereum/go-ethereum/core/rawdb"
-	pool "github.com/ethereum/go-ethereum/core/txpool/filedatapool"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/eth/fetcher"
@@ -65,7 +64,7 @@ type fileDataPool interface {
 
 	// Get retrieves the fileData from local fileDataPool with given
 	// tx hash.
-	Get(hash common.Hash) (*types.DA,pool.DISK_FILEDATA_STATE,error)
+	Get(hash common.Hash) (*types.DA,error)
 
 	GetDAByCommit(commit []byte) (*types.DA,error)
 

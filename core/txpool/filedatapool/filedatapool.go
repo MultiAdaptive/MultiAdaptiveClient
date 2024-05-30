@@ -349,6 +349,8 @@ Lable:
 			}
 			file.Close()
 		}
+	}else {
+		return fd,nil
 	}
 	return nil,nil
 }
