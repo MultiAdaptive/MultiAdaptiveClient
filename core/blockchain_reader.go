@@ -24,12 +24,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state/snapshot"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie"
 )
-
-
 
 // CurrentBlock retrieves the current head block of the canonical chain. The
 // block is retrieved from the blockchain's internal cache.
@@ -40,6 +37,13 @@ func (bc *BlockChain) CurrentBlock() *types.Header {
 	}
 	head := rawdb.ReadHeadBlockHash(bc.db)
 	if head == (common.Hash{}) {
+		num,err := db.GetLastBlockNum(bc.sqlDb)
+		if err == nil {
+			block,err := db.GetBlockByNum(bc.sqlDb,num)
+			if err == nil {
+				return block.Header()
+			}
+		}
 		return nil
 	}
 	// Make sure the entire head block is available
@@ -69,6 +73,12 @@ func (bc *BlockChain) GetBlock(hash common.Hash, number uint64) *types.Block {
 	}
 	block := rawdb.ReadBlock(bc.db, hash, number)
 	if block == nil {
+		block,err := db.GetBlockByNum(bc.sqlDb,number)
+		if err != nil {
+			return nil
+		}else {
+			return block
+		}
 		return nil
 	}
 	// Cache the found block for next time and return
@@ -121,7 +131,6 @@ func (bc *BlockChain) GetFileDatasByHash(hash common.Hash) []*types.DA {
 	return fds
 }
 
-//TODO fix this bug
 // GetTd retrieves a block's total difficulty in the canonical chain from the
 // database by hash and number, caching it if found.
 func (bc *BlockChain) GetTd() *big.Int {
@@ -183,24 +192,3 @@ func (bc *BlockChain) Genesis() *types.Block {
 func (bc *BlockChain) TrieDB() *trie.Database {
 	return bc.triedb
 }
-
-// Db returns the disk database 
-func (bc *BlockChain) Db() ethdb.Database {
-	return bc.db
-}
-
-//// SubscribeRemovedLogsEvent registers a subscription of RemovedLogsEvent.
-//func (bc *BlockChain) SubscribeRemovedLogsEvent(ch chan<- RemovedLogsEvent) event.Subscription {
-//	return bc.scope.Track(bc.rmLogsFeed.Subscribe(ch))
-//}
-//
-//// SubscribeChainEvent registers a subscription of ChainEvent.
-//func (bc *BlockChain) SubscribeChainEvent(ch chan<- ChainEvent) event.Subscription {
-//	return bc.scope.Track(bc.chainFeed.Subscribe(ch))
-//}
-//
-//
-//// SubscribeLogsEvent registers a subscription of []*types.Log.
-//func (bc *BlockChain) SubscribeLogsEvent(ch chan<- []*types.Log) event.Subscription {
-//	return bc.scope.Track(bc.logsFeed.Subscribe(ch))
-//}

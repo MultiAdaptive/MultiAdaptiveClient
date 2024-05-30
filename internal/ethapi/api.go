@@ -328,6 +328,14 @@ func NewBlockChainAPI(b Backend) *BlockChainAPI {
 	return &BlockChainAPI{b}
 }
 
+
+// BlockNumber returns the block number of the chain head.
+func (s *BlockChainAPI) BlockNumber() hexutil.Uint64 {
+	header := s.b.CurrentBlock() // latest header should always be available
+	return hexutil.Uint64(header.Number.Uint64())
+}
+
+
 // ChainId is the EIP-155 replay-protection chain id for the current Ethereum chain config.
 //
 // Note, this method does not conform to EIP-695 because the configured chain ID is always
@@ -406,6 +414,7 @@ func (s *BlockChainAPI) GetBlockByHash(ctx context.Context, hash common.Hash, fu
 	return nil, err
 }
 
+
 // OverrideAccount indicates the overriding fields of account during the execution
 // of a message call.
 // Note, state and stateDiff can't be specified at the same time. If state is
@@ -475,7 +484,6 @@ type BlockOverrides struct {
 }
 // ChainContextBackend provides methods required to implement ChainContext.
 type ChainContextBackend interface {
-	//Engine() consensus.Engine
 	HeaderByNumber(context.Context, rpc.BlockNumber) (*types.Header, error)
 }
 
@@ -1015,50 +1023,50 @@ func marshalReceipt(receipt *types.Receipt, blockHash common.Hash, blockNumber u
 	return fields
 }
 
-// sign is a helper function that signs a transaction with the private key of the given address.
-func (s *TransactionAPI) sign(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
-	// Look up the wallet containing the requested signer
-	account := accounts.Account{Address: addr}
-
-	wallet, err := s.b.AccountManager().Find(account)
-	if err != nil {
-		return nil, err
-	}
-	// Request the wallet to sign the transaction
-	return wallet.SignTx(account, tx, s.b.ChainConfig().ChainID)
-}
-
-
-// Sign calculates an ECDSA signature for:
-// keccak256("\x19Ethereum Signed Message:\n" + len(message) + message).
+//// sign is a helper function that signs a transaction with the private key of the given address.
+//func (s *TransactionAPI) sign(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
+//	// Look up the wallet containing the requested signer
+//	account := accounts.Account{Address: addr}
 //
-// Note, the produced signature conforms to the secp256k1 curve R, S and V values,
-// where the V value will be 27 or 28 for legacy reasons.
-//
-// The account associated with addr must be unlocked.
-//
-// https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_sign
-func (s *TransactionAPI) Sign(addr common.Address, data hexutil.Bytes) (hexutil.Bytes, error) {
-	// Look up the wallet containing the requested signer
-	account := accounts.Account{Address: addr}
+//	wallet, err := s.b.AccountManager().Find(account)
+//	if err != nil {
+//		return nil, err
+//	}
+//	// Request the wallet to sign the transaction
+//	return wallet.SignTx(account, tx, s.b.ChainConfig().ChainID)
+//}
 
-	wallet, err := s.b.AccountManager().Find(account)
-	if err != nil {
-		return nil, err
-	}
-	// Sign the requested hash with the wallet
-	signature, err := wallet.SignText(account, data)
-	if err == nil {
-		signature[64] += 27 // Transform V from 0/1 to 27/28 according to the yellow paper
-	}
-	return signature, err
-}
 
-// SignTransactionResult represents a RLP encoded signed transaction.
-type SignTransactionResult struct {
-	Raw hexutil.Bytes      `json:"raw"`
-	Tx  *types.Transaction `json:"tx"`
-}
+//// Sign calculates an ECDSA signature for:
+//// keccak256("\x19Ethereum Signed Message:\n" + len(message) + message).
+////
+//// Note, the produced signature conforms to the secp256k1 curve R, S and V values,
+//// where the V value will be 27 or 28 for legacy reasons.
+////
+//// The account associated with addr must be unlocked.
+////
+//// https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_sign
+//func (s *TransactionAPI) Sign(addr common.Address, data hexutil.Bytes) (hexutil.Bytes, error) {
+//	// Look up the wallet containing the requested signer
+//	account := accounts.Account{Address: addr}
+//
+//	wallet, err := s.b.AccountManager().Find(account)
+//	if err != nil {
+//		return nil, err
+//	}
+//	// Sign the requested hash with the wallet
+//	signature, err := wallet.SignText(account, data)
+//	if err == nil {
+//		signature[64] += 27 // Transform V from 0/1 to 27/28 according to the yellow paper
+//	}
+//	return signature, err
+//}
+//
+//// SignTransactionResult represents a RLP encoded signed transaction.
+//type SignTransactionResult struct {
+//	Raw hexutil.Bytes      `json:"raw"`
+//	Tx  *types.Transaction `json:"tx"`
+//}
 
 
 // DebugAPI is the collection of Ethereum APIs exposed over the debugging

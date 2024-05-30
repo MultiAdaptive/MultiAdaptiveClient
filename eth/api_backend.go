@@ -19,6 +19,7 @@ package eth
 import (
 	"context"
 	"errors"
+	"github.com/ethereum/go-ethereum/ethdb/db"
 	"math/big"
 	"time"
 
@@ -65,9 +66,7 @@ func (b *EthAPIBackend) HeaderByNumber(ctx context.Context, number rpc.BlockNumb
 	return nil,nil
 }
 
-
 func (b *EthAPIBackend) BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Block, error) {
-
 	// Otherwise resolve and return the block
 	if number == rpc.LatestBlockNumber {
 		header := b.eth.blockchain.CurrentBlock()
@@ -94,6 +93,7 @@ func (b *EthAPIBackend) BlockByNumberOrHash(ctx context.Context, blockNrOrHash r
 	}
 	return nil, errors.New("invalid arguments; neither block nor hash specified")
 }
+
 
 func (b *EthAPIBackend) GetTd(ctx context.Context) *big.Int {
 	return b.eth.blockchain.GetTd()
@@ -199,6 +199,15 @@ func (b *EthAPIBackend) GetPoolFileData(hash common.Hash) *types.DA {
 
 func (b *EthAPIBackend) GetTransaction(ctx context.Context, txHash common.Hash) (*types.Transaction, common.Hash, uint64, uint64, error) {
 	tx, blockHash, blockNumber, index := rawdb.ReadTransaction(b.eth.ChainDb(), txHash)
+	if tx == nil{
+		tx = new(types.Transaction)
+		txData := db.GetTransactionByHash(b.eth.sqlDb,txHash)
+		data := common.Hex2Bytes(txData.Encoded)
+		tx.UnmarshalBinary(data)
+		block,_ := db.GetBlockByNum(b.eth.sqlDb,uint64(txData.BlockNum))
+		blockHash = block.Hash()
+		blockNumber = block.NumberU64()
+	}
 	return tx, blockHash, blockNumber, index, nil
 }
 
