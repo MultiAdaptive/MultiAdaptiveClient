@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/tyler-smith/go-bip39"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/accounts/scwallet"
@@ -42,6 +41,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/tyler-smith/go-bip39"
 )
 
 // EthereumAccountAPI provides an API to access accounts managed by this node.
@@ -355,19 +355,6 @@ type StorageResult struct {
 	Proof []string     `json:"proof"`
 }
 
-// proofList implements ethdb.KeyValueWriter and collects the proofs as
-// hex-strings for delivery to rpc-caller.
-type proofList []string
-
-func (n *proofList) Put(key []byte, value []byte) error {
-	*n = append(*n, hexutil.Encode(value))
-	return nil
-}
-
-func (n *proofList) Delete(key []byte) error {
-	panic("not supported")
-}
-
 // decodeHash parses a hex-encoded 32-byte hash. The input may optionally
 // be prefixed by 0x and can have a byte length up to 32.
 func decodeHash(s string) (h common.Hash, inputLength int, err error) {
@@ -386,7 +373,6 @@ func decodeHash(s string) (h common.Hash, inputLength int, err error) {
 	}
 	return common.BytesToHash(b), len(b), nil
 }
-
 
 // GetBlockByNumber returns the requested canonical block.
 //   - When blockNr is -1 the chain pending block is returned.
@@ -419,8 +405,6 @@ func (s *BlockChainAPI) GetBlockByHash(ctx context.Context, hash common.Hash, fu
 	}
 	return nil, err
 }
-
-
 
 // OverrideAccount indicates the overriding fields of account during the execution
 // of a message call.
@@ -655,6 +639,19 @@ func NewRPCDA(fd *types.DA) *RPCDA {
 	return result
 }
 
+type RPCDAs struct {
+	DAs  []*RPCDA      `json:"das"`
+	Errs []error      `json:"errs"`
+}
+
+func NewRPCDAs(length int) *RPCDAs {
+	return &RPCDAs{
+		DAs: make([]*RPCDA,length),
+		Errs: make([]error,length),
+	}
+}
+
+
 type RPCTxHashes struct {
 	TxHashes []common.Hash `json:"txhashes"`
 }
@@ -852,14 +849,27 @@ func (f *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitm
 	return f.b.SendDAByParams(sender,index,length,commitment,data,dasKey)
 }
 
-func (f *DAAPI) GetFileDataByHash(hash common.Hash) (*RPCDA, error) {
+func (f *DAAPI) GetDAByHash(hash common.Hash) (*RPCDA, error) {
 	log.Info("FileDataAPI----", "GetFileDataByHash---called--", hash.String())
-	fd, _, err := f.b.GetDAByHash(hash)
+	fd,err := f.b.GetDAByHash(hash)
 	if err != nil {
 		return nil, err
 	}
 	rpcFd := NewRPCDA(fd)
 	return rpcFd, nil
+}
+
+func (f *DAAPI) GetBatchDAsByHashes(hashes []common.Hash) *RPCDAs {
+	das,errs := f.b.GetBatchDAsByHashes(hashes)
+	res := NewRPCDAs(len(hashes))
+	for index,da := range das {
+		rpcda := NewRPCDA(da)
+		res.DAs[index] = rpcda
+	}
+	for index,err := range errs{
+		res.Errs[index] = err
+	}
+	return res
 }
 
 func (f *DAAPI) GetDAByCommitment(comimt string) (*RPCDA, error) {
@@ -873,6 +883,24 @@ func (f *DAAPI) GetDAByCommitment(comimt string) (*RPCDA, error) {
 	return rpcFd, nil
 }
 
+func (f *DAAPI) GetBatchDAsByCommitments(commitments []string) *RPCDAs {
+	commitmenDatas := make([][]byte,len(commitments))
+	for index,commit := range commitments{
+		data := common.Hex2Bytes(commit)
+		commitmenDatas[index] = data
+	}
+
+	das,errs := f.b.GetBatchDAsByCommitments(commitmenDatas)
+	res := NewRPCDAs(len(commitments))
+	for index,da := range das {
+		rpcda := NewRPCDA(da)
+		res.DAs[index] = rpcda
+	}
+	for index,err := range errs{
+		res.Errs[index] = err
+	}
+	return res
+}
 
 // TransactionAPI exposes methods for reading and creating transaction data.
 type TransactionAPI struct {

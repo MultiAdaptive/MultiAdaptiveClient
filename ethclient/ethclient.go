@@ -218,13 +218,19 @@ func (ec *Client) HeaderByNumber(ctx context.Context, number *big.Int) (*types.H
 
 type RPCDA struct {
 	Sender         common.Address   `json:"sender"`
-	Length         hexutil.Uint64		`json:"length"`
-	Index          hexutil.Uint64		`json:"index"`
+	Length         hexutil.Uint64	  `json:"length"`
+	Index          hexutil.Uint64	  `json:"index"`
 	Commitment     hexutil.Bytes    `json:"commitment"`	
-	Data           hexutil.Bytes		`json:"data"`
-	Sign  		  	 hexutil.Bytes		`json:"sign"`
+	Data           hexutil.Bytes	  `json:"data"`
+	Sign  	   hexutil.Bytes	  `json:"sign"`
 	TxHash         common.Hash      `json:"txhash"`
 }
+
+type RPCDAs struct {
+	DAs  []*RPCDA      `json:"das"`
+	Errs []error      `json:"errs"`
+}
+
 
 type rpcTransaction struct {
 	tx *types.Transaction
@@ -296,23 +302,16 @@ func (ec *Client) TransactionCount(ctx context.Context, blockHash common.Hash) (
 }
 
 
-func (ec *Client) UploadFileData(ctx context.Context,data []byte) error {
-	var err error
-	tmpErr := ec.c.CallContext(ctx,&err,"eth_uploadFileData",data) 
-	return tmpErr
-
+func (ec *Client) SendDAByParams(ctx context.Context,sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte) ([]byte,error)  {
+	var result []byte
+	err := ec.c.CallContext(ctx,&result,"eth_sendDAByParams",sender,index,length,commitment,data,dasKey)
+	return result,err
 }
 
-func (ec *Client) UploadFileDataByParams(ctx context.Context,sender common.Address,submitter common.Address,index uint64,length uint64,gasprice uint64,data []byte,commitment []byte,sign []byte,txHash common.Hash) error {
-	var err error
-	tmpErr := ec.c.CallContext(ctx,&err,"eth_uploadFileDataByParams",sender,submitter,index,length,gasprice,data,commitment,sign,txHash) 
-	return tmpErr
-}
-
-func (ec *Client) GetBatchFileDataByHashes(ctx context.Context,hashes rpc.TxHashes) (rpc.Result,error) {
-	var res rpc.Result
-	err := ec.c.CallContext(ctx,&res,"eth_batchFileDataByHashes",hashes)
-	return res,err
+func (ec *Client) SendBatchDAs(ctx context.Context,datas [][]byte) ([][]byte,error) {
+	var res rpc.SignatureResult
+	err := ec.c.CallContext(ctx,res,"eth_sendBatchDAs",datas)
+	return res.Signs, err
 }
 
 func (ec *Client) GetDAByHash(ctx context.Context,hash common.Hash) (RPCDA,error){
@@ -322,17 +321,23 @@ func (ec *Client) GetDAByHash(ctx context.Context,hash common.Hash) (RPCDA,error
 	return fd,err
 }
 
-func (ec *Client) GetDAByCommitment(ctx context.Context,comimt string) (RPCDA, error) {
+func (ec *Client) GetBatchDAsByHashes(ctx context.Context,hashes rpc.TxHashes) (RPCDAs,error) {
+	var res RPCDAs
+	err := ec.c.CallContext(ctx,&res,"eth_getBatchDAByHashes",hashes)
+	return res,err
+}
+
+func (ec *Client) GetDAByCommitment(ctx context.Context,commitment string) (RPCDA, error) {
 	var fd RPCDA
 	log.Info("client---GetDAByCommitment---iscalling---")
-	err := ec.c.CallContext(ctx,&fd,"eth_getDAByCommitment",comimt)
+	err := ec.c.CallContext(ctx,&fd,"eth_getDAByCommitment",commitment)
 	return fd,err
 }
 
-func (ec *Client) ChangeCurrentState(ctx context.Context,state int,blockNr rpc.BlockNumber) (bool,error) {
-	var flag bool
-	err := ec.c.CallContext(ctx,&flag,"eth_changeCurrentState",state,blockNr.String())
-	return flag,err
+func (ec *Client) GetBatchDAByCommitments(ctx context.Context,commitments []string) (RPCDAs, error){
+	var res RPCDAs
+	err := ec.c.CallContext(ctx,&res,"eth_getBatchDAByCommitments",commitments)
+	return res,err
 }
 
 // TransactionInBlock returns a single transaction at index in the given block.
@@ -366,24 +371,24 @@ func (ec *Client) TransactionReceipt(ctx context.Context, txHash common.Hash) (*
 	return r, err
 }
 
-// SyncProgress retrieves the current progress of the sync algorithm. If there's
-// no sync currently running, it returns nil.
-func (ec *Client) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, error) {
-	var raw json.RawMessage
-	if err := ec.c.CallContext(ctx, &raw, "eth_syncing"); err != nil {
-		return nil, err
-	}
-	// Handle the possible response types
-	var syncing bool
-	if err := json.Unmarshal(raw, &syncing); err == nil {
-		return nil, nil // Not syncing (always false)
-	}
-	var p *rpcProgress
-	if err := json.Unmarshal(raw, &p); err != nil {
-		return nil, err
-	}
-	return p.toSyncProgress(), nil
-}
+//// SyncProgress retrieves the current progress of the sync algorithm. If there's
+//// no sync currently running, it returns nil.
+//func (ec *Client) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, error) {
+//	var raw json.RawMessage
+//	if err := ec.c.CallContext(ctx, &raw, "eth_syncing"); err != nil {
+//		return nil, err
+//	}
+//	// Handle the possible response types
+//	var syncing bool
+//	if err := json.Unmarshal(raw, &syncing); err == nil {
+//		return nil, nil // Not syncing (always false)
+//	}
+//	var p *rpcProgress
+//	if err := json.Unmarshal(raw, &p); err != nil {
+//		return nil, err
+//	}
+//	return p.toSyncProgress(), nil
+//}
 
 // SubscribeNewHead subscribes to notifications about the current blockchain head
 // on the given channel.
@@ -522,58 +527,6 @@ func (ec *Client) CallContractAtHash(ctx context.Context, msg ethereum.CallMsg, 
 	return hex, nil
 }
 
-// SuggestGasPrice retrieves the currently suggested gas price to allow a timely
-// execution of a transaction.
-func (ec *Client) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
-	var hex hexutil.Big
-	if err := ec.c.CallContext(ctx, &hex, "eth_gasPrice"); err != nil {
-		return nil, err
-	}
-	return (*big.Int)(&hex), nil
-}
-
-// SuggestGasTipCap retrieves the currently suggested gas tip cap after 1559 to
-// allow a timely execution of a transaction.
-func (ec *Client) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
-	var hex hexutil.Big
-	if err := ec.c.CallContext(ctx, &hex, "eth_maxPriorityFeePerGas"); err != nil {
-		return nil, err
-	}
-	return (*big.Int)(&hex), nil
-}
-
-type feeHistoryResultMarshaling struct {
-	OldestBlock  *hexutil.Big     `json:"oldestBlock"`
-	Reward       [][]*hexutil.Big `json:"reward,omitempty"`
-	BaseFee      []*hexutil.Big   `json:"baseFeePerGas,omitempty"`
-	GasUsedRatio []float64        `json:"gasUsedRatio"`
-}
-
-// FeeHistory retrieves the fee market history.
-func (ec *Client) FeeHistory(ctx context.Context, blockCount uint64, lastBlock *big.Int, rewardPercentiles []float64) (*ethereum.FeeHistory, error) {
-	var res feeHistoryResultMarshaling
-	if err := ec.c.CallContext(ctx, &res, "eth_feeHistory", hexutil.Uint(blockCount), toBlockNumArg(lastBlock), rewardPercentiles); err != nil {
-		return nil, err
-	}
-	reward := make([][]*big.Int, len(res.Reward))
-	for i, r := range res.Reward {
-		reward[i] = make([]*big.Int, len(r))
-		for j, r := range r {
-			reward[i][j] = (*big.Int)(r)
-		}
-	}
-	baseFee := make([]*big.Int, len(res.BaseFee))
-	for i, b := range res.BaseFee {
-		baseFee[i] = (*big.Int)(b)
-	}
-	return &ethereum.FeeHistory{
-		OldestBlock:  (*big.Int)(res.OldestBlock),
-		Reward:       reward,
-		BaseFee:      baseFee,
-		GasUsedRatio: res.GasUsedRatio,
-	}, nil
-}
-
 // EstimateGas tries to estimate the gas needed to execute a specific transaction based on
 // the current pending state of the backend blockchain. There is no guarantee that this is
 // the true gas limit requirement as other transactions may be added or removed by miners,
@@ -599,12 +552,6 @@ func (ec *Client) SendTransaction(ctx context.Context, tx *types.Transaction) er
 	return ec.c.CallContext(ctx, nil, "eth_sendRawTransaction", hexutil.Encode(data))
 }
 
-
-func (ec *Client) SendDAByParams(ctx context.Context,sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte) ([]byte,error)  {
-	var result []byte
-	err := ec.c.CallContext(ctx,&result,"eth_sendDAByParams",sender,index,length,commitment,data,dasKey)
-	return result,err
-}
 
 func toBlockNumArg(number *big.Int) string {
 	if number == nil {
@@ -639,52 +586,4 @@ func toCallArg(msg ethereum.CallMsg) interface{} {
 		arg["gasPrice"] = (*hexutil.Big)(msg.GasPrice)
 	}
 	return arg
-}
-
-// rpcProgress is a copy of SyncProgress with hex-encoded fields.
-type rpcProgress struct {
-	StartingBlock hexutil.Uint64
-	CurrentBlock  hexutil.Uint64
-	HighestBlock  hexutil.Uint64
-
-	PulledStates hexutil.Uint64
-	KnownStates  hexutil.Uint64
-
-	SyncedAccounts      hexutil.Uint64
-	SyncedAccountBytes  hexutil.Uint64
-	SyncedBytecodes     hexutil.Uint64
-	SyncedBytecodeBytes hexutil.Uint64
-	SyncedStorage       hexutil.Uint64
-	SyncedStorageBytes  hexutil.Uint64
-	HealedTrienodes     hexutil.Uint64
-	HealedTrienodeBytes hexutil.Uint64
-	HealedBytecodes     hexutil.Uint64
-	HealedBytecodeBytes hexutil.Uint64
-	HealingTrienodes    hexutil.Uint64
-	HealingBytecode     hexutil.Uint64
-}
-
-func (p *rpcProgress) toSyncProgress() *ethereum.SyncProgress {
-	if p == nil {
-		return nil
-	}
-	return &ethereum.SyncProgress{
-		StartingBlock:       uint64(p.StartingBlock),
-		CurrentBlock:        uint64(p.CurrentBlock),
-		HighestBlock:        uint64(p.HighestBlock),
-		PulledStates:        uint64(p.PulledStates),
-		KnownStates:         uint64(p.KnownStates),
-		SyncedAccounts:      uint64(p.SyncedAccounts),
-		SyncedAccountBytes:  uint64(p.SyncedAccountBytes),
-		SyncedBytecodes:     uint64(p.SyncedBytecodes),
-		SyncedBytecodeBytes: uint64(p.SyncedBytecodeBytes),
-		SyncedStorage:       uint64(p.SyncedStorage),
-		SyncedStorageBytes:  uint64(p.SyncedStorageBytes),
-		HealedTrienodes:     uint64(p.HealedTrienodes),
-		HealedTrienodeBytes: uint64(p.HealedTrienodeBytes),
-		HealedBytecodes:     uint64(p.HealedBytecodes),
-		HealedBytecodeBytes: uint64(p.HealedBytecodeBytes),
-		HealingTrienodes:    uint64(p.HealingTrienodes),
-		HealingBytecode:     uint64(p.HealingBytecode),
-	}
 }

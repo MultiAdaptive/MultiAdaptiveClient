@@ -27,7 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/txpool/filedatapool"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
@@ -115,7 +114,7 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 	}
 }
 
-func (b *EthAPIBackend) BatchSendDA(datas [][]byte) ([][]byte,[]error) {
+func (b *EthAPIBackend) SendBatchDA(datas [][]byte) ([][]byte,[]error) {
 	var da types.DA
 	signHashes := make([][]byte,len(datas))
 	errlist   := make([]error,len(datas))
@@ -141,13 +140,28 @@ func (b *EthAPIBackend) BatchSendDA(datas [][]byte) ([][]byte,[]error) {
 	return signHashes,errlist
 }
 
-func (b *EthAPIBackend) GetDAByHash(hash common.Hash) (*types.DA,filedatapool.DISK_FILEDATA_STATE,error) {
-	fd,state,err := b.eth.fdPool.Get(hash)
+func (b *EthAPIBackend) GetDAByHash(hash common.Hash) (*types.DA,error) {
+	fd,err := b.eth.fdPool.Get(hash)
 	log.Info("EthAPIBackend-----GetDAByHash", "txHash", hash.String())
 	if fd != nil {
-		return fd,state,nil
+		return fd,nil
 	}
-	return nil,state ,err
+	return nil,err
+}
+
+func (b *EthAPIBackend) GetBatchDAsByHashes(hashes []common.Hash) ([]*types.DA,[]error) {
+	das := make([]*types.DA,len(hashes))
+	errs := make([]error,len(hashes))
+	for index,hash := range hashes {
+		da,err := b.eth.fdPool.Get(hash)
+		log.Info("EthAPIBackend-----GetDAByHash", "txHash", hash.String())
+		if da != nil {
+			das[index] = da
+		}else {
+			errs[index] = err
+		}
+	}
+	return das,errs
 }
 
 func (b *EthAPIBackend) GetDAByCommitment(comimt []byte) (*types.DA, error) {
@@ -159,8 +173,24 @@ func (b *EthAPIBackend) GetDAByCommitment(comimt []byte) (*types.DA, error) {
 	return nil, err
 }
 
+func (b *EthAPIBackend) GetBatchDAsByCommitments(commitments [][]byte) ([]*types.DA,[]error) {
+	das := make([]*types.DA,len(commitments))
+	errs := make([]error,len(commitments))
+	for index,commitment := range commitments {
+		chash := common.BytesToHash(commitment)
+		da,err := b.eth.fdPool.Get(chash)
+		log.Info("EthAPIBackend-----GetDAByCommitment", "commitmentHash", chash.String())
+		if da != nil {
+			das[index] = da
+		}else {
+			errs[index] = err
+		}
+	}
+	return das,errs
+}
+
 func (b *EthAPIBackend) GetPoolFileData(hash common.Hash) *types.DA {
-	fd,_,err := b.eth.fdPool.Get(hash)
+	fd,err := b.eth.fdPool.Get(hash)
 	if err != nil {
 		log.Info("GetPoolFileData---get", "err", err.Error())
 	}

@@ -88,10 +88,6 @@ func (cs *chainSyncer) loop() {
 	defer cs.force.Stop()
 
 	for  {
-		//if !cs.forced {
-		//	cs.startSync()
-		//}
-
 		select {
 		case  <-cs.doneCh:
 			cs.doneCh = nil
@@ -256,7 +252,6 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 						txData := tx.Data()
 						if len(txData) != 0 {
 							commitment := slice(txData)
-							log.Info("查看一下----","commitment",common.Bytes2Hex(commitment))
 							commitCache.Set(tx.Hash().String(),commitment)
 						}
 					}
@@ -305,7 +300,6 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	}
 
 	if len(daDatas) != 0 {
-		log.Info("processBlocks---------find da")
 		parentHashData,err := db.GetMaxIDDAStateHash(cs.db)
 		if err != nil {
 			parentHashData = ""

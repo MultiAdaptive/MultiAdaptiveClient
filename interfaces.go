@@ -124,11 +124,11 @@ type SyncProgress struct {
 	HealingBytecode  uint64 // Number of bytecodes pending
 }
 
-// ChainSyncReader wraps access to the node's current sync status. If there's no
-// sync currently running, it returns nil.
-type ChainSyncReader interface {
-	SyncProgress(ctx context.Context) (*SyncProgress, error)
-}
+//// ChainSyncReader wraps access to the node's current sync status. If there's no
+//// sync currently running, it returns nil.
+//type ChainSyncReader interface {
+//	SyncProgress(ctx context.Context) (*SyncProgress, error)
+//}
 
 // CallMsg contains parameters for contract calls.
 type CallMsg struct {
@@ -195,20 +195,6 @@ type TransactionSender interface {
 	SendTransaction(ctx context.Context, tx *types.Transaction) error
 }
 
-// GasPricer wraps the gas price oracle, which monitors the blockchain to determine the
-// optimal gas price given current fee market conditions.
-type GasPricer interface {
-	SuggestGasPrice(ctx context.Context) (*big.Int, error)
-}
-
-// FeeHistory provides recent fee market data that consumers can use to determine
-// a reasonable maxPriorityFeePerGas value.
-type FeeHistory struct {
-	OldestBlock  *big.Int     // block corresponding to first response value
-	Reward       [][]*big.Int // list every txs priority fee per block
-	BaseFee      []*big.Int   // list of each block's base fee
-	GasUsedRatio []float64    // ratio of gas used out of the total available limit
-}
 
 // GasEstimator wraps EstimateGas, which tries to estimate the gas needed to execute a
 // specific transaction based on the pending state. There is no guarantee that this is the
@@ -216,10 +202,4 @@ type FeeHistory struct {
 // it should provide a basis for setting a reasonable default.
 type GasEstimator interface {
 	EstimateGas(ctx context.Context, call CallMsg) (uint64, error)
-}
-
-// A PendingStateEventer provides access to real time notifications about changes to the
-// pending state.
-type PendingStateEventer interface {
-	SubscribePendingTransactions(ctx context.Context, ch chan<- *types.Transaction) (Subscription, error)
 }
