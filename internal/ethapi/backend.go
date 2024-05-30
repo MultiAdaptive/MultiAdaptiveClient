@@ -35,7 +35,6 @@ import (
 type Backend interface {
 	// General Ethereum API
 	//SyncProgress() ethereum.SyncProgress
-
 	ChainDb() ethdb.Database
 	AccountManager() *accounts.Manager
 	ExtRPCEnabled() bool
@@ -50,6 +49,9 @@ type Backend interface {
 	BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error)
 	BlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*types.Block, error)
 	GetTd(ctx context.Context) *big.Int
+
+	// Transaction pool API
+	GetTransaction(ctx context.Context, txHash common.Hash) (*types.Transaction, common.Hash, uint64, uint64, error)
 
 	// FileData pool API
 	SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte) ([]byte,error)
@@ -71,7 +73,10 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 		 {
 			Namespace: "eth",
 			Service:   NewBlockChainAPI(apiBackend),
-		},  {
+		},{
+			Namespace: "eth",
+			Service:   NewTransactionAPI(apiBackend, nonceLock),
+		}, {
 			Namespace: "eth",
 			Service:   NewDAAPI(apiBackend),
 		}, {

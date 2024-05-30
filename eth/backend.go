@@ -335,7 +335,7 @@ func (s *Ethereum) SetEtherbase(etherbase common.Address) {
 
 func (s *Ethereum) AccountManager() *accounts.Manager  { return s.accountManager }
 func (s *Ethereum) BlockChain() *core.BlockChain       { return s.blockchain }
-func (s *Ethereum) DB() ethdb.Database 				   { return s.blockchain.Db()}
+//func (s *Ethereum) DB() ethdb.Database 				   { return s.blockchain.Db()}
 func (s *Ethereum) FilePool() *filedatapool.FilePool   { return s.fdPool }
 func (s *Ethereum) EventMux() *event.TypeMux           { return s.eventMux }
 func (s *Ethereum) ChainDb() ethdb.Database            { return s.chainDb }
