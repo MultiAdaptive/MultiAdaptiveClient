@@ -32,7 +32,7 @@ func TestEthAPIBackend_SendDAByParams(t *testing.T) {
 	if err != nil {
 		println("err---dial---",err.Error())
 	}
-	index := 5
+	index := 6
 	length := 1024
 	s := strconv.Itoa(index)
 	data := bytes.Repeat([]byte(s), 1024)
@@ -62,8 +62,8 @@ func TestEthereum_ChainDb(t *testing.T) {
 	if err != nil {
 		println("err---dial---",err.Error())
 	}
-
-	commitStr := "03de88d26033c0f1df6385e41c68c8898d49b7b31e24e9be6a6801d97421f8f30f253dcc97b6086854f64017e30719f66aee1e664e822ecc9a9e51c3e7d42ea1"
+	//0xb0074eda3c8677e92978daf87107949668c4e6b9118f630642cb221eb0351a09
+	commitStr := "094bd88dbc30525b003e3732bd9650e316d70b6526a1a3a9b98d76d56ec3b38a02cad0ff924bea9ed54f56de8d13badc107e6f6fc183108d01cb1551ab2d59a9"
 	da,err := client.GetDAByCommitment(context.Background(),commitStr)
 	if err == nil {
 		println("da----",da.TxHash.String())

@@ -294,6 +294,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			da,err := cs.handler.fileDataPool.GetDAByCommit(commitment)
 			if err == nil && da != nil {
 				da.TxHash = common.HexToHash(txHash)
+				cs.handler.fileDataPool.Add([]*types.DA{da},true,false)
 				daDatas = append(daDatas,da)
 			}
 		}
