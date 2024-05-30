@@ -323,7 +323,7 @@ func (fp *FilePool) GetDAByCommit(commit []byte) (*types.DA,error){
 
 // Get retrieves the fileData from local fileDataPool with given
 // tx hash.
-func (fp *FilePool) Get(hash common.Hash) (*types.DA,DISK_FILEDATA_STATE,error){
+func (fp *FilePool) Get(hash common.Hash) (*types.DA,error){
 	var getTimes uint64
 Lable:
 	fd := fp.get(hash)
@@ -349,9 +349,8 @@ Lable:
 			}
 			file.Close()
 		}
-
 	}
-	return nil,DISK_FILEDATA_STATE_SAVE,nil
+	return nil,nil
 }
 
 

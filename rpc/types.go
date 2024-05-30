@@ -92,6 +92,21 @@ func NewResult(length uint64) *Result{
 	}
 }
 
+type SignatureResult struct {
+	Signs   [][]byte     `json:"signs"`
+	errs    []error      `json:"errs"`
+}
+
+func NewSignatureResult(length uint64) *SignatureResult {
+	return &SignatureResult{
+		Signs: make([][]byte,length),
+		errs:  make([]error,length),
+	}
+}
+
+
+
+
 type BlockNumber int64
 
 const (

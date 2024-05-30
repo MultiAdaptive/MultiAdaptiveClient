@@ -22,7 +22,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/txpool/filedatapool"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
@@ -54,12 +53,14 @@ type Backend interface {
 
 	// FileData pool API
 	SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte) ([]byte,error)
-	BatchSendDA(datas [][]byte) ([][]byte,[]error)
-	GetDAByHash(hash common.Hash) (*types.DA,filedatapool.DISK_FILEDATA_STATE,error)
+	SendBatchDA(datas [][]byte) ([][]byte,[]error)
+	GetDAByHash(hash common.Hash) (*types.DA,error)
+	GetBatchDAsByHashes(hashes []common.Hash) ([]*types.DA,[]error)
 	GetDAByCommitment(comimt []byte) (*types.DA, error)
+	GetBatchDAsByCommitments(commitments [][]byte) ([]*types.DA,[]error)
 	SubscribeNewFileDataEvent(chan<- core.NewFileDataEvent) event.Subscription
-	ChainConfig() *params.ChainConfig
 
+	ChainConfig() *params.ChainConfig
 	HistoricalRPCService() *rpc.Client
 	Genesis() *types.Block
 }
