@@ -62,16 +62,28 @@ type jsonWriter interface {
 
 type TxHashes struct{
 	TxHashes       []common.Hash      `json:"txHashes"`
-	BlockHash 		  common.Hash				`json:"blockHash"`
+	BlockHash 	    common.Hash				`json:"blockHash"`
 	BlockNumber     BlockNumber				`json:"blockNumber"`
 }
 
 func (ts *TxHashes) String() string {
-		data,err := json.Marshal(ts)	
-		if err != nil {
+	data,err := json.Marshal(ts)
+	if err != nil {
 			return ""
 		}
-		return string(data)
+	return string(data)
+}
+
+type Commitments struct {
+	Commits   []string        `json:"commitments"`
+}
+
+func (cs *Commitments) String() string {
+	data,err := json.Marshal(cs)
+	if err != nil {
+		return ""
+	}
+	return string(data)
 }
 
 type DataState uint //数据状态

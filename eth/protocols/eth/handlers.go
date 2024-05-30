@@ -22,7 +22,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/txpool/filedatapool"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -77,20 +76,10 @@ func answerGetPooledFileDatas(backend Backend, query GetPooledFileDatasRequest) 
 	)
 	for _, hash := range query {
 		// Retrieve the requested fileData, skipping if unknown to us
-		fd,state,err := backend.FildDataPool().Get(hash)
+		fd,err := backend.FildDataPool().Get(hash)
 		if err != nil {
 			continue
 		}
-	
-		switch state {
-		case filedatapool.DISK_FILEDATA_STATE_DEL:
-			states = append(states, 0)
-		case filedatapool.DISK_FILEDATA_STATE_SAVE:
-			states = append(states, 1)
-		case filedatapool.DISK_FILEDATA_STATE_UNKNOW:	
-			states = append(states, 2)
-		}
-		
 		if fd != nil {
 			// If known, encode and queue for response packet
 			if encoded, err := rlp.EncodeToBytes(fd); err != nil {
