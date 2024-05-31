@@ -14,22 +14,21 @@ import (
 // 创建区块表格模型
 type Block struct {
 	gorm.Model
-	BlockNum    int64    `gorm:"primaryKey"`
-	BlockHash   string   `gorm:"not null"`
-	ParentHash  string
-	EncodeData        string
-	ReceivedAt  string   `gorm:"type:timestamp with time zone; not null"`
+	BlockNum   int64  `gorm:"unique"`
+	BlockHash  string `gorm:"not null"`
+	ParentHash string
+	EncodeData string
+	ReceivedAt string `gorm:"type:timestamp with time zone; not null"`
 }
 
-
-func AddBlock(tx *gorm.DB,block *types.Block) error {
-	data,err := rlp.EncodeToBytes(block)
+func AddBlock(tx *gorm.DB, block *types.Block) error {
+	data, err := rlp.EncodeToBytes(block)
 	if err != nil {
-		log.Info("AddBlock----encode","err",err.Error())
+		log.Info("AddBlock----encode", "err", err.Error())
 	}
 	wb := Block{
-		BlockNum: block.Number().Int64(),
-		BlockHash: block.Hash().Hex(),
+		BlockNum:   block.Number().Int64(),
+		BlockHash:  block.Hash().Hex(),
 		ParentHash: block.ParentHash().Hex(),
 		ReceivedAt: block.ReceivedAt.String(),
 		EncodeData: common.Bytes2Hex(data),
@@ -43,19 +42,19 @@ func AddBlock(tx *gorm.DB,block *types.Block) error {
 	return nil
 }
 
-func AddBatchBlocks(tx *gorm.DB,blocks []*types.Block) error {
+func AddBatchBlocks(tx *gorm.DB, blocks []*types.Block) error {
 	// 遍历每个区块，依次插入数据库
 	for _, block := range blocks {
 		if block != nil {
-			data,err := rlp.EncodeToBytes(block)
+			data, err := rlp.EncodeToBytes(block)
 			if err != nil {
-				log.Info("AddBlock----encode","err",err.Error())
+				log.Info("AddBlock----encode", "err", err.Error())
 			}
 			wb := Block{
-				BlockNum: block.Number().Int64(),
-				BlockHash: block.Hash().String(),
+				BlockNum:   block.Number().Int64(),
+				BlockHash:  block.Hash().String(),
 				ParentHash: block.ParentHash().String(),
-				ReceivedAt: strconv.FormatUint(block.Time(),10),
+				ReceivedAt: strconv.FormatUint(block.Time(), 10),
 				EncodeData: common.Bytes2Hex(data),
 			}
 			result := tx.Create(&wb)
@@ -69,33 +68,33 @@ func AddBatchBlocks(tx *gorm.DB,blocks []*types.Block) error {
 	return nil
 }
 
-func GetBlockByHash(db *gorm.DB,blockHash common.Hash) (*types.Block,error) {
+func GetBlockByHash(db *gorm.DB, blockHash common.Hash) (*types.Block, error) {
 	var block Block
 	tx := db.First(&block, "block_hash = ?", blockHash)
 	if tx.Error == nil {
 		var roiBlock types.Block
-		err := rlp.DecodeBytes(common.Hex2Bytes(block.EncodeData),roiBlock)
-		return &roiBlock,err
+		err := rlp.DecodeBytes(common.Hex2Bytes(block.EncodeData), roiBlock)
+		return &roiBlock, err
 	}
-	errstr := fmt.Sprintf("can not find block with given blockHash :%s",blockHash.Hex())
-	return nil,errors.New(errstr)
+	errstr := fmt.Sprintf("can not find block with given blockHash :%s", blockHash.Hex())
+	return nil, errors.New(errstr)
 }
 
-func GetBlockByNum(db *gorm.DB,blockNum uint64) (*types.Block,error) {
+func GetBlockByNum(db *gorm.DB, blockNum uint64) (*types.Block, error) {
 	var block Block
-	tx := db.First(&block,"block_num = ?",blockNum)
+	tx := db.First(&block, "block_num = ?", blockNum)
 	if tx.Error == nil {
 		var roiBlock types.Block
-		err := rlp.DecodeBytes(common.Hex2Bytes(block.EncodeData),&roiBlock)
-		return &roiBlock,err
+		err := rlp.DecodeBytes(common.Hex2Bytes(block.EncodeData), &roiBlock)
+		return &roiBlock, err
 	}
-	errstr := fmt.Sprintf("can not find block with given blocknum :%d",blockNum)
-	return nil,errors.New(errstr)
+	errstr := fmt.Sprintf("can not find block with given blocknum :%d", blockNum)
+	return nil, errors.New(errstr)
 }
 
-func DeleteBlockByHash(db *gorm.DB,blockHash common.Hash) error {
+func DeleteBlockByHash(db *gorm.DB, blockHash common.Hash) error {
 	var block Block
-	err := db.Where("block_num = ?",blockHash).Delete(&block).Error
+	err := db.Where("block_num = ?", blockHash).Delete(&block).Error
 	if err != nil {
 		db.Rollback()
 		return err
@@ -103,13 +102,12 @@ func DeleteBlockByHash(db *gorm.DB,blockHash common.Hash) error {
 	return nil
 }
 
-func DeleteBlockByNum(db *gorm.DB,blockNum uint64) error {
+func DeleteBlockByNum(db *gorm.DB, blockNum uint64) error {
 	var block Block
-	err := db.Where("block_num",blockNum).Delete(&block).Error
+	err := db.Where("block_num", blockNum).Delete(&block).Error
 	if err != nil {
 		db.Rollback()
 		return err
 	}
 	return nil
 }
-
