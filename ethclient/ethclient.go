@@ -217,20 +217,19 @@ func (ec *Client) HeaderByNumber(ctx context.Context, number *big.Int) (*types.H
 }
 
 type RPCDA struct {
-	Sender         common.Address   `json:"sender"`
-	Length         hexutil.Uint64	  `json:"length"`
-	Index          hexutil.Uint64	  `json:"index"`
-	Commitment     hexutil.Bytes    `json:"commitment"`	
-	Data           hexutil.Bytes	  `json:"data"`
-	Sign  	   hexutil.Bytes	  `json:"sign"`
-	TxHash         common.Hash      `json:"txhash"`
+	Sender     common.Address `json:"sender"`
+	Length     hexutil.Uint64 `json:"length"`
+	Index      hexutil.Uint64 `json:"index"`
+	Commitment hexutil.Bytes  `json:"commitment"`
+	Data       hexutil.Bytes  `json:"data"`
+	Sign       hexutil.Bytes  `json:"sign"`
+	TxHash     common.Hash    `json:"txhash"`
 }
 
 type RPCDAs struct {
-	DAs  []*RPCDA      `json:"das"`
-	Errs []error      `json:"errs"`
+	DAs  []*RPCDA `json:"das"`
+	Errs []error  `json:"errs"`
 }
-
 
 type rpcTransaction struct {
 	tx *types.Transaction
@@ -301,42 +300,44 @@ func (ec *Client) TransactionCount(ctx context.Context, blockHash common.Hash) (
 	return uint(num), err
 }
 
-func (ec *Client) SendDAByParams(ctx context.Context,sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte) ([]byte,error)  {
+func (ec *Client) SendDAByParams(ctx context.Context, sender common.Address, index, length uint64, commitment, data []byte, dasKey [32]byte) ([]byte, error) {
 	var result []byte
-	err := ec.c.CallContext(ctx,&result,"eth_sendDAByParams",sender,index,length,commitment,data,dasKey)
-	return result,err
+	err := ec.c.CallContext(ctx, &result, "eth_sendDAByParams", sender, index, length, commitment, data, dasKey)
+	return result, err
 }
 
-func (ec *Client) SendBatchDAs(ctx context.Context,datas [][]byte) ([][]byte,error) {
+func (ec *Client) SendBatchDAs(ctx context.Context, datas [][]byte) ([][]byte, error) {
 	var res rpc.SignatureResult
-	err := ec.c.CallContext(ctx,res,"eth_sendBatchDAs",datas)
+	err := ec.c.CallContext(ctx, res, "eth_sendBatchDAs", datas)
 	return res.Signs, err
 }
 
-func (ec *Client) GetDAByHash(ctx context.Context,hash common.Hash) (RPCDA,error){
+func (ec *Client) GetDAByHash(ctx context.Context, hash common.Hash) (RPCDA, error) {
 	var fd RPCDA
 	log.Info("client---GetFileDataByHash---iscalling---")
-	err := ec.c.CallContext(ctx,&fd,"eth_getDAByHash",hash)
-	return fd,err
+	err := ec.c.CallContext(ctx, &fd, "eth_getDAByHash", hash)
+	return fd, err
 }
 
-func (ec *Client) GetBatchDAsByHashes(ctx context.Context,hashes rpc.TxHashes) (RPCDAs,error) {
+func (ec *Client) GetBatchDAsByHashes(ctx context.Context, hashes rpc.TxHashes) (RPCDAs, error) {
 	var res RPCDAs
-	err := ec.c.CallContext(ctx,&res,"eth_getBatchDAByHashes",hashes.TxHashes)
-	return res,err
+	log.Info("client---GetBatchDAsByHashes---iscalling---")
+	err := ec.c.CallContext(ctx, &res, "eth_getBatchDAByHashes", hashes.TxHashes)
+	return res, err
 }
 
-func (ec *Client) GetDAByCommitment(ctx context.Context,commitment string) (RPCDA, error) {
+func (ec *Client) GetDAByCommitment(ctx context.Context, commitment string) (RPCDA, error) {
 	var fd RPCDA
 	log.Info("client---GetDAByCommitment---iscalling---")
-	err := ec.c.CallContext(ctx,&fd,"eth_getDAByCommitment",commitment)
-	return fd,err
+	err := ec.c.CallContext(ctx, &fd, "eth_getDAByCommitment", commitment)
+	return fd, err
 }
 
-func (ec *Client) GetBatchDAByCommitments(ctx context.Context,commitments rpc.Commitments) (RPCDAs, error){
+func (ec *Client) GetBatchDAByCommitments(ctx context.Context, commitments rpc.Commitments) (RPCDAs, error) {
 	var res RPCDAs
-	err := ec.c.CallContext(ctx,&res,"eth_getBatchDAByCommitments",commitments.Commits)
-	return res,err
+	log.Info("client---GetBatchDAByCommitments---iscalling---")
+	err := ec.c.CallContext(ctx, &res, "eth_getBatchDAByCommitments", commitments.Commits)
+	return res, err
 }
 
 // TransactionInBlock returns a single transaction at index in the given block.
@@ -550,7 +551,6 @@ func (ec *Client) SendTransaction(ctx context.Context, tx *types.Transaction) er
 	}
 	return ec.c.CallContext(ctx, nil, "eth_sendRawTransaction", hexutil.Encode(data))
 }
-
 
 func toBlockNumArg(number *big.Int) string {
 	if number == nil {
