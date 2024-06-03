@@ -6,16 +6,26 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
 	"math/big"
+	"time"
 )
 
-// FileData struct
+type NameSpace struct {
+	//Creater 创建者
+
+	//存储节点的地址列表
+}
+
+// DA struct
 // sender       address
-// submitter    address
 // index        uint64
 // commitment   证据
 // data         file
 // sign         签名
+// receiveAt    收到的时间
+// order
+
 type DA struct {
+	NameSpace
 	Sender     common.Address  	                  `json:"Sender"` //文件发送者
 	Index      uint64						`json:"Index"`//文件发送者类nonce 相同的index认为是重复交易
 	Length     uint64						`json:"Length"`//长度
@@ -24,6 +34,7 @@ type DA struct {
 	SignData   []byte                               `json:"SignData"`
 	DasKey     [32]byte                              `json:"DasKey"`
 	TxHash     common.Hash                           `json:"TxHash"`
+	ReceiveAt  time.Time                            `json:"ReceiveAt"`
 }
 
 func NewDA(sender common.Address,index,length uint64,commitment kzg.Digest, data []byte, dasKey [32]byte) *DA {
