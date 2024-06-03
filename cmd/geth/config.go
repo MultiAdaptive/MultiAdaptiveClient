@@ -185,9 +185,7 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 	if ctx.IsSet(utils.NodeTypeFlag.Name) {
 		ndType := ctx.String(utils.NodeTypeFlag.Name)
 		switch ndType {
-		case "d":
-			cfg.Eth.NodeType = ndType
-		case "s":
+		case "d","s":
 			cfg.Eth.NodeType = ndType
 		default:
 			cfg.Eth.NodeType = ethconfig.Defaults.NodeType
@@ -216,9 +214,6 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 	if cfg.Ethstats.URL != "" {
 		utils.RegisterEthStatsService(stack, backend, cfg.Ethstats.URL)
 	}
-
-	// Configure log filter RPC API.
-	utils.RegisterFilterAPI(stack, backend, &cfg.Eth)
 
 	// Configure full-sync tester service if requested
 	if ctx.IsSet(utils.SyncTargetFlag.Name) {

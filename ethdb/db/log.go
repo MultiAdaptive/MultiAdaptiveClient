@@ -33,10 +33,32 @@ func AddLog(tx *gorm.DB, log Log) error {
 	return nil
 }
 
-func AddBatchLogs(tx *gorm.DB, logs []Log) error {
+func AddBatchLogs(tx *gorm.DB, logs []*types.Log) error {
 	// 遍历每个区块，依次插入数据库
 	for _, logIns := range logs {
-		result := tx.Create(&logIns)
+		tpcLength := len(logIns.Topics)
+		logWrite := Log{
+			TxHash: logIns.TxHash.Hex(),
+			LogIndex: int(logIns.Index),
+			Address: logIns.Address.Hex(),
+			BlockNum: int64(logIns.BlockNumber),
+			BlockHash: logIns.BlockHash.Hex(),
+			Removed: logIns.Removed,
+			Data: common.Bytes2Hex(logIns.Data),
+		}
+
+		switch tpcLength {
+		case 0:
+			logWrite.Topic0 = logIns.Topics[0].Hex()
+		case 1:
+			logWrite.Topic1 = logIns.Topics[0].Hex()
+		case 2:
+			logWrite.Topic2 = logIns.Topics[0].Hex()
+		case 3:
+			logWrite.Topic3 = logIns.Topics[0].Hex()
+		}
+
+		result := tx.Create(&logWrite)
 		if result.Error != nil {
 			// 插入失败，回滚事务并返回错误
 			tx.Rollback()

@@ -283,6 +283,17 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	if err != nil {
 		log.Error("AddBatchReceipts--","err",err.Error())
 	}
+
+	logs := make([]*types.Log,0)
+	for _,receipt := range receipts{
+		logs = append(logs,receipt.Logs...)
+	}
+
+	err = db.AddBatchLogs(db.Tx,logs)
+	if err != nil {
+		log.Error("AddBatchLogs--","err",err.Error())
+	}
+
 	db.Commit(db.Tx)
 
 	finalKeys := commitCache.Keys()
