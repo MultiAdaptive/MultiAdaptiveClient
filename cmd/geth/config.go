@@ -228,9 +228,6 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 		utils.RegisterEthStatsService(stack, backend, cfg.Ethstats.URL)
 	}
 
-	// Configure log filter RPC API.
-	utils.RegisterFilterAPI(stack, backend, &cfg.Eth)
-
 	// Configure full-sync tester service if requested
 	if ctx.IsSet(utils.SyncTargetFlag.Name) {
 		hex := hexutil.MustDecode(ctx.String(utils.SyncTargetFlag.Name))
