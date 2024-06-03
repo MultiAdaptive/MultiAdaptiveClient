@@ -59,10 +59,70 @@ func newChainSync(
 	ctx context.Context,
 	sqlDb *gorm.DB,
 	url string,
+	host string,
+	user string,
+	password string,
 	handler *handler,
 	chain *core.BlockChain,
 	nodeType string,
 	chainName string) *chainSyncer {
+	log.Info("newChainSync", "chainName", chainName)
+
+	switch strings.ToLower(chainName) {
+	case "ethereum", "eth":
+		return newEthereumChainSync(ctx, sqlDb, url, host, user, password, handler, chain, nodeType, chainName)
+	case "bitcoin", "btc":
+		return newBitcoinChainSync(ctx, sqlDb, url, host, user, password, handler, chain, nodeType, chainName)
+	default:
+		return nil
+	}
+}
+
+func newEthereumChainSync(
+	ctx context.Context,
+	sqlDb *gorm.DB,
+	url string,
+	host string,
+	user string,
+	password string,
+	handler *handler,
+	chain *core.BlockChain,
+	nodeType string,
+	chainName string) *chainSyncer {
+	log.Info("newEthereumChainSync", "url", url, "host", host, "user", user, "password", password)
+
+	eth, err := ethclient.Dial(url)
+	if err != nil {
+		log.Error("newEthereumChainSync Dial url failed", "err", err.Error(), "url", url)
+		return nil
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	return &chainSyncer{
+		ctx:       ctx,
+		handler:   handler,
+		ethclient: eth,
+		db:        sqlDb,
+		nodeType:  nodeType,
+		chainName: chainName,
+		chain:     chain,
+		cancel:    cancel,
+	}
+}
+
+func newBitcoinChainSync(
+	ctx context.Context,
+	sqlDb *gorm.DB,
+	url string,
+	host string,
+	user string,
+	password string,
+	handler *handler,
+	chain *core.BlockChain,
+	nodeType string,
+	chainName string) *chainSyncer {
+	log.Info("newBitcoinChainSync", "url", url, "host", host, "user", user, "password", password)
+
 	eth, err := ethclient.Dial(url)
 	if err != nil {
 		log.Error("NewChainSync Dial url failed", "err", err.Error(), "url", url)
@@ -338,7 +398,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		switch cs.nodeType {
 		case "b":
 			db.Begin(cs.db)
-			db.AddBatchCommitment(db.Tx,daDatas,parentHash)
+			db.AddBatchCommitment(db.Tx, daDatas, parentHash)
 			db.Commit(db.Tx)
 			cs.handler.fileDataPool.RemoveFileData(daDatas)
 		case "s":

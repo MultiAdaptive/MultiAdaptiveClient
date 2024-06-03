@@ -161,6 +161,27 @@ var (
 		Category: flags.EthCategory,
 	}
 
+	L1ScanHostFlag = &cli.StringFlag{
+		Name:     "l1Host",
+		Usage:    "scan l1 host",
+		Value:    ethconfig.Defaults.L1ScanHost,
+		Category: flags.EthCategory,
+	}
+
+	L1ScanUserFlag = &cli.StringFlag{
+		Name:     "l1User",
+		Usage:    "scan l1 user",
+		Value:    ethconfig.Defaults.L1ScanUser,
+		Category: flags.EthCategory,
+	}
+
+	L1ScanPasswordFlag = &cli.StringFlag{
+		Name:     "l1Password",
+		Usage:    "scan l1 password",
+		Value:    ethconfig.Defaults.L1ScanPassword,
+		Category: flags.EthCategory,
+	}
+
 	NodeTypeFlag = &cli.StringFlag{
 		Name:     "nodeType",
 		Usage:    "regist local node type,value type :`b` - broadcast node; `s` - save node",

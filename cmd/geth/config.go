@@ -182,6 +182,30 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 		cfg.Eth.L1ScanUrl = url
 	}
 
+	if ctx.IsSet(utils.L1ScanHostFlag.Name) {
+		host := ctx.String(utils.L1ScanHostFlag.Name)
+		if host == "" || len(host) == 0 {
+			log.Error("makeFullNode failed", "L1ScanHostFlag value", utils.L1ScanHostFlag.Value)
+		}
+		cfg.Eth.L1ScanHost = host
+	}
+
+	if ctx.IsSet(utils.L1ScanUserFlag.Name) {
+		user := ctx.String(utils.L1ScanUserFlag.Name)
+		if user == "" || len(user) == 0 {
+			log.Error("makeFullNode failed", "L1ScanUserFlag value", utils.L1ScanUserFlag.Value)
+		}
+		cfg.Eth.L1ScanUser = user
+	}
+
+	if ctx.IsSet(utils.L1ScanPasswordFlag.Name) {
+		password := ctx.String(utils.L1ScanPasswordFlag.Name)
+		if password == "" || len(password) == 0 {
+			log.Error("makeFullNode failed", "L1ScanPasswordFlag value", utils.L1ScanPasswordFlag.Value)
+		}
+		cfg.Eth.L1ScanPassword = password
+	}
+
 	if ctx.IsSet(utils.NodeTypeFlag.Name) {
 		ndType := ctx.String(utils.NodeTypeFlag.Name)
 		switch ndType {

@@ -53,6 +53,9 @@ var (
 	nodeFlags = flags.Merge([]cli.Flag{
 		utils.IdentityFlag,
 		utils.L1ScanUrlFlag,
+		utils.L1ScanHostFlag,
+		utils.L1ScanUserFlag,
+		utils.L1ScanPasswordFlag,
 		utils.NodeTypeFlag,
 		utils.ChainNameFlag,
 		utils.UnlockedAccountFlag,

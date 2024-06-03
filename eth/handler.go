@@ -90,16 +90,19 @@ type handlerConfig struct {
 	Database ethdb.Database   // Database for direct sync insertions
 	Chain    *core.BlockChain // Blockchain to serve data from
 	//modify by echo
-	FileDataPool fileDataPool        // FileData Pool to propagate from
-	Merger       *consensus.Merger   // The manager for eth1/2 transition
-	Network      uint64              // Network identifier to advertise
-	Sync         downloader.SyncMode // Whether to snap or full sync
-	BloomCache   uint64              // Megabytes to alloc for snap sync bloom
-	EventMux     *event.TypeMux      // Legacy event mux, deprecate for `feed`
-	L1ScanUrl    string              //l1 scan url
-	NodeType     string              //local node type
-	ChainName    string              //l1 chain name
-	NoTxGossip   bool                // Disable P2P transaction gossip
+	FileDataPool   fileDataPool        // FileData Pool to propagate from
+	Merger         *consensus.Merger   // The manager for eth1/2 transition
+	Network        uint64              // Network identifier to advertise
+	Sync           downloader.SyncMode // Whether to snap or full sync
+	BloomCache     uint64              // Megabytes to alloc for snap sync bloom
+	EventMux       *event.TypeMux      // Legacy event mux, deprecate for `feed`
+	L1ScanUrl      string              //l1 scan url
+	L1ScanHost     string              //l1 scan host
+	L1ScanUser     string              //l1 scan user
+	L1ScanPassword string              //l1 scan password
+	NodeType       string              //local node type
+	ChainName      string              //l1 chain name
+	NoTxGossip     bool                // Disable P2P transaction gossip
 }
 
 type handler struct {
@@ -187,7 +190,17 @@ func newHandler(config *handlerConfig) (*handler, error) {
 		return h.fileDataPool.Add(fds, false, false)
 	}
 	h.fdFetcher = fetcher.NewFdFetcher(h.fileDataPool.Has, addFds, fetchFd, h.removePeer)
-	h.chainSync = newChainSync(context.Background(), h.chain.SqlDB(), config.L1ScanUrl, h, h.chain, config.NodeType, config.ChainName)
+	h.chainSync = newChainSync(
+		context.Background(),
+		h.chain.SqlDB(),
+		config.L1ScanUrl,
+		config.L1ScanHost,
+		config.L1ScanUser,
+		config.L1ScanPassword,
+		h,
+		h.chain,
+		config.NodeType,
+		config.ChainName)
 	return h, nil
 }
 

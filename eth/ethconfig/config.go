@@ -43,6 +43,9 @@ var Defaults = Config{
 	FilterLogCacheSize: 32,
 	FileDataPool:       filedatapool.DefaultConfig,
 	L1ScanUrl:          "",
+	L1ScanHost:         "",
+	L1ScanUser:         "",
+	L1ScanPassword:     "",
 	RPCGasCap:          50000000,
 	RPCEVMTimeout:      5 * time.Second,
 	RPCTxFeeCap:        1, // 1 ether
@@ -101,6 +104,12 @@ type Config struct {
 	Preimages      bool
 
 	L1ScanUrl string //scan l1 url
+
+	L1ScanHost string //scan l1 host
+
+	L1ScanUser string //scan l1 user
+
+	L1ScanPassword string //scan l1 password
 
 	Passphrase string
 
