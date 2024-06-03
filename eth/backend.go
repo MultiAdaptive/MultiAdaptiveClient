@@ -63,30 +63,30 @@ type Config = ethconfig.Config
 type Ethereum struct {
 	config *ethconfig.Config
 	// Handlers
-	fdPool *filedatapool.FilePool
-	sqlDb              *gorm.DB
-	blockchain         *core.BlockChain
-	handler            *handler
-	ethDialCandidates  enode.Iterator
-	snapDialCandidates enode.Iterator
-	merger             *consensus.Merger
+	fdPool               *filedatapool.FilePool
+	sqlDb                *gorm.DB
+	blockchain           *core.BlockChain
+	handler              *handler
+	ethDialCandidates    enode.Iterator
+	snapDialCandidates   enode.Iterator
+	merger               *consensus.Merger
 	historicalRPCService *rpc.Client
 	// DB interfaces
-	chainDb ethdb.Database // Block chain database
-	eventMux       *event.TypeMux
-	accountManager *accounts.Manager
+	chainDb           ethdb.Database // Block chain database
+	eventMux          *event.TypeMux
+	accountManager    *accounts.Manager
 	bloomRequests     chan chan *bloombits.Retrieval // Channel receiving bloom data retrieval requests
 	closeBloomHandler chan struct{}
-	APIBackend *EthAPIBackend
-	gasPrice  *big.Int
-	etherbase common.Address
-	singer  *types.SingerTool
-	networkID     uint64
-	netRPCService *ethapi.NetAPI
-	p2pServer *p2p.Server
-	lock sync.RWMutex // Protects the variadic fields (e.g. gas price and etherbase)
-	shutdownTracker *shutdowncheck.ShutdownTracker // Tracks if and when the node has shutdown ungracefully
-	nodeCloser func() error
+	APIBackend        *EthAPIBackend
+	gasPrice          *big.Int
+	etherbase         common.Address
+	singer            *types.SingerTool
+	networkID         uint64
+	netRPCService     *ethapi.NetAPI
+	p2pServer         *p2p.Server
+	lock              sync.RWMutex                   // Protects the variadic fields (e.g. gas price and etherbase)
+	shutdownTracker   *shutdowncheck.ShutdownTracker // Tracks if and when the node has shutdown ungracefully
+	nodeCloser        func() error
 }
 
 // New creates a new Ethereum object (including the
@@ -183,15 +183,15 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 
 	stateSqlDB, err := db.NewSqlDB(stack.Config().DataDir)
 	if err != nil {
-		log.Error("create sql db failed:","err",err.Error())
+		log.Error("create sql db failed:", "err", err.Error())
 	}
 	db.MigrateUp(stateSqlDB)
 
-	lastNum,err := db.GetLastBlockNum(stateSqlDB)
+	lastNum, err := db.GetLastBlockNum(stateSqlDB)
 	if err == nil {
-		db.CleanUpDB(stateSqlDB,lastNum)
+		db.CleanUpDB(stateSqlDB, lastNum)
 	}
-	eth.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, config.Genesis,stateSqlDB)
+	eth.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, config.Genesis, stateSqlDB)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +206,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if config.FileDataPool.Journal != "" {
 		config.FileDataPool.Journal = stack.ResolvePath(config.FileDataPool.Journal)
 	}
-	fileDataPool := filedatapool.New(config.FileDataPool,eth.blockchain)
+	fileDataPool := filedatapool.New(config.FileDataPool, eth.blockchain)
 	if err != nil {
 		return nil, err
 	}
@@ -214,37 +214,38 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 
 	keyStores, err := ioutil.ReadDir(stack.KeyStoreDir())
 	if err != nil {
-		log.Error("New----failed","Read KeyStore File err",err.Error())
+		log.Error("New----failed", "Read KeyStore File err", err.Error())
 	}
 	if len(keyStores) == 0 {
-		log.Error("New----ReadDir","empty keystore")
-		return nil,errors.New("no keystore file is path")
+		log.Error("New----ReadDir", "empty keystore")
+		return nil, errors.New("no keystore file is path")
 	}
 	filePath := stack.KeyStoreDir() + "/" + keyStores[0].Name()
-	log.Info("filePath-----","filePath",filePath)
-	keyjson,err := ioutil.ReadFile(filePath)
+	log.Info("filePath-----", "filePath", filePath)
+	keyjson, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		log.Error("New----failed","Read KeyStore File err",err.Error())
+		log.Error("New----failed", "Read KeyStore File err", err.Error())
 	}
 	// 解密keystore文件，获取私钥
 	key, err := keystore.DecryptKey(keyjson, eth.config.Passphrase)
 	if err != nil {
-		log.Error("New----failed","DecryptKey  err",err.Error())
+		log.Error("New----failed", "DecryptKey  err", err.Error())
 	}
-	eth.singer = types.NewSingerTool(eth.blockchain.Config(),key.PrivateKey)
+	eth.singer = types.NewSingerTool(eth.blockchain.Config(), key.PrivateKey)
 	// Permit the downloader to use the trie cache allowance during fast sync
 	cacheLimit := cacheConfig.TrieCleanLimit + cacheConfig.TrieDirtyLimit + cacheConfig.SnapshotLimit
 	if eth.handler, err = newHandler(&handlerConfig{
-		Database:       chainDb,
-		Chain:          eth.blockchain,
-		FileDataPool:  	eth.fdPool,
-		Merger:         eth.merger,
-		Network:        config.NetworkId,
-		Sync:           config.SyncMode,
-		L1ScanUrl:      eth.config.L1ScanUrl,
-		NodeType:       eth.config.NodeType,
-		BloomCache:     uint64(cacheLimit),
-		EventMux:       eth.eventMux,
+		Database:     chainDb,
+		Chain:        eth.blockchain,
+		FileDataPool: eth.fdPool,
+		Merger:       eth.merger,
+		Network:      config.NetworkId,
+		Sync:         config.SyncMode,
+		L1ScanUrl:    eth.config.L1ScanUrl,
+		NodeType:     eth.config.NodeType,
+		ChainName:    eth.config.ChainName,
+		BloomCache:   uint64(cacheLimit),
+		EventMux:     eth.eventMux,
 	}); err != nil {
 		return nil, err
 	}
@@ -333,17 +334,18 @@ func (s *Ethereum) SetEtherbase(etherbase common.Address) {
 	s.lock.Unlock()
 }
 
-func (s *Ethereum) AccountManager() *accounts.Manager  { return s.accountManager }
-func (s *Ethereum) BlockChain() *core.BlockChain       { return s.blockchain }
-//func (s *Ethereum) DB() ethdb.Database 				   { return s.blockchain.Db()}
-func (s *Ethereum) FilePool() *filedatapool.FilePool   { return s.fdPool }
-func (s *Ethereum) EventMux() *event.TypeMux           { return s.eventMux }
-func (s *Ethereum) ChainDb() ethdb.Database            { return s.chainDb }
-func (s *Ethereum) IsListening() bool                  { return true } // Always listening
-func (s *Ethereum) Synced() bool                       { return s.handler.synced.Load() }
-func (s *Ethereum) SetSynced()                         { s.handler.enableSyncedFeatures() }
-func (s *Ethereum) ArchiveMode() bool                  { return s.config.NoPruning }
-func (s *Ethereum) Merger() *consensus.Merger          { return s.merger }
+func (s *Ethereum) AccountManager() *accounts.Manager { return s.accountManager }
+func (s *Ethereum) BlockChain() *core.BlockChain      { return s.blockchain }
+
+// func (s *Ethereum) DB() ethdb.Database 				   { return s.blockchain.Db()}
+func (s *Ethereum) FilePool() *filedatapool.FilePool { return s.fdPool }
+func (s *Ethereum) EventMux() *event.TypeMux         { return s.eventMux }
+func (s *Ethereum) ChainDb() ethdb.Database          { return s.chainDb }
+func (s *Ethereum) IsListening() bool                { return true } // Always listening
+func (s *Ethereum) Synced() bool                     { return s.handler.synced.Load() }
+func (s *Ethereum) SetSynced()                       { s.handler.enableSyncedFeatures() }
+func (s *Ethereum) ArchiveMode() bool                { return s.config.NoPruning }
+func (s *Ethereum) Merger() *consensus.Merger        { return s.merger }
 func (s *Ethereum) SyncMode() downloader.SyncMode {
 	return downloader.FullSync
 }

@@ -176,8 +176,8 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 
 	if ctx.IsSet(utils.L1ScanUrlFlag.Name) {
 		url := ctx.String(utils.L1ScanUrlFlag.Name)
-		if url == "" || len(url) == 0{
-			 log.Error("makeFullNode failed","L1ScanUrlFlag value",utils.L1ScanUrlFlag.Value)
+		if url == "" || len(url) == 0 {
+			log.Error("makeFullNode failed", "L1ScanUrlFlag value", utils.L1ScanUrlFlag.Value)
 		}
 		cfg.Eth.L1ScanUrl = url
 	}
@@ -185,15 +185,26 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 	if ctx.IsSet(utils.NodeTypeFlag.Name) {
 		ndType := ctx.String(utils.NodeTypeFlag.Name)
 		switch ndType {
-		case "d":
-			cfg.Eth.NodeType = ndType
-		case "s":
+		case "d", "s":
 			cfg.Eth.NodeType = ndType
 		default:
 			cfg.Eth.NodeType = ethconfig.Defaults.NodeType
 		}
-	}else {
+	} else {
 		cfg.Eth.NodeType = ethconfig.Defaults.NodeType
+	}
+
+	log.Info("ChainName", "chain name", ctx.String(utils.ChainNameFlag.Name))
+	if ctx.IsSet(utils.ChainNameFlag.Name) {
+		chainName := ctx.String(utils.ChainNameFlag.Name)
+		switch chainName {
+		case "ethereum", "eth", "bitcoin", "btc":
+			cfg.Eth.ChainName = chainName
+		default:
+			cfg.Eth.ChainName = ethconfig.Defaults.ChainName
+		}
+	} else {
+		cfg.Eth.ChainName = ethconfig.Defaults.ChainName
 	}
 
 	backend, eth := utils.RegisterEthService(stack, &cfg.Eth)

@@ -149,22 +149,29 @@ var (
 	}
 
 	DomiconFlag = &cli.BoolFlag{
-		Name: "domicon",
-		Usage: "domicon network: ",
+		Name:     "domicon",
+		Usage:    "domicon network: ",
 		Category: flags.EthCategory,
 	}
 
 	L1ScanUrlFlag = &cli.StringFlag{
-		Name: "l1Url",
-		Usage: "scan l1 url",
-		Value:  ethconfig.Defaults.L1ScanUrl,
+		Name:     "l1Url",
+		Usage:    "scan l1 url",
+		Value:    ethconfig.Defaults.L1ScanUrl,
 		Category: flags.EthCategory,
 	}
 
 	NodeTypeFlag = &cli.StringFlag{
-		Name: "nodeType",
-		Usage: "regist local node type,value type :`b` - broadcast node; `s` - save node",
-		Value: ethconfig.Defaults.NodeType,
+		Name:     "nodeType",
+		Usage:    "regist local node type,value type :`b` - broadcast node; `s` - save node",
+		Value:    ethconfig.Defaults.NodeType,
+		Category: flags.EthCategory,
+	}
+
+	ChainNameFlag = &cli.StringFlag{
+		Name:     "chainName",
+		Usage:    "chain name: ethereum or bitcoin",
+		Value:    ethconfig.Defaults.ChainName,
 		Category: flags.EthCategory,
 	}
 
@@ -318,7 +325,7 @@ var (
 		Usage:    "Enables serving light clients before syncing",
 		Category: flags.LightCategory,
 	}
-	
+
 	FileDataPoolLocalsFlag = &cli.StringFlag{
 		Name:     "filedatapool.locals",
 		Usage:    "Comma separated accounts to treat as locals (no flush, priority inclusion)",
@@ -330,14 +337,14 @@ var (
 		Usage:    "Disk journal for local fileData to survive node restarts",
 		Value:    ethconfig.Defaults.FileDataPool.Journal,
 		Category: flags.FileDataCategory,
-	} 
+	}
 
 	FileDataLifetimeFlag = &cli.DurationFlag{
 		Name:     "filedatapool.lifetime",
 		Usage:    "Maximum amount of time non-executable fileData are queued",
 		Value:    ethconfig.Defaults.FileDataPool.Lifetime,
 		Category: flags.FileDataCategory,
-	}	
+	}
 
 	FileDataRejournalFlag = &cli.DurationFlag{
 		Name:     "filedatapool.lifetime",
@@ -724,7 +731,6 @@ var (
 		Category: flags.APICategory,
 	}
 
-
 	// Metrics flags
 	MetricsEnabledFlag = &cli.BoolFlag{
 		Name:     "metrics",
@@ -1053,7 +1059,6 @@ func setHTTP(ctx *cli.Context, cfg *node.Config) {
 	}
 }
 
-
 // setWS creates the WebSocket RPC listener interface string from the set
 // command line flags, returning empty if the HTTP endpoint is disabled.
 func setWS(ctx *cli.Context, cfg *node.Config) {
@@ -1362,7 +1367,7 @@ func SetDataDir(ctx *cli.Context, cfg *node.Config) {
 	}
 }
 
-func setFileDataPool(ctx *cli.Context, cfg *filedatapool.Config){
+func setFileDataPool(ctx *cli.Context, cfg *filedatapool.Config) {
 	if ctx.IsSet(FileDataPoolLocalsFlag.Name) {
 		locals := strings.Split(ctx.String(FileDataPoolLocalsFlag.Name), ",")
 		for _, account := range locals {
@@ -1377,7 +1382,7 @@ func setFileDataPool(ctx *cli.Context, cfg *filedatapool.Config){
 	if ctx.IsSet(FileDataPoolJournalFlag.Name) {
 		cfg.Journal = ctx.String(FileDataPoolJournalFlag.Name)
 	}
-	
+
 	if ctx.IsSet(FileDataLifetimeFlag.Name) {
 		cfg.Lifetime = ctx.Duration(FileDataLifetimeFlag.Name)
 	}
@@ -1442,7 +1447,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 
 	// Set configurations from CLI flags
 	setEtherbase(ctx, cfg)
-	setFileDataPool(ctx,&cfg.FileDataPool)
+	setFileDataPool(ctx, &cfg.FileDataPool)
 
 	// Cap the cache allowance and tune the garbage collector
 	mem, err := gopsutil.VirtualMemory()
@@ -1482,9 +1487,9 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 
 	pwlist := MakePasswordList(ctx)
 	if len(pwlist) == 0 {
-		log.Error("local node did not config password file","use PasswordFileFlag.Name",PasswordFileFlag.Name)
+		log.Error("local node did not config password file", "use PasswordFileFlag.Name", PasswordFileFlag.Name)
 		return
-	}else {
+	} else {
 		cfg.Passphrase = pwlist[0]
 	}
 
@@ -1574,7 +1579,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 			cfg.NetworkId = 1988
 		}
 		cfg.Genesis = core.DefaultDomicionGenesisBlock()
-		SetDNSDiscoveryDefaults(cfg,params.DomiconGenesisHash)
+		SetDNSDiscoveryDefaults(cfg, params.DomiconGenesisHash)
 
 	case ctx.Bool(HoleskyFlag.Name):
 		if !ctx.IsSet(NetworkIdFlag.Name) {
@@ -1660,7 +1665,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		cfg.Genesis = genesis
 
 		var (
-			account  accounts.Account
+			account    accounts.Account
 			passphrase string
 			err        error
 		)
