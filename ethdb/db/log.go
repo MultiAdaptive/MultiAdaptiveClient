@@ -24,8 +24,8 @@ type Log struct {
 	Topic3     string
 }
 
-func AddLog(tx *gorm.DB,log Log) error {
-	res:= tx.Create(&log)
+func AddLog(tx *gorm.DB, log Log) error {
+	res := tx.Create(&log)
 	if res.Error != nil {
 		tx.Rollback()
 		return res.Error
@@ -33,7 +33,7 @@ func AddLog(tx *gorm.DB,log Log) error {
 	return nil
 }
 
-func AddBatchLogs(tx *gorm.DB,logs []Log) error {
+func AddBatchLogs(tx *gorm.DB, logs []Log) error {
 	// 遍历每个区块，依次插入数据库
 	for _, logIns := range logs {
 		result := tx.Create(&logIns)
@@ -58,7 +58,7 @@ func GetLogByHash(db *gorm.DB,blockHash common.Hash) ([]*types.Log,error) {
 
 func DeleteLogWithTxHash(db *gorm.DB,txHash common.Hash) error {
 	var log Log
-	err := db.Where("tx_hash",txHash).Delete(&log).Error
+	err := db.Where("tx_hash", txHash).Delete(&log).Error
 	if err != nil {
 		db.Rollback()
 		return err

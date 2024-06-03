@@ -9,12 +9,12 @@ import (
 // 创建交易表格模型
 type Transaction struct {
 	gorm.Model
-	Hash     string `gorm:"primaryKey"`
+	Hash     string `gorm:"unique"`
 	Encoded  string `gorm:"not null"`
 	BlockNum int64  `gorm:"not null"`
 }
 
-func AddTransaction(tx *gorm.DB,trans Transaction) error {
+func AddTransaction(tx *gorm.DB, trans Transaction) error {
 	res := tx.Create(&trans)
 	if res.Error != nil {
 		tx.Rollback()
@@ -23,13 +23,13 @@ func AddTransaction(tx *gorm.DB,trans Transaction) error {
 	return nil
 }
 
-func AddBatchTransactions(tx *gorm.DB,txs []*types.Transaction,num int64) error {
+func AddBatchTransactions(tx *gorm.DB, txs []*types.Transaction, num int64) error {
 	// 遍历每个区块，依次插入数据库
 	for _, txIn := range txs {
-		data,_ := txIn.MarshalBinary()
+		data, _ := txIn.MarshalBinary()
 		wt := Transaction{
-			Hash: txIn.Hash().String(),
-			Encoded: common.Bytes2Hex(data),
+			Hash:     txIn.Hash().String(),
+			Encoded:  common.Bytes2Hex(data),
 			BlockNum: num,
 		}
 		result := tx.Create(&wt)
@@ -43,15 +43,15 @@ func AddBatchTransactions(tx *gorm.DB,txs []*types.Transaction,num int64) error 
 	return nil
 }
 
-func GetTransactionByHash(db *gorm.DB,txHash common.Hash) *Transaction {
+func GetTransactionByHash(db *gorm.DB, txHash common.Hash) *Transaction {
 	var trans Transaction
-	db.First(&trans,"hash = ?",txHash)
+	db.First(&trans, "hash = ?", txHash)
 	return nil
 }
 
-func DeleteTransactionByHash(db *gorm.DB,txHash common.Hash) error {
+func DeleteTransactionByHash(db *gorm.DB, txHash common.Hash) error {
 	var tx Transaction
-	err := db.Where("hash",txHash).Delete(&tx).Error
+	err := db.Where("hash", txHash).Delete(&tx).Error
 	if err != nil {
 		db.Rollback()
 		return err
@@ -59,9 +59,9 @@ func DeleteTransactionByHash(db *gorm.DB,txHash common.Hash) error {
 	return nil
 }
 
-func DeleteTransactionByNum(db *gorm.DB,num uint64) error {
+func DeleteTransactionByNum(db *gorm.DB, num uint64) error {
 	var tx Transaction
-	err := db.Where("block_num",num).Delete(&tx).Error
+	err := db.Where("block_num", num).Delete(&tx).Error
 	if err != nil {
 		db.Rollback()
 		return err
