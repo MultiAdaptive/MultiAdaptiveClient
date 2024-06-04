@@ -27,7 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-
 // Defaults contains default settings for use on the Ethereum main net.
 var Defaults = Config{
 	SyncMode:           downloader.SnapSync,
@@ -40,9 +39,13 @@ var Defaults = Config{
 	TrieTimeout:        60 * time.Minute,
 	SnapshotCache:      102,
 	NodeType:           "b",
+	ChainName:          "ethereum",
 	FilterLogCacheSize: 32,
-	FileDataPool: 	  filedatapool.DefaultConfig,
+	FileDataPool:       filedatapool.DefaultConfig,
 	L1ScanUrl:          "",
+	L1ScanHost:         "",
+	L1ScanUser:         "",
+	L1ScanPassword:     "",
 	RPCGasCap:          50000000,
 	RPCEVMTimeout:      5 * time.Second,
 	RPCTxFeeCap:        1, // 1 ether
@@ -68,7 +71,7 @@ type Config struct {
 	NoPruning  bool // Whether to disable pruning and flush everything to disk
 	NoPrefetch bool // Whether to disable prefetching and only load state on demand
 
-	StateHistory       uint64 `toml:",omitempty"` // The maximum number of blocks from head whose state histories are reserved.
+	StateHistory uint64 `toml:",omitempty"` // The maximum number of blocks from head whose state histories are reserved.
 
 	// State scheme represents the scheme used to store ethereum states and trie
 	// nodes on top. It can be 'hash', 'path', or none which means use the scheme
@@ -100,11 +103,19 @@ type Config struct {
 	SnapshotCache  int
 	Preimages      bool
 
-	L1ScanUrl      string  //scan l1 url
+	L1ScanUrl string //scan l1 url
 
-	Passphrase     string
+	L1ScanHost string //scan l1 host
 
-	NodeType       string
+	L1ScanUser string //scan l1 user
+
+	L1ScanPassword string //scan l1 password
+
+	Passphrase string
+
+	NodeType string
+
+	ChainName string
 
 	// This is the number of blocks for which logs will be cached in the filter system.
 	FilterLogCacheSize int
@@ -128,7 +139,7 @@ type Config struct {
 	RPCTxFeeCap float64
 
 	// OverrideCancun (TODO: remove after the fork)
-//	OverrideCancun *uint64 `toml:",omitempty"`
+	//	OverrideCancun *uint64 `toml:",omitempty"`
 
 	// OverrideVerkle (TODO: remove after the fork)
 	OverrideVerkle *uint64 `toml:",omitempty"`
@@ -138,4 +149,3 @@ type Config struct {
 	// ApplySuperchainUpgrades requests the node to load chain-configuration from the superchain-registry.
 	ApplySuperchainUpgrades bool `toml:",omitempty"`
 }
-

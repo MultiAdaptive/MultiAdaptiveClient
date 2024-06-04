@@ -17,18 +17,20 @@
 package eth
 
 import (
+	"context"
 	"errors"
+	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethdb/db"
+	"github.com/ethereum/go-ethereum/log"
 	"gorm.io/gorm"
 	"math/big"
+	"strings"
 	"time"
-	"context"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/log"
 )
 
 const (
@@ -39,41 +41,118 @@ const (
 	SyncChunkSize       = 10
 )
 
-
 // chainSyncer coordinates blockchain sync components.
 type chainSyncer struct {
-	ctx         context.Context
-	force       *time.Timer
-	forced      bool
-	ethclient  *ethclient.Client
-	handler    *handler
-	db         *gorm.DB
-	nodeType   string
-	chain      *core.BlockChain
-	cancel     context.CancelFunc
-	doneCh     chan error
+	ctx       context.Context
+	force     *time.Timer
+	forced    bool
+	ethClient *ethclient.Client
+	btcClient *rpcclient.Client
+	handler   *handler
+	db        *gorm.DB
+	nodeType  string
+	chainName string
+	chain     *core.BlockChain
+	cancel    context.CancelFunc
+	doneCh    chan error
 }
 
-func newChainSync(ctx context.Context,sqlDb *gorm.DB,url string,handler *handler, chain *core.BlockChain, nodeType string) *chainSyncer {
-	eth,err := ethclient.Dial(url)
+func newChainSync(
+	ctx context.Context,
+	sqlDb *gorm.DB,
+	url string,
+	host string,
+	user string,
+	password string,
+	handler *handler,
+	chain *core.BlockChain,
+	nodeType string,
+	chainName string) *chainSyncer {
+	log.Info("newChainSync", "chainName", chainName)
+
+	switch strings.ToLower(chainName) {
+	case "ethereum", "eth":
+		return newEthereumChainSync(ctx, sqlDb, url, handler, chain, nodeType, chainName)
+	case "bitcoin", "btc":
+		return newBitcoinChainSync(ctx, sqlDb, host, user, password, handler, chain, nodeType, chainName)
+	default:
+		return nil
+	}
+}
+
+func newEthereumChainSync(
+	ctx context.Context,
+	sqlDb *gorm.DB,
+	url string,
+	handler *handler,
+	chain *core.BlockChain,
+	nodeType string,
+	chainName string) *chainSyncer {
+	log.Info("newEthereumChainSync", "url", url)
+
+	ethClient, err := ethclient.Dial(url)
 	if err != nil {
-		log.Error("NewChainSync Dial url failed","err",err.Error(),"url",url)
+		log.Error("newEthereumChainSync failed", "err", err.Error(), "url", url)
 		return nil
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &chainSyncer{
-		ctx: ctx,
-		handler: handler,
-		ethclient: eth,
-		db: sqlDb,
-		nodeType:nodeType,
-		chain: chain,
-		cancel: cancel,
+		ctx:       ctx,
+		handler:   handler,
+		ethClient: ethClient,
+		db:        sqlDb,
+		nodeType:  nodeType,
+		chainName: chainName,
+		chain:     chain,
+		cancel:    cancel,
 	}
 }
+
+func newBitcoinChainSync(
+	ctx context.Context,
+	sqlDb *gorm.DB,
+	host string,
+	user string,
+	password string,
+	handler *handler,
+	chain *core.BlockChain,
+	nodeType string,
+	chainName string) *chainSyncer {
+	log.Info("newBitcoinChainSync", "host", host, "user", user, "password", password)
+
+	cleanedHost := trimPrefixes(host, "http://", "https://")
+
+	connCfg := &rpcclient.ConnConfig{
+		Host:         cleanedHost,
+		User:         user,
+		Pass:         password,
+		HTTPPostMode: true,
+		DisableTLS:   true,
+	}
+
+	btcClient, err := rpcclient.New(connCfg, nil)
+
+	if err != nil {
+		log.Error("newBitcoinChainSync failed", "err", err.Error(), "host", host, "user", user, "password", password)
+		return nil
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	return &chainSyncer{
+		ctx:       ctx,
+		handler:   handler,
+		btcClient: btcClient,
+		db:        sqlDb,
+		nodeType:  nodeType,
+		chainName: chainName,
+		chain:     chain,
+		cancel:    cancel,
+	}
+}
+
 func (cs *chainSyncer) startSync() {
-	cs.doneCh = make(chan error,1)
+	cs.doneCh = make(chan error, 1)
 	go func() {
 		cs.doneCh <- cs.doSync()
 	}()
@@ -87,9 +166,9 @@ func (cs *chainSyncer) loop() {
 	cs.force = time.NewTimer(forceSyncCycle)
 	defer cs.force.Stop()
 
-	for  {
+	for {
 		select {
-		case  <-cs.doneCh:
+		case <-cs.doneCh:
 			cs.doneCh = nil
 			cs.forced = false
 			cs.force.Reset(forceSyncCycle)
@@ -99,9 +178,9 @@ func (cs *chainSyncer) loop() {
 				cs.startSync()
 			}
 			cs.force.Reset(forceSyncCycle)
-			log.Info("forcesync cycle time out","is sync",!cs.forced)
+			log.Info("force sync cycle time out", "is sync", !cs.forced)
 
-		case  <-cs.handler.quitSync:
+		case <-cs.handler.quitSync:
 			log.Info("chainSyncer---loop quit")
 			cs.cancel()
 			if cs.doneCh != nil {
@@ -109,31 +188,59 @@ func (cs *chainSyncer) loop() {
 			}
 			return
 		}
-
 	}
 }
 
 func (cs *chainSyncer) doSync() error {
+	log.Info("doSync-----")
+	switch strings.ToLower(cs.chainName) {
+	case "ethereum", "eth":
+		return cs.doEthereumSync()
+	case "bitcoin", "btc":
+		return cs.doBitcoinSync()
+	default:
+		return nil
+	}
+}
+
+func (cs *chainSyncer) doBitcoinSync() error {
+	log.Info("doBitcoinSync-----")
+	ctx := context.Background()
+	ws := NewWorkerService(cs.btcClient)
+
+	// 获取当前区块高度
+	currentBlockNumber, err := ws.GetCurrentBlockNumber(ctx)
+	if err != nil {
+		log.Error("get current block number fail", "err", err)
+		return err
+	}
+	log.Info("current block number", "currentBlockNumber", currentBlockNumber)
+
+	return nil
+}
+
+func (cs *chainSyncer) doEthereumSync() error {
+	log.Info("doEthereumSync-----")
 	if cs.forced == true {
 		return errors.New("chainSyncer is syncing")
 	}
 	var currentHeader uint64
 	currentBlock := cs.chain.CurrentBlock()
 	if currentBlock == nil || currentBlock.Number == nil {
-		num,err := db.GetLastBlockNum(cs.db)
+		num, err := db.GetLastBlockNum(cs.db)
 		if err != nil {
 			return err
 		}
 		currentHeader = num
-	}else {
+	} else {
 		currentHeader = currentBlock.Number.Uint64()
 	}
 
-	l1Num,err := cs.ethclient.BlockNumber(cs.ctx)
+	l1Num, err := cs.ethClient.BlockNumber(cs.ctx)
 	if err != nil {
 		return err
 	}
-	log.Info("doSync-----","l1num",l1Num,"currentHeader",currentHeader)
+	log.Info("doSync-----", "l1num", l1Num, "currentHeader", currentHeader)
 	cs.forced = true
 
 	//当前高度为零 可以直接从genesis开始同步
@@ -141,28 +248,28 @@ func (cs *chainSyncer) doSync() error {
 		requireTime := time.NewTimer(QuickReqTime)
 		startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
 		var shouldBreak bool
-		for i := startNum;true;i += SyncChunkSize {
-			log.Info("chainSyncer---","i----",i)
-			blocks := make([]*types.Block,SyncChunkSize)
-			for j := i;j< i+SyncChunkSize;j++ {
-				if j >= l1Num  {
+		for i := startNum; true; i += SyncChunkSize {
+			log.Info("chainSyncer---", "i----", i)
+			blocks := make([]*types.Block, SyncChunkSize)
+			for j := i; j < i+SyncChunkSize; j++ {
+				if j >= l1Num {
 					shouldBreak = true
-					log.Info("doSync-----shouldBreak----","j",j,"l1Num",l1Num)
+					log.Info("doSync-----shouldBreak----", "j", j, "l1Num", l1Num)
 					break
 				}
 				toBlockNum := j
 				select {
 				case <-requireTime.C:
-					block,err := cs.ethclient.BlockByNumber(cs.ctx,new(big.Int).SetUint64(toBlockNum))
+					block, err := cs.ethClient.BlockByNumber(cs.ctx, new(big.Int).SetUint64(toBlockNum))
 					if err == nil {
 						blocks[j-i] = block
 						requireTime.Reset(QuickReqTime)
-					}else {
+					} else {
 						cs.forced = false
 						return err
 					}
-				case <- cs.ctx.Done():
-					log.Info("chainSyncer-----","chainSyncer stop")
+				case <-cs.ctx.Done():
+					log.Info("chainSyncer-----", "chainSyncer stop")
 					return nil
 				}
 			}
@@ -172,49 +279,49 @@ func (cs *chainSyncer) doSync() error {
 				break
 			}
 		}
-	}else {
-		log.Info("chainSyncer---start---","currentHeader",currentHeader)
+	} else {
+		log.Info("chainSyncer---start---", "currentHeader", currentHeader)
 		//当前数据库有数据需要检查是否回滚
-		latestBlock,_ := db.GetBlockByNum(cs.db,currentHeader)
-		flag,org := cs.checkReorg(latestBlock)
+		latestBlock, _ := db.GetBlockByNum(cs.db, currentHeader)
+		flag, org := cs.checkReorg(latestBlock)
 		switch flag {
 		case true:
 			//回滚了删除从org开始的数据重新同步
-			for i :=latestBlock.NumberU64();i > org.NumberU64();i-- {
-				db.DeleteBlockByNum(cs.db,uint64(i))
+			for i := latestBlock.NumberU64(); i > org.NumberU64(); i-- {
+				db.DeleteBlockByNum(cs.db, uint64(i))
 			}
-			num,err := db.GetLastBlockNum(cs.db)
+			num, err := db.GetLastBlockNum(cs.db)
 			db.Begin(cs.db)
 			if err != nil {
-				db.AddLastBlockNum(db.Tx,org.NumberU64())
-			}else {
-				db.UpDataLastBlocNum(db.Tx,num,org.NumberU64())
+				db.AddLastBlockNum(db.Tx, org.NumberU64())
+			} else {
+				db.UpDataLastBlocNum(db.Tx, num, org.NumberU64())
 			}
 			db.Commit(db.Tx)
 		case false:
 			//没回滚继续同步
 			//cs.startSyncWithNum(uint64(org.BlockNum+1))
 		}
-		cs.startSyncWithNum(org.NumberU64()+1)
+		cs.startSyncWithNum(org.NumberU64() + 1)
 	}
 	return nil
 }
 
 func (cs *chainSyncer) startSyncWithNum(num uint64) error {
 	requerTimer := time.NewTimer(QuickReqTime)
-	for  {
+	for {
 		select {
 		case <-requerTimer.C:
-			block,err := cs.ethclient.BlockByNumber(cs.ctx,new(big.Int).SetUint64(num))
-			if err == nil && block != nil{
-				currentNum,_ := cs.ethclient.BlockNumber(context.Background())
+			block, err := cs.ethClient.BlockByNumber(cs.ctx, new(big.Int).SetUint64(num))
+			if err == nil && block != nil {
+				currentNum, _ := cs.ethClient.BlockNumber(context.Background())
 				if block.NumberU64() == currentNum {
 					cs.forced = false
 					return nil
-				}else if(block.NumberU64() < currentNum) {
+				} else if block.NumberU64() < currentNum {
 					num++
 					requerTimer.Reset(QuickReqTime)
-				}else {
+				} else {
 					return nil
 				}
 				cs.processBlocks([]*types.Block{block})
@@ -228,60 +335,60 @@ func (cs *chainSyncer) startSyncWithNum(num uint64) error {
 func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	//save to db
 	db.Begin(cs.db)
-	err := db.AddBatchBlocks(db.Tx,blocks)
+	err := db.AddBatchBlocks(db.Tx, blocks)
 	if err != nil {
-		log.Error("processBlocks-----","AddBatchBlocks---err",err.Error())
+		log.Error("processBlocks-----", "AddBatchBlocks---err", err.Error())
 		return err
 	}
 	commitCache := db.NewOrderedMap()
 	var latestNum uint64
 	length := len(blocks)
 	//get tx
-	for _,bc := range blocks{
-		trans := make([]*types.Transaction,0)
-		if bc != nil{
+	for _, bc := range blocks {
+		trans := make([]*types.Transaction, 0)
+		if bc != nil {
 			if latestNum < bc.NumberU64() {
 				latestNum = bc.NumberU64()
 			}
-			for _,tx := range bc.Transactions(){
+			for _, tx := range bc.Transactions() {
 				if tx.To() != nil {
 					switch tx.To().String() {
 					case cs.chain.Config().L1Conf.DomiconCommitmentProxy:
 						//get data from trans data
-						trans = append(trans,tx)
+						trans = append(trans, tx)
 						txData := tx.Data()
 						if len(txData) != 0 {
 							commitment := slice(txData)
-							commitCache.Set(tx.Hash().String(),commitment)
+							commitCache.Set(tx.Hash().String(), commitment)
 						}
 					}
 				}
 			}
 			if len(trans) != 0 {
-				err := db.AddBatchTransactions(db.Tx,trans,bc.Number().Int64())
-				if err != nil{
-					log.Error("AddBatchTransactions----","err",err.Error())
+				err := db.AddBatchTransactions(db.Tx, trans, bc.Number().Int64())
+				if err != nil {
+					log.Error("AddBatchTransactions----", "err", err.Error())
 				}
 			}
 		}
 	}
 
 	checkHash := commitCache.Keys()
-	receipts := make([]*types.Receipt,len(checkHash))
+	receipts := make([]*types.Receipt, len(checkHash))
 
-	for i,k := range checkHash{
+	for i, k := range checkHash {
 		txHash := common.HexToHash(k)
-		time.Sleep(1*time.Second)
-		receipt,err := cs.ethclient.TransactionReceipt(cs.ctx,txHash)
-		if err == nil && receipt != nil && receipt.Status == types.ReceiptStatusSuccessful{
+		time.Sleep(1 * time.Second)
+		receipt, err := cs.ethClient.TransactionReceipt(cs.ctx, txHash)
+		if err == nil && receipt != nil && receipt.Status == types.ReceiptStatusSuccessful {
 			receipts[i] = receipt
-		}else {
+		} else {
 			commitCache.Del(k)
 		}
 	}
-	err = db.AddBatchReceipts(db.Tx,receipts)
+	err = db.AddBatchReceipts(db.Tx, receipts)
 	if err != nil {
-		log.Error("AddBatchReceipts--","err",err.Error())
+		log.Error("AddBatchReceipts--", "err", err.Error())
 	}
 
 	logs := make([]*types.Log,0)
@@ -297,23 +404,24 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	db.Commit(db.Tx)
 
 	finalKeys := commitCache.Keys()
-	daDatas := make([]*types.DA,0)
-	for _,txHash := range finalKeys{
-		commitment,flag := commitCache.Get(txHash)
+	daDatas := make([]*types.DA, 0)
+	for _, txHash := range finalKeys {
+		commitment, flag := commitCache.Get(txHash)
 		if flag {
 			//new commit get from memory pool
-			da,err := cs.handler.fileDataPool.GetDAByCommit(commitment)
+			da, err := cs.handler.fileDataPool.GetDAByCommit(commitment)
 			if err == nil && da != nil {
 				da.TxHash = common.HexToHash(txHash)
 				da.ReceiveAt = time.Now()
 				cs.handler.fileDataPool.Add([]*types.DA{da},true,false)
 				daDatas = append(daDatas,da)
+
 			}
 		}
 	}
 
 	if len(daDatas) != 0 {
-		parentHashData,err := db.GetMaxIDDAStateHash(cs.db)
+		parentHashData, err := db.GetMaxIDDAStateHash(cs.db)
 		if err != nil {
 			parentHashData = ""
 		}
@@ -322,12 +430,12 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		switch cs.nodeType {
 		case "b":
 			db.Begin(cs.db)
-			db.AddBatchCommitment(db.Tx,daDatas,parentHash)
+			db.AddBatchCommitment(db.Tx, daDatas, parentHash)
 			db.Commit(db.Tx)
 			cs.handler.fileDataPool.RemoveFileData(daDatas)
 		case "s":
 			db.Begin(cs.db)
-			db.AddBatchCommitment(db.Tx,daDatas,parentHash)
+			db.AddBatchCommitment(db.Tx, daDatas, parentHash)
 			db.Commit(db.Tx)
 			cs.handler.fileDataPool.RemoveFileData(daDatas)
 		}
@@ -338,32 +446,32 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 
 func slice(data []byte) []byte {
 	digst := new(kzg.Digest)
-	digst.X.SetBytes(data[132:132+32])
-	digst.Y.SetBytes(data[132+32:132+64])
+	digst.X.SetBytes(data[132 : 132+32])
+	digst.Y.SetBytes(data[132+32 : 132+64])
 	return digst.Marshal()
 }
 
-//false 没有回滚
-func (cs *chainSyncer) checkReorg(block *types.Block) (bool,*types.Block) {
+// false 没有回滚
+func (cs *chainSyncer) checkReorg(block *types.Block) (bool, *types.Block) {
 	var parentHash common.Hash
 	blockNum := block.NumberU64()
 	time.After(QuickReqTime)
-	l1Block,err := cs.ethclient.BlockByNumber(cs.ctx,block.Number())
+	l1Block, err := cs.ethClient.BlockByNumber(cs.ctx, block.Number())
 	if err != nil {
-		log.Error("checkReorg------BlockByNumber","num",blockNum)
+		log.Error("checkReorg------BlockByNumber", "num", blockNum)
 	}
 	if block.Hash().Hex() == l1Block.Hash().String() {
-		return false,block
-	}else {
+		return false, block
+	} else {
 		parentHash = block.ParentHash()
-		block,err := cs.ethclient.BlockByHash(cs.ctx,parentHash)
+		block, err := cs.ethClient.BlockByHash(cs.ctx, parentHash)
 		if err != nil || block == nil {
-			block,_ := db.GetBlockByHash(cs.db,parentHash)
-			if block.NumberU64() == cs.chain.Config().L1Conf.GenesisBlockNumber  {
-				return true,block
+			block, _ := db.GetBlockByHash(cs.db, parentHash)
+			if block.NumberU64() == cs.chain.Config().L1Conf.GenesisBlockNumber {
+				return true, block
 			}
 			cs.checkReorg(block)
 		}
 	}
-	return true,block
+	return true, block
 }

@@ -176,10 +176,34 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 
 	if ctx.IsSet(utils.L1ScanUrlFlag.Name) {
 		url := ctx.String(utils.L1ScanUrlFlag.Name)
-		if url == "" || len(url) == 0{
-			 log.Error("makeFullNode failed","L1ScanUrlFlag value",utils.L1ScanUrlFlag.Value)
+		if url == "" || len(url) == 0 {
+			log.Error("makeFullNode failed", "L1ScanUrlFlag value", utils.L1ScanUrlFlag.Value)
 		}
 		cfg.Eth.L1ScanUrl = url
+	}
+
+	if ctx.IsSet(utils.L1ScanHostFlag.Name) {
+		host := ctx.String(utils.L1ScanHostFlag.Name)
+		if host == "" || len(host) == 0 {
+			log.Error("makeFullNode failed", "L1ScanHostFlag value", utils.L1ScanHostFlag.Value)
+		}
+		cfg.Eth.L1ScanHost = host
+	}
+
+	if ctx.IsSet(utils.L1ScanUserFlag.Name) {
+		user := ctx.String(utils.L1ScanUserFlag.Name)
+		if user == "" || len(user) == 0 {
+			log.Error("makeFullNode failed", "L1ScanUserFlag value", utils.L1ScanUserFlag.Value)
+		}
+		cfg.Eth.L1ScanUser = user
+	}
+
+	if ctx.IsSet(utils.L1ScanPasswordFlag.Name) {
+		password := ctx.String(utils.L1ScanPasswordFlag.Name)
+		if password == "" || len(password) == 0 {
+			log.Error("makeFullNode failed", "L1ScanPasswordFlag value", utils.L1ScanPasswordFlag.Value)
+		}
+		cfg.Eth.L1ScanPassword = password
 	}
 
 	if ctx.IsSet(utils.NodeTypeFlag.Name) {
@@ -190,8 +214,21 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 		default:
 			cfg.Eth.NodeType = ethconfig.Defaults.NodeType
 		}
-	}else {
+	} else {
 		cfg.Eth.NodeType = ethconfig.Defaults.NodeType
+	}
+
+	log.Info("ChainName", "chain name", ctx.String(utils.ChainNameFlag.Name))
+	if ctx.IsSet(utils.ChainNameFlag.Name) {
+		chainName := ctx.String(utils.ChainNameFlag.Name)
+		switch chainName {
+		case "ethereum", "eth", "bitcoin", "btc":
+			cfg.Eth.ChainName = chainName
+		default:
+			cfg.Eth.ChainName = ethconfig.Defaults.ChainName
+		}
+	} else {
+		cfg.Eth.ChainName = ethconfig.Defaults.ChainName
 	}
 
 	backend, eth := utils.RegisterEthService(stack, &cfg.Eth)
