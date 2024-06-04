@@ -206,7 +206,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if config.FileDataPool.Journal != "" {
 		config.FileDataPool.Journal = stack.ResolvePath(config.FileDataPool.Journal)
 	}
-	fileDataPool := filedatapool.New(config.FileDataPool,eth.blockchain)
+	fileDataPool := filedatapool.New(config.FileDataPool,eth.blockchain,config.NodeType)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +237,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if eth.handler, err = newHandler(&handlerConfig{
 		Database:       chainDb,
 		Chain:          eth.blockchain,
-		FileDataPool:  	eth.fdPool,
+		FileDataPool:   eth.fdPool,
 		Merger:         eth.merger,
 		Network:        config.NetworkId,
 		Sync:           config.SyncMode,

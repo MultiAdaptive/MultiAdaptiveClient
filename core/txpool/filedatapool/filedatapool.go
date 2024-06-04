@@ -100,12 +100,12 @@ type DiskDetail struct {
 }
 
 type HashCollect struct {
-   Hashes   []common.Hash  `json:"Hashes"`
+	Hashes   map[common.Hash]time.Time  `json:"Hashes"`
 }
 
 func newHashCollect() *HashCollect{
 	return &HashCollect{
-		Hashes: make([]common.Hash, 0),
+		Hashes: make(map[common.Hash]time.Time),
 	}
 }
 
@@ -120,7 +120,8 @@ type FilePool struct {
 	journal         *journal                // Journal of local fileData to back up to disk
 	subs            event.SubscriptionScope // Subscription scope to unsubscribe all on shutdown
 	all             *lookup
-	diskCache	     *HashCollect  //
+	nodeType        string
+	diskCache	    *HashCollect  //
 	collector       map[common.Hash]*types.DA
 	beats           map[common.Hash]time.Time // Last heartbeat from each known account
 	reorgDoneCh     chan chan struct{}
@@ -130,14 +131,15 @@ type FilePool struct {
 	currentBlock     atomic.Pointer[types.Header] // Current head of the blockchain
 }
 
-func New(config Config, chain BlockChain) *FilePool {
+func New(config Config, chain BlockChain,nodeType string) *FilePool {
 	fp := &FilePool{
 		config:          config,
 		chain:			 		 chain,		
 		chainconfig:     chain.Config(),
 		signer:          types.LatestFdSigner(chain.Config()),
 		all:             newLookup(),
-		diskCache:	       newHashCollect(),
+		diskCache:	     newHashCollect(),
+		nodeType:        nodeType,
 		collector:       make(map[common.Hash]*types.DA),
 		beats:           make(map[common.Hash]time.Time),
 		reorgDoneCh:     make(chan chan struct{}),
@@ -174,6 +176,20 @@ func (fp *FilePool) Init(head *types.Header) error {
 		}
 	}
 	fp.wg.Add(1)
+
+	if fp.nodeType == "b" {
+		das,err := db.GetAllDARecords(fp.chain.SqlDB())
+		if err != nil {
+			log.Info("FilePool init","err",err.Error())
+		}else {
+			for _,da := range das{
+				fp.diskCache.Hashes[da.TxHash] = da.ReceiveAt
+				hashData := common.BytesToHash(da.Commitment.Marshal())
+				fp.diskCache.Hashes[hashData] = da.ReceiveAt
+			}
+		}
+	}
+
 	go fp.loop()
 	return nil
 }
@@ -185,7 +201,7 @@ func (fp *FilePool) loop() {
 		// Start the stats reporting and fileData eviction tickers
 		evict   = time.NewTicker(evictionInterval)
 		journal = time.NewTicker(fp.config.Rejournal)
-		//remove  = time.NewTicker(fp.config.Lifetime)
+		remove  = time.NewTicker(fp.config.Lifetime)
 	)
 	defer evict.Stop()
 	defer journal.Stop()
@@ -197,46 +213,15 @@ func (fp *FilePool) loop() {
 		// Handle pool shutdown
 		case <-fp.reorgShutdownCh:
 			return
-		//TODO FIX THIS
-		//// remove FileData from disk
-		//case <- remove.C:
-		// diskDb := fp.currentState.Database().DiskDB()
-		// data,err := diskDb.Get(HashListKey)
-		// if err != nil || len(data) == 0 {
-		//	continue
-		// }
-		//
-		//var coll HashCollect
-		//err = json.Unmarshal(data,&coll)
-		//if err != nil {
-		//	continue
-		//}
-		//
-		//var detail DiskDetail
-		//for index,txHash := range coll.Hashes {
-		//	data,err := rawdb.ReadFileDataDetail(diskDb,txHash)
-		//	if err != nil {
-		//		continue
-		//	}
-		//
-		//	err = json.Unmarshal(data,&detail)
-		//	if err == nil {
-		//		if detail.TimeRecord.Before(time.Now().Add(3*24*time.Hour)) {
-		//			detail.State = DISK_FILEDATA_STATE_DEL
-		//		}
-		//		if detail.State == DISK_FILEDATA_STATE_DEL {
-		//			//just for test net v1.0
-		//			detail.State = DISK_FILEDATA_STATE_SAVE
-		//
-		//			data, _ := rlp.EncodeToBytes(detail)
-		//			rawdb.WriteFileDataDetail(diskDb,data,txHash)
-		//			fp.diskCache.Hashes = removeElement(fp.diskCache.Hashes,index)
-		//		}
-		//	}
-		//}
-		//collData,_ := json.Marshal(fp.diskCache)
-		//diskDb.Put(HashListKey,collData)
 
+		case <- remove.C:
+
+			for hash,receive := range fp.diskCache.Hashes {
+				if receive.Before(time.Now().Add(14*24*time.Hour)) {
+					db.DeleteDAByHash(fp.chain.SqlDB(),hash)
+				}
+			}
+			remove.Reset(fp.config.Lifetime)
 		// Handle inactive txHash fileData eviction
 		case <-evict.C:
 			fp.mu.Lock()
@@ -244,9 +229,9 @@ func (fp *FilePool) loop() {
 				// Any non-locals old enough should be removed
 				if time.Since(fp.beats[txHash]) > fp.config.Lifetime {
 					for txHash := range fp.collector {
-						for ind,hash := range fp.diskCache.Hashes {
+						for hash,_ := range fp.diskCache.Hashes {
 							if hash == txHash {
-								removeElement(fp.diskCache.Hashes,ind)
+								delete(fp.diskCache.Hashes,hash)
 							}
 						}
 						fp.removeFileData(txHash)
@@ -268,9 +253,8 @@ func (fp *FilePool) loop() {
 	}
 }
 
-func removeElement(arr []common.Hash, index int) []common.Hash {
-	arr[index] = arr[len(arr)-1]
-	return arr[:len(arr)-1]
+func (fp *FilePool) AddInToDisk(hash common.Hash,receive time.Time)  {
+	fp.diskCache.Hashes[hash] = receive
 }
 
 // SubscribeFileDatas registers a subscription for new FileData events,
@@ -313,7 +297,7 @@ func (fp *FilePool) GetDAByCommit(commit []byte) (*types.DA,error){
 		return fd,nil
 	}
 
-	da,err := db.GetCommitmentByCommitment(fp.chain.SqlDB(),commit)
+	da,err := db.GetDAByCommitment(fp.chain.SqlDB(),commit)
 	if err != nil {
 		return nil, err
 	}
@@ -409,6 +393,11 @@ func (fp *FilePool) Add(fds []*types.DA, local, sync bool) []error {
 			hashData = common.BytesToHash(fd.Commitment.Marshal())
 			log.Info("FilePool----Add","commitHash",hashData.Hex())
 		}
+
+		if fp.nodeType == "b" {
+			fp.AddInToDisk(hashData,fd.ReceiveAt)
+		}
+
 		if fp.all.Get(hashData) != nil {
 			errs[i] = ErrAlreadyKnown
 			knownFdMeter.Mark(1)
@@ -470,7 +459,6 @@ func (fp *FilePool) addFdsLocked(fds []*types.DA, local bool) []error {
 		_, err := fp.add(fd, local)
 		errs[i] = err
 	}
-
 	return errs
 }
 

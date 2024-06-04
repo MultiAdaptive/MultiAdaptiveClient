@@ -415,6 +415,43 @@ func TestRegisterHandler_Successful(t *testing.T) {
 	assert.Equal(t, "success", string(buf))
 }
 
+func TestNode_RegisterHandler(t *testing.T) {
+	node := createNode(t, 8081, 8082)
+	defer node.Close()
+
+	// create and mount handler
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			w.Header().Set("Content-Type", "application/json")
+
+		} else {
+			http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		}
+	})
+	node.RegisterHandler("/api/home-data", "/api/home-data", handler)
+
+	// start node
+	if err := node.Start(); err != nil {
+		t.Fatalf("could not start node: %v", err)
+	}
+
+	// create HTTP request
+	httpReq, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:8081/api/home-data", nil)
+	if err != nil {
+		t.Error("could not issue new http request ", err)
+	}
+
+	// check response
+	resp := doHTTPRequest(t, httpReq)
+	buf := make([]byte, 7)
+	_, err = io.ReadFull(resp.Body, buf)
+	if err != nil {
+		t.Fatalf("could not read response: %v", err)
+	}
+	assert.Equal(t, "success", string(buf))
+}
+
+
 // Tests that the given handler will not be successfully mounted since no HTTP server
 // is enabled for RPC
 func TestRegisterHandler_Unsuccessful(t *testing.T) {

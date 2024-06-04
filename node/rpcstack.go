@@ -73,7 +73,6 @@ type httpServer struct {
 	listener net.Listener // non-nil when server is running
 
 	// HTTP RPC handler things.
-
 	httpConfig  httpConfig
 	httpHandler atomic.Value // *rpcHandler
 
@@ -95,7 +94,6 @@ const (
 
 func newHTTPServer(log log.Logger, timeouts rpc.HTTPTimeouts) *httpServer {
 	h := &httpServer{log: log, timeouts: timeouts, handlerNames: make(map[string]string)}
-
 	h.httpHandler.Store((*rpcHandler)(nil))
 	h.wsHandler.Store((*rpcHandler)(nil))
 	return h

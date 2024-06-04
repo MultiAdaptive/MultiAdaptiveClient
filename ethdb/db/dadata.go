@@ -8,7 +8,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"gorm.io/gorm"
+	"time"
 )
+
+const layout = "2006-01-02 15:04:05.999999999 -0700 MST"
 
 // 创建commitment表格模型
 type DA struct {
@@ -24,6 +27,7 @@ type DA struct {
 	ParentStateHash string //parent Commit Data Hash
 	StateHash       string //latest commit Data hash
 	BlockNum        int64
+	ReceiveAt       string
 }
 
 func AddCommitment(tx *gorm.DB, da *types.DA, parentHash common.Hash) error {
@@ -44,6 +48,7 @@ func AddCommitment(tx *gorm.DB, da *types.DA, parentHash common.Hash) error {
 		SignData:        common.Bytes2Hex(da.SignData),
 		ParentStateHash: currentParentHash.Hex(),
 		StateHash:       stateHash.Hex(),
+		ReceiveAt:       da.ReceiveAt.String(),
 	}
 	res := tx.Create(&wd)
 	return res.Error
@@ -69,6 +74,7 @@ func AddBatchCommitment(tx *gorm.DB, das []*types.DA, parentHash common.Hash) er
 			SignData:        common.Bytes2Hex(da.SignData),
 			ParentStateHash: currentParentHash.String(),
 			StateHash:       stateHash.Hex(),
+			ReceiveAt:       da.ReceiveAt.String(),
 		}
 		result := tx.Create(&wda)
 		if result.Error != nil {
@@ -82,14 +88,17 @@ func AddBatchCommitment(tx *gorm.DB, das []*types.DA, parentHash common.Hash) er
 	return nil
 }
 
-func GetCommitmentByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
+func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 	var da DA
 	tx := db.First(&da, "commitment = ?", common.Bytes2Hex(commitment))
 	if tx.Error == nil {
 		var digest kzg.Digest
 		str, _ := hex.DecodeString(da.Commitment)
 		digest.SetBytes(str)
-
+		parsedTime, err := time.Parse(layout, da.ReceiveAt)
+		if err != nil {
+			fmt.Println("Error parsing time:", err)
+		}
 		return &types.DA{
 			Sender:     common.HexToAddress(da.Sender),
 			Index:      uint64(da.Index),
@@ -98,6 +107,7 @@ func GetCommitmentByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error
 			Data:       common.Hex2Bytes(da.Data),
 			SignData:   common.Hex2Bytes(da.SignData),
 			TxHash:     common.HexToHash(da.TxHash),
+			ReceiveAt:  parsedTime,
 		}, tx.Error
 	}
 	errstr := fmt.Sprintf("can not find DA with given commitment :%d", common.Bytes2Hex(commitment))
@@ -111,6 +121,10 @@ func GetCommitmentByHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 		var digest kzg.Digest
 		str, _ := hex.DecodeString(da.Commitment)
 		digest.SetBytes(str)
+		parsedTime, err := time.Parse(layout, da.ReceiveAt)
+		if err != nil {
+			fmt.Println("Error parsing time:", err)
+		}
 		return &types.DA{
 			Sender:     common.HexToAddress(da.Sender),
 			Index:      uint64(da.Index),
@@ -119,6 +133,7 @@ func GetCommitmentByHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 			Data:       common.Hex2Bytes(da.Data),
 			SignData:   common.Hex2Bytes(da.SignData),
 			TxHash:     common.HexToHash(da.TxHash),
+			ReceiveAt:  parsedTime,
 		}, tx.Error
 	}
 	errstr := fmt.Sprintf("can not find DA with given txHash :%d", txHash.Hex())
@@ -132,4 +147,43 @@ func GetMaxIDDAStateHash(db *gorm.DB) (string, error) {
 		return "", err
 	}
 	return da.StateHash, nil
+}
+
+func DeleteDAByHash(db *gorm.DB, hash common.Hash) error {
+	var da DA
+	tx := db.Where("tx_hash = ?", hash)
+	if tx.Error != nil {
+		tx = db.Where("commitment = ?", hash)
+	}
+	err := tx.Delete(&da).Error
+	if err != nil {
+		db.Rollback()
+		return err
+	}
+	return nil
+}
+
+func GetAllDARecords(db *gorm.DB) ([]*types.DA, error) {
+	var daRecords []DA
+	tx := db.Select("tx_hash", "commitment", "receipt").Find(&daRecords)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	var das []*types.DA
+	for _, da := range daRecords {
+		var digest kzg.Digest
+		str, _ := hex.DecodeString(da.Commitment)
+		digest.SetBytes(str)
+		parsedTime, err := time.Parse(layout, da.ReceiveAt)
+		if err != nil {
+			fmt.Println("Error parsing time:", err)
+		}
+		das = append(das, &types.DA{
+			TxHash:     common.HexToHash(da.TxHash),
+			Commitment: digest,
+			ReceiveAt:  parsedTime,
+		})
+	}
+	return das, nil
 }

@@ -109,6 +109,7 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 	}else {
 		signData,err := b.eth.singer.Sign(fd)
 		fd.SignData = signData
+		fd.ReceiveAt = time.Now()
 		b.eth.fdPool.Add([]*types.DA{fd},true,false)
 		return signData,err
 	}
@@ -126,6 +127,7 @@ func (b *EthAPIBackend) SendBatchDA(datas [][]byte) ([][]byte,[]error) {
 				errlist[index] = err
 				continue
 			}else {
+				da.ReceiveAt = time.Now()
 				b.eth.fdPool.Add([]*types.DA{&da},true,false)
 				sign,err :=  b.eth.singer.Sign(&da)
 				if err != nil {

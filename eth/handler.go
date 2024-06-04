@@ -75,6 +75,7 @@ type fileDataPool interface {
 	// Add should add the given transactions to the pool.
 	Add(fds []*types.DA, local bool, sync bool) []error
 
+	AddInToDisk(hash common.Hash,receive time.Time)
 	// SubscribenFileDatas subscribes to new fileData events. The subscriber
 	// can decide whether to receive notifications only for newly seen fileDatas
 	// or also for reorged out ones.
@@ -119,8 +120,8 @@ type handler struct {
 	peers        *peerSet
 	merger       *consensus.Merger
 	eventMux      *event.TypeMux
-	txsCh         chan core.NewTxsEvent
-	txsSub        event.Subscription
+	//txsCh         chan core.NewTxsEvent
+	//txsSub        event.Subscription
 	fdsCh         chan core.NewFileDataEvent
 	fdHashCh      chan core.FileDataHashEvent
 	fdsSub        event.Subscription
