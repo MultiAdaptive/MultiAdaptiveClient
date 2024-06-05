@@ -28,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethdb/db"
 	"github.com/ethereum/go-ethereum/log"
+	los "github.com/samber/lo"
 	"gorm.io/gorm"
 	"math/big"
 	"strings"
@@ -206,6 +207,9 @@ func (cs *chainSyncer) doSync() error {
 
 func (cs *chainSyncer) doBitcoinSync() error {
 	log.Info("doBitcoinSync-----")
+	chainMagicNumber := "0xDAB5BFFA"
+	chainName := "bitcoinregtest"
+
 	ctx := context.Background()
 	ws := NewWorkerService(cs.db, cs.btcClient)
 
@@ -218,13 +222,32 @@ func (cs *chainSyncer) doBitcoinSync() error {
 	log.Info("current block number", "currentBlockNumber", currentBlockNumber)
 
 	// 读取数据库中的区块高度
-	chainMagicNumber := "0xDAB5BFFA"
-	chainName := "bitcoinregtest"
 	presentBlockNumber, err := ws.GetPresentBlockNumber(ctx, chainMagicNumber, chainName)
 	if err != nil {
 		return err
 	}
 	log.Info("present block number", "presentBlockNumber", presentBlockNumber)
+
+	// 如果当前区块高度等于数据库中的区块高度，则不处理
+	if presentBlockNumber >= currentBlockNumber {
+		log.Info("The current blockchain height is equal to the height of synchronized blocks in the database")
+		return nil
+	}
+
+	beginBlockNumber := presentBlockNumber + 1
+	endBlockNumber := los.Min([]int64{presentBlockNumber + 6, currentBlockNumber})
+
+	// 遍历获取block
+	blockNumberAndBlockMap, blockNumberAndBlockHeaderMap, err := ws.GetBlocks(ctx, beginBlockNumber, endBlockNumber)
+	if err != nil {
+		return err
+	}
+
+	//保存区块
+	err = ws.SaveBlocks(ctx, chainMagicNumber, blockNumberAndBlockHeaderMap, blockNumberAndBlockMap)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -401,14 +424,14 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		log.Error("AddBatchReceipts--", "err", err.Error())
 	}
 
-	logs := make([]*types.Log,0)
-	for _,receipt := range receipts{
-		logs = append(logs,receipt.Logs...)
+	logs := make([]*types.Log, 0)
+	for _, receipt := range receipts {
+		logs = append(logs, receipt.Logs...)
 	}
 
-	err = db.AddBatchLogs(db.Tx,logs)
+	err = db.AddBatchLogs(db.Tx, logs)
 	if err != nil {
-		log.Error("AddBatchLogs--","err",err.Error())
+		log.Error("AddBatchLogs--", "err", err.Error())
 	}
 
 	db.Commit(db.Tx)
@@ -423,8 +446,8 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			if err == nil && da != nil {
 				da.TxHash = common.HexToHash(txHash)
 				da.ReceiveAt = time.Now()
-				cs.handler.fileDataPool.Add([]*types.DA{da},true,false)
-				daDatas = append(daDatas,da)
+				cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
+				daDatas = append(daDatas, da)
 
 			}
 		}

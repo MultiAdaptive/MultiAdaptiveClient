@@ -2,11 +2,15 @@ package eth
 
 import (
 	"context"
+	"errors"
+	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/rpcclient"
-	"github.com/ethereum/go-ethereum/eth/model"
+	"github.com/btcsuite/btcd/wire"
+	baseModel "github.com/ethereum/go-ethereum/eth/model"
 	"github.com/ethereum/go-ethereum/eth/tool"
 	"github.com/ethereum/go-ethereum/log"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -196,13 +200,13 @@ func (ws *WorkerService) GetCurrentBlockNumber(ctx context.Context) (int64, erro
 
 func (ws *WorkerService) GetPresentBlockNumber(ctx context.Context, chainMagicNumber string, chainName string) (int64, error) {
 	var gormdb *gorm.DB
-	var bc model.BaseChain
+	var bc baseModel.BaseChain
 
 	now := tool.TimeStampNowSecond()
 
 	gormdb = ws.gdb.WithContext(ctx).
-		Where(model.BaseChain{ChainMagicNumber: chainMagicNumber}).
-		Attrs(model.BaseChain{ChainName: chainName, CurrentHeight: 0, CreateAt: now}).
+		Where(baseModel.BaseChain{ChainMagicNumber: chainMagicNumber}).
+		Attrs(baseModel.BaseChain{ChainName: chainName, CurrentHeight: 0, CreateAt: now}).
 		FirstOrCreate(&bc)
 	if gormdb.Error != nil {
 		return 0, gormdb.Error
@@ -232,71 +236,95 @@ func (ws *WorkerService) GetPresentBlockNumber(ctx context.Context, chainMagicNu
 //
 //	return nil
 //}
-//
-//func (ws *WorkerService) GetBlocks(ctx context.Context, from int64, to int64) (map[int64]*btcjson.GetBlockVerboseResult, map[int64]*wire.BlockHeader, error) {
-//	// 遍历获取block
-//	blockNumberAndBlockVerboseMap := make(map[int64]*btcjson.GetBlockVerboseResult)
-//	blockNumberAndBlockHeaderMap := make(map[int64]*wire.BlockHeader)
-//
-//	for i := from; i <= to; i++ {
-//		blockNumber := i
-//		blockVerbose, err := ws.btcCli.BlockVerboseByNumber(ctx, blockNumber)
-//		if err != nil {
-//			return nil, nil, err
-//		}
-//		blockNumberAndBlockVerboseMap[i] = blockVerbose
-//
-//		blockHeader, err := ws.btcCli.BlockHeaderByNumber(ctx, blockNumber)
-//		if err != nil {
-//			return nil, nil, err
-//		}
-//		blockNumberAndBlockHeaderMap[i] = blockHeader
-//	}
-//
-//	return blockNumberAndBlockVerboseMap, blockNumberAndBlockHeaderMap, nil
-//}
-//
-//// 保存区块
-//func (ws *WorkerService) SaveBlocks(ctx context.Context, chainMagicNumber string, blockNumberAndBlockHeaderMap map[int64]*wire.BlockHeader, blockNumberAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) error {
-//	q := baseQuery.Use(ws.db.GDB())
-//
-//	// 遍历获取block
-//	blockModels := make([]*baseModel.BaseBlock, 0)
-//
-//	now := tool.TimeStampNowSecond()
-//
-//	for blockNumber, _ := range blockNumberAndBlockHeaderMap {
-//		block := blockNumberAndBlockVerboseMap[blockNumber]
-//		blockModels = append(blockModels, &baseModel.BaseBlock{
-//			ChainMagicNumber: chainMagicNumber,
-//			BlockHeight:      block.Height,
-//			BlockHash:        block.Hash,
-//			Confirmations:    block.Confirmations,
-//			StrippedSize:     block.StrippedSize,
-//			Size:             block.Size,
-//			Weight:           block.Weight,
-//			MerkleRoot:       block.MerkleRoot,
-//			TransactionCnt:   uint32(len(block.Tx)),
-//			BlockTime:        block.Time,
-//			Nonce:            block.Nonce,
-//			Bits:             block.Bits,
-//			Difficulty:       block.Difficulty,
-//			PreviousHash:     block.PreviousHash,
-//			NextHash:         block.NextHash,
-//			CreateAt:         now,
-//		})
-//	}
-//
-//	// 保存区块
-//	err := q.BaseBlock.WithContext(ctx).Clauses(clause.Insert{Modifier: "IGNORE"}).CreateInBatches(blockModels, 30)
-//
-//	if err != nil {
-//		return err
-//	}
-//
-//	return nil
-//}
-//
+
+func (ws *WorkerService) GetBlocks(ctx context.Context, from int64, to int64) (map[int64]*btcjson.GetBlockVerboseResult, map[int64]*wire.BlockHeader, error) {
+	blockNumberAndBlockVerboseMap := make(map[int64]*btcjson.GetBlockVerboseResult)
+	blockNumberAndBlockHeaderMap := make(map[int64]*wire.BlockHeader)
+
+	// 遍历获取block
+	for i := from; i <= to; i++ {
+		blockHeight := i
+
+		// 根据区块高度获取区块哈希
+		blockHash, err := ws.btcCli.GetBlockHash(blockHeight)
+		if err != nil {
+			log.Error("Error getting block hash by height", "blockHeight", blockHeight, "err", err)
+			return nil, nil, errors.New("get block hash by height err:" + err.Error())
+		}
+		log.Info("get block hash by height", "blockHash", blockHash, "blockHeight", blockHeight)
+
+		// 使用区块哈希获取区块详细信息
+		blockVerbose, err := ws.btcCli.GetBlockVerbose(blockHash)
+		if err != nil {
+			log.Error("Error getting block verbose by hash", "blockHash", blockHash, "err", err)
+			return nil, nil, errors.New("get block verbose by hash err:" + err.Error())
+		}
+
+		// 打印区块详细信息
+		log.Info("get block verbose by hash", "blockHeight", blockHeight, "blockHash", blockHash, "blockTime", blockVerbose.Time, "numberOfTransactions", len(blockVerbose.Tx))
+
+		blockNumberAndBlockVerboseMap[i] = blockVerbose
+
+		// 使用最新区块哈希获取区块详细信息
+		blockHeader, err := ws.btcCli.GetBlockHeader(blockHash)
+		if err != nil {
+			log.Error("Error getting block header by hash", "blockHash", blockHash, "err", err)
+			return nil, nil, errors.New("get block header by hash err:" + err.Error())
+		}
+
+		// 打印区块详细信息
+		log.Info("get block header by hash", "blockHeight", blockHeight, "blockHash", blockHash, "blockTimestamp", blockHeader.Timestamp)
+
+		blockNumberAndBlockHeaderMap[i] = blockHeader
+	}
+
+	return blockNumberAndBlockVerboseMap, blockNumberAndBlockHeaderMap, nil
+}
+
+// 保存区块
+func (ws *WorkerService) SaveBlocks(ctx context.Context, chainMagicNumber string, blockNumberAndBlockHeaderMap map[int64]*wire.BlockHeader, blockNumberAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) error {
+	// 遍历获取block
+	blockModels := make([]baseModel.BaseBlock, 0)
+
+	now := tool.TimeStampNowSecond()
+
+	for blockNumber, _ := range blockNumberAndBlockHeaderMap {
+		block := blockNumberAndBlockVerboseMap[blockNumber]
+		blockModels = append(blockModels, baseModel.BaseBlock{
+			ChainMagicNumber: chainMagicNumber,
+			BlockHeight:      block.Height,
+			BlockHash:        block.Hash,
+			Confirmations:    block.Confirmations,
+			StrippedSize:     block.StrippedSize,
+			Size:             block.Size,
+			Weight:           block.Weight,
+			MerkleRoot:       block.MerkleRoot,
+			TransactionCnt:   uint32(len(block.Tx)),
+			BlockTime:        block.Time,
+			Nonce:            block.Nonce,
+			Bits:             block.Bits,
+			Difficulty:       block.Difficulty,
+			PreviousHash:     block.PreviousHash,
+			NextHash:         block.NextHash,
+			CreateAt:         now,
+		})
+	}
+
+	var gormdb *gorm.DB
+
+	// 保存区块
+	gormdb = ws.gdb.WithContext(ctx).
+		Clauses(clause.OnConflict{
+			DoNothing: true,
+		}).Create(&blockModels)
+
+	if gormdb.Error != nil {
+		return gormdb.Error
+	}
+
+	return nil
+}
+
 //// 保存交易
 //func (ws *WorkerService) SaveTransactions(ctx context.Context, chainMagicNumber string, blockNumberAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) error {
 //	q := baseQuery.Use(ws.db.GDB())
