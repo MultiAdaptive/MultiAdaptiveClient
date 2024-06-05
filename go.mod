@@ -72,8 +72,9 @@ require (
 )
 
 require (
+	github.com/MultiAdaptive/sig-sdk v0.1.1
 	github.com/btcsuite/btcd/btcutil v1.1.5 // indirect
-	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
+	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f // indirect
 	github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd // indirect
 	github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792 // indirect
@@ -81,7 +82,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/mattn/go-sqlite3 v1.14.17 // indirect
-	github.com/samber/lo v1.39.0 // indirect
+	github.com/samber/lo v1.39.0
 	github.com/supranational/blst v0.3.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

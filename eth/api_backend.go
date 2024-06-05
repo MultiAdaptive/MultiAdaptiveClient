@@ -29,6 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/types"
+	sigSdk "github.com/MultiAdaptive/sig-sdk"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
@@ -57,7 +58,6 @@ func (b *EthAPIBackend) SetHead(number uint64) {
 	b.eth.blockchain.SetHead(number)
 }
 
-//TODO fix this bug
 func (b *EthAPIBackend) HeaderByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Header, error) {
 	// Otherwise resolve and return the block
 	if number == rpc.LatestBlockNumber {
@@ -99,11 +99,11 @@ func (b *EthAPIBackend) GetTd(ctx context.Context) *big.Int {
 	return b.eth.blockchain.GetTd()
 }
 
-func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,dasKey [32]byte) ([]byte,error) {
+func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,dasKey [32]byte,proof []byte) ([]byte,error) {
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
-	fd := types.NewDA(sender, index, length, digest, data, dasKey)
-	flag,err := b.eth.singer.Verify(fd)
+	fd := types.NewDA(sender, index, length, digest, data, dasKey, proof)
+	flag,err := b.eth.singer.VerifyEth(fd)
 	if err != nil || flag == false {
 		return nil, err
 	}else {
@@ -112,6 +112,26 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 		fd.ReceiveAt = time.Now()
 		b.eth.fdPool.Add([]*types.DA{fd},true,false)
 		return signData,err
+	}
+}
+
+func (b *EthAPIBackend) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byte,proof []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error)  {
+	var digest kzg.Digest
+	digest.SetBytes(commitment)
+	da := new(types.DA)
+	da.Commitment = digest
+	da.Proof = proof
+	da.DasKey = dasKey
+	da.Data = data
+	flag,err := b.eth.singer.VerifyBtc(da)
+	if err != nil || flag == false {
+		return nil, err
+	}else {
+		sign,err := sigSdk.SigWithSchnorr(commitment,[]byte{},commitTxBytes,revealTxBytes,inscriptionScript)
+		if err != nil {
+			return nil,err
+		}
+		return sign,nil
 	}
 }
 
@@ -241,9 +261,6 @@ func (b *EthAPIBackend) RPCGasCap() uint64 {
 	return b.eth.config.RPCGasCap
 }
 
-func (b *EthAPIBackend) RPCEVMTimeout() time.Duration {
-	return b.eth.config.RPCEVMTimeout
-}
 
 func (b *EthAPIBackend) RPCTxFeeCap() float64 {
 	return b.eth.config.RPCTxFeeCap
