@@ -853,8 +853,8 @@ func NewDAAPI(b Backend) *DAAPI {
 	return &DAAPI{b, signer}
 }
 
-func (f *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte) ([]byte,error) {
-	return f.b.SendDAByParams(sender,index,length,commitment,data,dasKey)
+func (f *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte,proof []byte) ([]byte,error) {
+	return f.b.SendDAByParams(sender,index,length,commitment,data,dasKey,proof)
 }
 
 func (f *DAAPI) GetDAByHash(hash common.Hash) (*RPCDA, error) {

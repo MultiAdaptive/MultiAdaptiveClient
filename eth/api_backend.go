@@ -142,7 +142,7 @@ func (b *EthAPIBackend) SendBatchDA(datas [][]byte) ([][]byte,[]error) {
 	for index,data := range datas{
 		err := rlp.DecodeBytes(data,&da)
 		if err == nil{
-			flag,err := b.eth.singer.Verify(&da)
+			flag,err := b.eth.singer.VerifyEth(&da)
 			if err != nil || flag == false {
 				errlist[index] = err
 				continue
