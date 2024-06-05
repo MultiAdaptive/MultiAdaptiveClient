@@ -1,4 +1,4 @@
-package model
+package basemodel
 
 const TableNameBaseChain = "t_base_chain"
 

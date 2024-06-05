@@ -165,7 +165,7 @@ func DeleteDAByHash(db *gorm.DB, hash common.Hash) error {
 
 func GetAllDARecords(db *gorm.DB) ([]*types.DA, error) {
 	var daRecords []DA
-	tx := db.Select("tx_hash", "commitment", "receipt").Find(&daRecords)
+	tx := db.Select("tx_hash", "commitment").Find(&daRecords)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}

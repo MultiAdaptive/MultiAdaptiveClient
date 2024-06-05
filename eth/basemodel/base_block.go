@@ -1,4 +1,4 @@
-package model
+package basemodel
 
 const TableNameBaseBlock = "t_base_block"
 

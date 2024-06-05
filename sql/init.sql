@@ -69,17 +69,17 @@ CREATE TABLE t_base_file
 (
     f_id                 INTEGER      not null PRIMARY KEY AUTOINCREMENT,
     f_chain_magic_number varchar(127)          default '' not null,
-    f_source_hash        varchar(127) not null,
-    f_sender             varchar(63)  not null,
-    f_submitter          varchar(63)  not null,
-    f_length             bigint       not null default 0,
-    f_index              bigint       not null default 0,
-    f_commitment         text,
-    f_data               longtext,
-    f_sign               text,
+    f_block_height        bigint       default 0  not null,
+    f_block_hash          varchar(127) default '' not null,
     f_transaction_hash   varchar(127)          default '' not null,
+    f_content_type        varchar(127) default '' not null,
+    f_content_length             bigint   unsigned    not null default 0,
+    f_content_body         text,
+    f_index integer unsigned    not null default 0,
+    f_offset bigint   unsigned    not null default 0,
+    f_data               longtext,
     f_create_at          bigint unsigned    default 0 not null,
-    constraint udx_file_chain_magic_number_source_hash
-        unique (f_chain_magic_number, f_source_hash)
+    constraint udx_file_chain_magic_number_block_hash_transaction_hash_index
+        unique (f_chain_magic_number, f_block_hash,f_transaction_hash,f_index)
 );
 CREATE INDEX idx_file_transaction_hash ON t_base_file (f_transaction_hash);

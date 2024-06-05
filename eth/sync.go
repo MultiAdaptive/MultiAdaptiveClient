@@ -28,7 +28,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethdb/db"
 	"github.com/ethereum/go-ethereum/log"
-	los "github.com/samber/lo"
 	"gorm.io/gorm"
 	"math/big"
 	"strings"
@@ -213,58 +212,9 @@ func (cs *chainSyncer) doBitcoinSync() error {
 	ctx := context.Background()
 	ws := NewWorkerService(cs.db, cs.btcClient)
 
-	// 获取当前区块高度
-	currentBlockNumber, err := ws.GetCurrentBlockNumber(ctx)
+	err := ws.RunSync(ctx, chainMagicNumber, chainName)
 	if err != nil {
-		log.Error("get current block number fail", "err", err)
-		return err
-	}
-	log.Info("current block number", "currentBlockNumber", currentBlockNumber)
-
-	// 读取数据库中的区块高度
-	presentBlockNumber, err := ws.GetPresentBlockNumber(ctx, chainMagicNumber, chainName)
-	if err != nil {
-		return err
-	}
-	log.Info("present block number", "presentBlockNumber", presentBlockNumber)
-
-	// 如果当前区块高度等于数据库中的区块高度，则不处理
-	if presentBlockNumber >= currentBlockNumber {
-		log.Info("The current blockchain height is equal to the height of synchronized blocks in the database")
-		return nil
-	}
-
-	beginBlockNumber := presentBlockNumber + 1
-	endBlockNumber := los.Min([]int64{presentBlockNumber + 6, currentBlockNumber})
-
-	// 遍历获取block
-	blockNumberAndBlockMap, blockNumberAndBlockHeaderMap, err := ws.GetBlocks(ctx, beginBlockNumber, endBlockNumber)
-	if err != nil {
-		return err
-	}
-
-	//保存区块
-	err = ws.SaveBlocks(ctx, chainMagicNumber, blockNumberAndBlockHeaderMap, blockNumberAndBlockMap)
-	if err != nil {
-		return err
-	}
-
-	// 保存交易
-	err = ws.SaveTransactions(ctx, chainMagicNumber, blockNumberAndBlockMap)
-	if err != nil {
-		return err
-	}
-
-	//
-	//	// 保存文件
-	//	err = ws.SaveFiles(ctx, chainMagicNumber, blockNumberAndBlockMap)
-	//	if err != nil {
-	//		return err
-	//	}
-
-	// 更新当前区块高度
-	err = ws.UpdateChain(ctx, chainMagicNumber, endBlockNumber)
-	if err != nil {
+		log.Error("bitcoin sync fail", "err", err)
 		return err
 	}
 

@@ -1,4 +1,4 @@
-package model
+package basemodel
 
 const TableNameBaseTransaction = "t_base_transaction"
 
