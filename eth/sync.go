@@ -249,6 +249,25 @@ func (cs *chainSyncer) doBitcoinSync() error {
 		return err
 	}
 
+	// 保存交易
+	err = ws.SaveTransactions(ctx, chainMagicNumber, blockNumberAndBlockMap)
+	if err != nil {
+		return err
+	}
+
+	//
+	//	// 保存文件
+	//	err = ws.SaveFiles(ctx, chainMagicNumber, blockNumberAndBlockMap)
+	//	if err != nil {
+	//		return err
+	//	}
+
+	// 更新当前区块高度
+	err = ws.UpdateChain(ctx, chainMagicNumber, endBlockNumber)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

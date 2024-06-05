@@ -2,8 +2,10 @@ package eth
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/btcsuite/btcd/btcjson"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/wire"
 	baseModel "github.com/ethereum/go-ethereum/eth/model"
@@ -214,28 +216,30 @@ func (ws *WorkerService) GetPresentBlockNumber(ctx context.Context, chainMagicNu
 	return int64(bc.CurrentHeight), nil
 }
 
-//// 更新当前区块高度
-//func (ws *WorkerService) UpdateChain(ctx context.Context, chainMagicNumber string, blockNumber int64) error {
-//	q := baseQuery.Use(ws.db.GDB())
-//
-//	chain, err := q.BaseChain.WithContext(ctx).
-//		Where(q.BaseChain.ChainMagicNumber.Eq(chainMagicNumber)).
-//		First()
-//	if err != nil {
-//		return err
-//	}
-//
-//	now := tool.TimeStampNowSecond()
-//
-//	chain.CurrentHeight = uint64(blockNumber)
-//	chain.CreateAt = now
-//	err = q.BaseChain.WithContext(ctx).Save(chain)
-//	if err != nil {
-//		return err
-//	}
-//
-//	return nil
-//}
+// 更新当前区块高度
+func (ws *WorkerService) UpdateChain(ctx context.Context, chainMagicNumber string, blockHeight int64) error {
+	var gormdb *gorm.DB
+	var bc baseModel.BaseChain
+
+	gormdb = ws.gdb.WithContext(ctx).
+		Where(baseModel.BaseChain{ChainMagicNumber: chainMagicNumber}).
+		First(&bc)
+	if gormdb.Error != nil {
+		return gormdb.Error
+	}
+
+	now := tool.TimeStampNowSecond()
+
+	bc.CurrentHeight = uint64(blockHeight)
+	bc.CreateAt = now
+
+	gormdb = ws.gdb.WithContext(ctx).Save(&bc)
+	if gormdb.Error != nil {
+		return gormdb.Error
+	}
+
+	return nil
+}
 
 func (ws *WorkerService) GetBlocks(ctx context.Context, from int64, to int64) (map[int64]*btcjson.GetBlockVerboseResult, map[int64]*wire.BlockHeader, error) {
 	blockNumberAndBlockVerboseMap := make(map[int64]*btcjson.GetBlockVerboseResult)
@@ -325,71 +329,86 @@ func (ws *WorkerService) SaveBlocks(ctx context.Context, chainMagicNumber string
 	return nil
 }
 
-//// 保存交易
-//func (ws *WorkerService) SaveTransactions(ctx context.Context, chainMagicNumber string, blockNumberAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) error {
-//	q := baseQuery.Use(ws.db.GDB())
-//
-//	hashes := make([]string, 0)
-//
-//	for _, block := range blockNumberAndBlockVerboseMap {
-//		for _, tx := range block.Tx {
-//			hashes = append(hashes, tx)
-//		}
-//	}
-//
-//	transactionModels := make([]*baseModel.BaseTransaction, 0)
-//
-//	now := tool.TimeStampNowSecond()
-//
-//	// 校验交易内容
-//	for _, block := range blockNumberAndBlockVerboseMap {
-//		for _, tx := range block.Tx {
-//			transactionVerbose, err := ws.btcCli.TransactionVerboseById(ctx, tx)
-//			if err != nil {
-//				customlogger.ErrorZ(err.Error())
-//				continue
-//			}
-//
-//			vinDataBytes, err := json.Marshal(transactionVerbose.Vin)
-//			if err != nil {
-//				customlogger.Errorf("Error marshaling vin data: %v", err)
-//			}
-//
-//			voutDataBytes, err := json.Marshal(transactionVerbose.Vout)
-//			if err != nil {
-//				customlogger.Errorf("Error marshaling vout data: %v", err)
-//			}
-//
-//			transactionModels = append(transactionModels, &baseModel.BaseTransaction{
-//				ChainMagicNumber: chainMagicNumber,
-//				Hex:              transactionVerbose.Hex,
-//				Txid:             transactionVerbose.Txid,
-//				TransactionHash:  transactionVerbose.Hash,
-//				Size:             transactionVerbose.Size,
-//				Vsize:            transactionVerbose.Vsize,
-//				Weight:           transactionVerbose.Weight,
-//				LockTime:         transactionVerbose.LockTime,
-//				Vin:              vinDataBytes,
-//				Vout:             voutDataBytes,
-//				BlockHash:        transactionVerbose.BlockHash,
-//				Confirmations:    transactionVerbose.Confirmations,
-//				TransactionTime:  transactionVerbose.Time,
-//				BlockTime:        transactionVerbose.Blocktime,
-//				CreateAt:         now,
-//			})
-//		}
-//	}
-//
-//	customlogger.Infof("交易数量: %v", len(transactionModels))
-//	// 保存交易
-//	err := q.BaseTransaction.WithContext(ctx).Clauses(clause.Insert{Modifier: "IGNORE"}).CreateInBatches(transactionModels, 30)
-//
-//	if err != nil {
-//		return err
-//	}
-//	return nil
-//}
-//
+// 保存交易
+func (ws *WorkerService) SaveTransactions(ctx context.Context, chainMagicNumber string, blockNumberAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) error {
+	hashes := make([]string, 0)
+
+	for _, block := range blockNumberAndBlockVerboseMap {
+		for _, tx := range block.Tx {
+			hashes = append(hashes, tx)
+		}
+	}
+
+	transactionModels := make([]baseModel.BaseTransaction, 0)
+
+	now := tool.TimeStampNowSecond()
+
+	// 校验交易内容
+	for _, block := range blockNumberAndBlockVerboseMap {
+		for _, tx := range block.Tx {
+			txid, err := chainhash.NewHashFromStr(tx)
+			if err != nil {
+				log.Error("Error converting txid string to hash", "tx", tx, "err", err)
+				continue
+			}
+
+			transactionVerbose, err := ws.btcCli.GetRawTransactionVerbose(txid)
+			if err != nil {
+				log.Error("Error getting transaction by hash", "txid", txid, "err", err)
+				continue
+			}
+
+			log.Info("Transaction Timestamp", "transactionTime", transactionVerbose.Time)
+
+			vinDataBytes, err := json.Marshal(transactionVerbose.Vin)
+			if err != nil {
+				log.Error("Error marshaling vin data", "err", err)
+				continue
+			}
+
+			voutDataBytes, err := json.Marshal(transactionVerbose.Vout)
+			if err != nil {
+				log.Error("Error marshaling vout data", "err", err)
+				continue
+			}
+
+			transactionModels = append(transactionModels, baseModel.BaseTransaction{
+				ChainMagicNumber: chainMagicNumber,
+				Hex:              transactionVerbose.Hex,
+				Txid:             transactionVerbose.Txid,
+				TransactionHash:  transactionVerbose.Hash,
+				Size:             transactionVerbose.Size,
+				Vsize:            transactionVerbose.Vsize,
+				Weight:           transactionVerbose.Weight,
+				LockTime:         transactionVerbose.LockTime,
+				Vin:              vinDataBytes,
+				Vout:             voutDataBytes,
+				BlockHash:        transactionVerbose.BlockHash,
+				Confirmations:    transactionVerbose.Confirmations,
+				TransactionTime:  transactionVerbose.Time,
+				BlockTime:        transactionVerbose.Blocktime,
+				CreateAt:         now,
+			})
+		}
+	}
+
+	log.Info("number of transactions", "number", len(transactionModels))
+
+	var gormdb *gorm.DB
+
+	// 保存交易
+	gormdb = ws.gdb.WithContext(ctx).
+		Clauses(clause.OnConflict{
+			DoNothing: true,
+		}).Create(&transactionModels)
+
+	if gormdb.Error != nil {
+		return gormdb.Error
+	}
+
+	return nil
+}
+
 //// 保存文件
 //func (ws *WorkerService) SaveFiles(ctx context.Context, chainMagicNumber string, blockNumberAndBlockMap map[int64]*btcjson.GetBlockVerboseResult) error {
 //	q := baseQuery.Use(ws.db.GDB())
