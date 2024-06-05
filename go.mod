@@ -71,7 +71,7 @@ require (
 )
 
 require (
-	github.com/btcsuite/btcd v0.24.0 // indirect
+	github.com/btcsuite/btcd v0.24.0
 	github.com/btcsuite/btcd/btcutil v1.1.5 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f // indirect
@@ -80,6 +80,7 @@ require (
 	github.com/decred/dcrd/crypto/blake256 v1.0.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/MultiAdaptive/sig-sdk v0.1.1
 	github.com/mattn/go-sqlite3 v1.14.17 // indirect
 	github.com/supranational/blst v0.3.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

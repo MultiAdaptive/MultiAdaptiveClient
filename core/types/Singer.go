@@ -42,10 +42,31 @@ func (s *SingerTool) Sender(da *DA) common.Address {
 }
 
 
-func (s *SingerTool) Verify(da *DA) (bool,error) {
+func (s *SingerTool) VerifyEth(da *DA) (bool,error) {
 	if da.Length != uint64(len(da.Data)) {
 		return false,errors.New("da data length is not match")
 	}
+	currentPath, _ := os.Getwd()
+	path := strings.Split(currentPath,"/build")[0] + "/srs"
+	domiconSDK,err := kzg.InitDomiconSdk(dSrsSize,path)
+	if err != nil {
+		return false,err
+	}
+
+	digst,err := domiconSDK.GenerateDataCommit(da.Data)
+	if err != nil {
+		return false,errors.New("GenerateDataCommit failed")
+	}
+	x := digst.X.Marshal()
+	y := digst.Y.Marshal()
+
+	if (bytes.Compare(x,da.Commitment.X.Marshal()) == 0) && (bytes.Compare(y,da.Commitment.Y.Marshal()) == 0){
+		return true,nil
+	}
+	return false,errors.New("commit is not match with da")
+}
+
+func (s *SingerTool) VerifyBtc(da *DA) (bool,error) {
 	currentPath, _ := os.Getwd()
 	path := strings.Split(currentPath,"/build")[0] + "/srs"
 	domiconSDK,err := kzg.InitDomiconSdk(dSrsSize,path)

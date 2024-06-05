@@ -215,7 +215,6 @@ func (fp *FilePool) loop() {
 			return
 
 		case <- remove.C:
-
 			for hash,receive := range fp.diskCache.Hashes {
 				if receive.Before(time.Now().Add(14*24*time.Hour)) {
 					db.DeleteDAByHash(fp.chain.SqlDB(),hash)

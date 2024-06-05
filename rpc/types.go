@@ -116,9 +116,6 @@ func NewSignatureResult(length uint64) *SignatureResult {
 	}
 }
 
-
-
-
 type BlockNumber int64
 
 const (

@@ -10,9 +10,8 @@ import (
 )
 
 type NameSpace struct {
-	//Creater 创建者
-
-	//存储节点的地址列表
+	Creater           common.Address
+	StorageList       []common.Address
 }
 
 // DA struct
@@ -35,9 +34,10 @@ type DA struct {
 	DasKey     [32]byte                              `json:"DasKey"`
 	TxHash     common.Hash                           `json:"TxHash"`
 	ReceiveAt  time.Time                            `json:"ReceiveAt"`
+	Proof      []byte                               `json:"Proof"`
 }
 
-func NewDA(sender common.Address,index,length uint64,commitment kzg.Digest, data []byte, dasKey [32]byte) *DA {
+func NewDA(sender common.Address,index,length uint64,commitment kzg.Digest, data []byte, dasKey [32]byte,proof []byte) *DA {
 	return &DA{
 		Sender:     sender,
 		Index:      index,
@@ -45,6 +45,7 @@ func NewDA(sender common.Address,index,length uint64,commitment kzg.Digest, data
 		Commitment: commitment,
 		Data:       data,
 		DasKey:     dasKey,
+		Proof:      proof,
 	}
 }
 
