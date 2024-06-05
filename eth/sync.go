@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/eth/tool"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethdb/db"
 	"github.com/ethereum/go-ethereum/log"
@@ -121,7 +122,7 @@ func newBitcoinChainSync(
 	chainName string) *chainSyncer {
 	log.Info("newBitcoinChainSync", "host", host, "user", user, "password", password)
 
-	cleanedHost := trimPrefixes(host, "http://", "https://")
+	cleanedHost := tool.TrimPrefixes(host, "http://", "https://")
 
 	connCfg := &rpcclient.ConnConfig{
 		Host:         cleanedHost,
@@ -206,7 +207,7 @@ func (cs *chainSyncer) doSync() error {
 func (cs *chainSyncer) doBitcoinSync() error {
 	log.Info("doBitcoinSync-----")
 	ctx := context.Background()
-	ws := NewWorkerService(cs.btcClient)
+	ws := NewWorkerService(cs.db, cs.btcClient)
 
 	// 获取当前区块高度
 	currentBlockNumber, err := ws.GetCurrentBlockNumber(ctx)
@@ -215,6 +216,15 @@ func (cs *chainSyncer) doBitcoinSync() error {
 		return err
 	}
 	log.Info("current block number", "currentBlockNumber", currentBlockNumber)
+
+	// 读取数据库中的区块高度
+	chainMagicNumber := "0xDAB5BFFA"
+	chainName := "bitcoinregtest"
+	presentBlockNumber, err := ws.GetPresentBlockNumber(ctx, chainMagicNumber, chainName)
+	if err != nil {
+		return err
+	}
+	log.Info("present block number", "presentBlockNumber", presentBlockNumber)
 
 	return nil
 }

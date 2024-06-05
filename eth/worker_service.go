@@ -3,7 +3,10 @@ package eth
 import (
 	"context"
 	"github.com/btcsuite/btcd/rpcclient"
+	"github.com/ethereum/go-ethereum/eth/model"
+	"github.com/ethereum/go-ethereum/eth/tool"
 	"github.com/ethereum/go-ethereum/log"
+	"gorm.io/gorm"
 )
 
 const (
@@ -13,16 +16,16 @@ const (
 var SatoshiToBitcoin = float64(100000000)
 
 type WorkerService struct {
-	//db     *persistence.MysqlClient
+	gdb    *gorm.DB
 	btcCli *rpcclient.Client
 }
 
 func NewWorkerService(
-// db *persistence.MysqlClient,
+	gdb *gorm.DB,
 	btcCli *rpcclient.Client,
 ) *WorkerService {
 	return &WorkerService{
-		//db:     db,
+		gdb:    gdb,
 		btcCli: btcCli,
 	}
 }
@@ -191,42 +194,22 @@ func (ws *WorkerService) GetCurrentBlockNumber(ctx context.Context) (int64, erro
 	return blockCount, nil
 }
 
-//func (ws *WorkerService) GetPresentBlockNumber(ctx context.Context, chainMagicNumber string, chainName string) (int64, error) {
-//	q := baseQuery.Use(ws.db.GDB())
-//
-//	cn, err := q.BaseChain.WithContext(ctx).
-//		Where(q.BaseChain.ChainMagicNumber.Eq(chainMagicNumber)).
-//		Count()
-//
-//	if err != nil {
-//		return 0, err
-//	}
-//
-//	//不存在,则创建
-//	if cn == 0 {
-//		now := toolkit.TimeStampNowSecond()
-//		bc := baseModel.BaseChain{
-//			ChainName:        chainName,
-//			ChainMagicNumber: chainMagicNumber,
-//			CurrentHeight:    0,
-//			CreateAt:         now,
-//		}
-//		err := q.BaseChain.WithContext(ctx).Save(&bc)
-//		if err != nil {
-//			return 0, err
-//		}
-//	}
-//
-//	chain, err := q.BaseChain.WithContext(ctx).
-//		Where(q.BaseChain.ChainMagicNumber.Eq(chainMagicNumber)).
-//		First()
-//	if err != nil {
-//		return 0, err
-//	}
-//
-//	return int64(chain.CurrentHeight), nil
-//}
-//
+func (ws *WorkerService) GetPresentBlockNumber(ctx context.Context, chainMagicNumber string, chainName string) (int64, error) {
+	var gormdb *gorm.DB
+	var bc model.BaseChain
+
+	now := tool.TimeStampNowSecond()
+
+	gormdb = ws.gdb.WithContext(ctx).
+		Where(model.BaseChain{ChainMagicNumber: chainMagicNumber}).
+		Attrs(model.BaseChain{ChainName: chainName, CurrentHeight: 0, CreateAt: now}).
+		FirstOrCreate(&bc)
+	if gormdb.Error != nil {
+		return 0, gormdb.Error
+	}
+	return int64(bc.CurrentHeight), nil
+}
+
 //// 更新当前区块高度
 //func (ws *WorkerService) UpdateChain(ctx context.Context, chainMagicNumber string, blockNumber int64) error {
 //	q := baseQuery.Use(ws.db.GDB())
@@ -238,7 +221,7 @@ func (ws *WorkerService) GetCurrentBlockNumber(ctx context.Context) (int64, erro
 //		return err
 //	}
 //
-//	now := toolkit.TimeStampNowSecond()
+//	now := tool.TimeStampNowSecond()
 //
 //	chain.CurrentHeight = uint64(blockNumber)
 //	chain.CreateAt = now
@@ -280,7 +263,7 @@ func (ws *WorkerService) GetCurrentBlockNumber(ctx context.Context) (int64, erro
 //	// 遍历获取block
 //	blockModels := make([]*baseModel.BaseBlock, 0)
 //
-//	now := toolkit.TimeStampNowSecond()
+//	now := tool.TimeStampNowSecond()
 //
 //	for blockNumber, _ := range blockNumberAndBlockHeaderMap {
 //		block := blockNumberAndBlockVerboseMap[blockNumber]
@@ -328,7 +311,7 @@ func (ws *WorkerService) GetCurrentBlockNumber(ctx context.Context) (int64, erro
 //
 //	transactionModels := make([]*baseModel.BaseTransaction, 0)
 //
-//	now := toolkit.TimeStampNowSecond()
+//	now := tool.TimeStampNowSecond()
 //
 //	// 校验交易内容
 //	for _, block := range blockNumberAndBlockVerboseMap {
@@ -385,7 +368,7 @@ func (ws *WorkerService) GetCurrentBlockNumber(ctx context.Context) (int64, erro
 //
 //	fileModels := make([]*baseModel.BaseFile, 0)
 //
-//	//now := toolkit.TimeStampNowSecond()
+//	//now := tool.TimeStampNowSecond()
 //
 //	//for _, block := range blockNumberAndBlockMap {
 //	//		for _, tx := range block.Transactions {

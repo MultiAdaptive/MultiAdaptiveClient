@@ -10,6 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.45
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.43
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.30.2
+	github.com/btcsuite/btcd v0.24.0
 	github.com/btcsuite/btcd/btcec/v2 v2.3.3
 	github.com/cespare/cp v0.1.0
 	github.com/cloudflare/cloudflare-go v0.79.0
@@ -60,18 +61,17 @@ require (
 	go.uber.org/automaxprocs v1.5.2
 	golang.org/x/crypto v0.23.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
-	golang.org/x/sync v0.3.0
+	golang.org/x/sync v0.6.0
 	golang.org/x/sys v0.20.0
 	golang.org/x/text v0.15.0
 	golang.org/x/time v0.3.0
-	golang.org/x/tools v0.13.0
+	golang.org/x/tools v0.17.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gorm.io/driver/sqlite v1.5.5
 	gorm.io/gorm v1.25.10
 )
 
 require (
-	github.com/btcsuite/btcd v0.24.0 // indirect
 	github.com/btcsuite/btcd/btcutil v1.1.5 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f // indirect
@@ -146,7 +146,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
-	golang.org/x/mod v0.12.0 // indirect
+	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.21.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
