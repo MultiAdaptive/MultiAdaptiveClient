@@ -111,7 +111,7 @@ var (
 		VerkleTime:                    nil,
 		TerminalTotalDifficulty:       nil,
 		TerminalTotalDifficultyPassed: true,
-		L1Conf:                       new(L1Config),
+		L1Conf:                        new(L1Config),
 	}
 	// HoleskyChainConfig contains the chain parameters to run a node on the Holesky test network.
 	HoleskyChainConfig = &ChainConfig{
@@ -386,28 +386,29 @@ type ChainConfig struct {
 	// even without having seen the TTD locally (safer long term).
 	TerminalTotalDifficultyPassed bool `json:"terminalTotalDifficultyPassed,omitempty"`
 
-	IsDevMode bool          `json:"isDev,omitempty"`
+	IsDevMode bool `json:"isDev,omitempty"`
 
 	//L1 Scan config
-	L1Conf    *L1Config       `json:"l1Conf,omitempty"`
+	L1Conf *L1Config `json:"l1Conf,omitempty"`
 }
 
-
 type L1Config struct {
-	GenesisBlockNumber      uint64      `json:"genesisBlockNumber"`
-	DomiconCommitment       string      `json:"domiconCommitment"`
-	DomiconCommitmentProxy  string      `json:"domiconCommitmentProxy"`
-	DomiconNode             string      `json:"domiconNode"`
-	DomiconNodeProxy        string      `json:"domiconNodeProxy"`
-	AddressManager          string      `json:"addressManager"`
-	ChallengeContract       string      `json:"challengeContract"`
-	ChallengeContractProxy  string      `json:"challengeContractProxy"`
-	ProxyAdmin              string      `json:"proxyAdmin"`
-	SafeProxyFactory        string      `json:"safeProxyFactory"`
-	SafeSingleton           string      `json:"safeSingleton"`
-	StorageManagement       string      `json:"storageManagement"`
-	StorageManagementProxy  string      `json:"storageManagementProxy"`
-	SystemOwnerSafe         string      `json:"systemOwnerSafe"`
+	GenesisBlockNumber     uint64 `json:"genesisBlockNumber"`
+	DomiconCommitment      string `json:"domiconCommitment"`
+	DomiconCommitmentProxy string `json:"domiconCommitmentProxy"`
+	DomiconNode            string `json:"domiconNode"`
+	DomiconNodeProxy       string `json:"domiconNodeProxy"`
+	AddressManager         string `json:"addressManager"`
+	ChallengeContract      string `json:"challengeContract"`
+	ChallengeContractProxy string `json:"challengeContractProxy"`
+	ProxyAdmin             string `json:"proxyAdmin"`
+	SafeProxyFactory       string `json:"safeProxyFactory"`
+	SafeSingleton          string `json:"safeSingleton"`
+	StorageManagement      string `json:"storageManagement"`
+	StorageManagementProxy string `json:"storageManagementProxy"`
+	SystemOwnerSafe        string `json:"systemOwnerSafe"`
+	BitcoinNet             string `json:"bitcoinNet"`
+	BitcoinMagicNumber     string `json:"bitcoinMagicNumber"`
 }
 
 func (l1 *L1Config) String() string {

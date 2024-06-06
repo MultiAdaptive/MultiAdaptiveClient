@@ -24,25 +24,31 @@ const (
 var SatoshiToBitcoin = float64(100000000)
 
 type WorkerService struct {
-	gdb      *gorm.DB
-	btcCli   *rpcclient.Client
-	startNum uint64
+	gdb         *gorm.DB
+	btcCli      *rpcclient.Client
+	magicNumber string
+	net         string
+	startNum    uint64
 }
 
 func NewWorkerService(
 	gdb *gorm.DB,
 	btcCli *rpcclient.Client,
+	magicNumber string,
+	net string,
 	startNum uint64,
 ) *WorkerService {
 	return &WorkerService{
-		gdb:      gdb,
-		btcCli:   btcCli,
-		startNum: startNum,
+		gdb:         gdb,
+		btcCli:      btcCli,
+		magicNumber: magicNumber,
+		net:         net,
+		startNum:    startNum,
 	}
 }
 
-func (ws *WorkerService) SetBlockHeight(ctx context.Context, chainMagicNumber string, blockHeight int64) error {
-	err := ws.UpdateChain(ctx, chainMagicNumber, blockHeight)
+func (ws *WorkerService) SetBlockHeight(ctx context.Context, blockHeight int64) error {
+	err := ws.UpdateChain(ctx, blockHeight)
 	if err != nil {
 		return err
 	}
@@ -50,7 +56,7 @@ func (ws *WorkerService) SetBlockHeight(ctx context.Context, chainMagicNumber st
 	return nil
 }
 
-func (ws *WorkerService) SyncBlock(ctx context.Context, chainMagicNumber string, blockHeight int64) error {
+func (ws *WorkerService) SyncBlock(ctx context.Context, blockHeight int64) error {
 	beginBlockHeight := blockHeight
 	endBlockHeight := blockHeight
 
@@ -61,19 +67,19 @@ func (ws *WorkerService) SyncBlock(ctx context.Context, chainMagicNumber string,
 	}
 
 	//保存区块
-	err = ws.SaveBlocks(ctx, chainMagicNumber, blockHeightAndBlockHeaderMap, blockHeightAndBlockMap)
+	err = ws.SaveBlocks(ctx, blockHeightAndBlockHeaderMap, blockHeightAndBlockMap)
 	if err != nil {
 		return err
 	}
 
 	// 保存交易
-	err = ws.SaveTransactions(ctx, chainMagicNumber, blockHeightAndBlockMap)
+	err = ws.SaveTransactions(ctx, blockHeightAndBlockMap)
 	if err != nil {
 		return err
 	}
 
 	// 保存文件
-	err = ws.SaveFiles(ctx, chainMagicNumber, blockHeightAndBlockMap)
+	err = ws.SaveFiles(ctx, blockHeightAndBlockMap)
 	if err != nil {
 		return err
 	}
@@ -81,7 +87,7 @@ func (ws *WorkerService) SyncBlock(ctx context.Context, chainMagicNumber string,
 	return nil
 }
 
-func (ws *WorkerService) RunSync(ctx context.Context, chainMagicNumber string, chainName string) error {
+func (ws *WorkerService) RunSync(ctx context.Context) error {
 	var err error
 
 	// 获取当前区块高度
@@ -93,7 +99,7 @@ func (ws *WorkerService) RunSync(ctx context.Context, chainMagicNumber string, c
 	log.Info("current block number", "currentBlockHeight", currentBlockHeight)
 
 	// 读取数据库中的区块高度
-	presentBlockHeight, err := ws.GetPresentBlockHeight(ctx, chainMagicNumber, chainName)
+	presentBlockHeight, err := ws.GetPresentBlockHeight(ctx)
 	if err != nil {
 		return err
 	}
@@ -101,7 +107,7 @@ func (ws *WorkerService) RunSync(ctx context.Context, chainMagicNumber string, c
 
 	// 如果当前区块高度等于数据库中的区块高度，则不处理
 	if presentBlockHeight >= currentBlockHeight {
-		log.Info("The current blockchain height is equal to the height of synchronized blocks in the database")
+		log.Info("The current blockchain height is not greater than the height of synchronized blocks in the database")
 		return nil
 	}
 
@@ -115,25 +121,25 @@ func (ws *WorkerService) RunSync(ctx context.Context, chainMagicNumber string, c
 	}
 
 	//保存区块
-	err = ws.SaveBlocks(ctx, chainMagicNumber, blockHeightAndBlockHeaderMap, blockHeightAndBlockMap)
+	err = ws.SaveBlocks(ctx, blockHeightAndBlockHeaderMap, blockHeightAndBlockMap)
 	if err != nil {
 		return err
 	}
 
 	// 保存交易
-	err = ws.SaveTransactions(ctx, chainMagicNumber, blockHeightAndBlockMap)
+	err = ws.SaveTransactions(ctx, blockHeightAndBlockMap)
 	if err != nil {
 		return err
 	}
 
 	// 保存文件
-	err = ws.SaveFiles(ctx, chainMagicNumber, blockHeightAndBlockMap)
+	err = ws.SaveFiles(ctx, blockHeightAndBlockMap)
 	if err != nil {
 		return err
 	}
 
 	// 更新当前区块高度
-	err = ws.UpdateChain(ctx, chainMagicNumber, endBlockHeight)
+	err = ws.UpdateChain(ctx, endBlockHeight)
 	if err != nil {
 		return err
 	}
@@ -155,15 +161,15 @@ func (ws *WorkerService) GetCurrentBlockHeight(ctx context.Context) (int64, erro
 	return blockCount, nil
 }
 
-func (ws *WorkerService) GetPresentBlockHeight(ctx context.Context, chainMagicNumber string, chainName string) (int64, error) {
+func (ws *WorkerService) GetPresentBlockHeight(ctx context.Context) (int64, error) {
 	var gormdb *gorm.DB
 	var bc baseModel.BaseChain
 
 	now := tool.TimeStampNowSecond()
 
 	gormdb = ws.gdb.WithContext(ctx).
-		Where(baseModel.BaseChain{ChainMagicNumber: chainMagicNumber}).
-		Attrs(baseModel.BaseChain{ChainName: chainName, CurrentHeight: ws.startNum, CreateAt: now}).
+		Where(baseModel.BaseChain{MagicNumber: ws.magicNumber, Net: ws.net}).
+		Attrs(baseModel.BaseChain{CurrentHeight: ws.startNum, CreateAt: now}).
 		FirstOrCreate(&bc)
 	if gormdb.Error != nil {
 		return int64(ws.startNum), gormdb.Error
@@ -172,12 +178,12 @@ func (ws *WorkerService) GetPresentBlockHeight(ctx context.Context, chainMagicNu
 }
 
 // 更新当前区块高度
-func (ws *WorkerService) UpdateChain(ctx context.Context, chainMagicNumber string, blockHeight int64) error {
+func (ws *WorkerService) UpdateChain(ctx context.Context, blockHeight int64) error {
 	var gormdb *gorm.DB
 	var bc baseModel.BaseChain
 
 	gormdb = ws.gdb.WithContext(ctx).
-		Where(baseModel.BaseChain{ChainMagicNumber: chainMagicNumber}).
+		Where(baseModel.BaseChain{MagicNumber: ws.magicNumber, Net: ws.net}).
 		First(&bc)
 	if gormdb.Error != nil {
 		return gormdb.Error
@@ -230,10 +236,7 @@ func (ws *WorkerService) GetBlocks(ctx context.Context, from int64, to int64) (m
 			log.Error("Error getting block header by hash", "blockHash", blockHash, "err", err)
 			return nil, nil, errors.New("get block header by hash err:" + err.Error())
 		}
-
-		// 打印区块详细信息
-		log.Info("get block header by hash", "blockHeight", blockHeight, "blockHash", blockHash, "blockTimestamp", blockHeader.Timestamp)
-
+		
 		blockHeightAndBlockHeaderMap[i] = blockHeader
 	}
 
@@ -241,7 +244,7 @@ func (ws *WorkerService) GetBlocks(ctx context.Context, from int64, to int64) (m
 }
 
 // 保存区块
-func (ws *WorkerService) SaveBlocks(ctx context.Context, chainMagicNumber string, blockHeightAndBlockHeaderMap map[int64]*wire.BlockHeader, blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) error {
+func (ws *WorkerService) SaveBlocks(ctx context.Context, blockHeightAndBlockHeaderMap map[int64]*wire.BlockHeader, blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) error {
 	// 遍历获取block
 	blockModels := make([]baseModel.BaseBlock, 0)
 
@@ -250,22 +253,23 @@ func (ws *WorkerService) SaveBlocks(ctx context.Context, chainMagicNumber string
 	for blockHeight, _ := range blockHeightAndBlockHeaderMap {
 		block := blockHeightAndBlockVerboseMap[blockHeight]
 		blockModels = append(blockModels, baseModel.BaseBlock{
-			ChainMagicNumber: chainMagicNumber,
-			BlockHeight:      block.Height,
-			BlockHash:        block.Hash,
-			Confirmations:    block.Confirmations,
-			StrippedSize:     block.StrippedSize,
-			Size:             block.Size,
-			Weight:           block.Weight,
-			MerkleRoot:       block.MerkleRoot,
-			TransactionCnt:   uint32(len(block.Tx)),
-			BlockTime:        block.Time,
-			Nonce:            block.Nonce,
-			Bits:             block.Bits,
-			Difficulty:       block.Difficulty,
-			PreviousHash:     block.PreviousHash,
-			NextHash:         block.NextHash,
-			CreateAt:         now,
+			MagicNumber:    ws.magicNumber,
+			Net:            ws.net,
+			BlockHeight:    block.Height,
+			BlockHash:      block.Hash,
+			Confirmations:  block.Confirmations,
+			StrippedSize:   block.StrippedSize,
+			Size:           block.Size,
+			Weight:         block.Weight,
+			MerkleRoot:     block.MerkleRoot,
+			TransactionCnt: uint32(len(block.Tx)),
+			BlockTime:      block.Time,
+			Nonce:          block.Nonce,
+			Bits:           block.Bits,
+			Difficulty:     block.Difficulty,
+			PreviousHash:   block.PreviousHash,
+			NextHash:       block.NextHash,
+			CreateAt:       now,
 		})
 	}
 
@@ -287,7 +291,7 @@ func (ws *WorkerService) SaveBlocks(ctx context.Context, chainMagicNumber string
 }
 
 // 保存交易
-func (ws *WorkerService) SaveTransactions(ctx context.Context, chainMagicNumber string, blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) error {
+func (ws *WorkerService) SaveTransactions(ctx context.Context, blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) error {
 	txHashes := make([]string, 0)
 
 	for _, blockVerbose := range blockHeightAndBlockVerboseMap {
@@ -315,8 +319,6 @@ func (ws *WorkerService) SaveTransactions(ctx context.Context, chainMagicNumber 
 				continue
 			}
 
-			log.Info("Transaction Timestamp", "transactionTime", transactionVerbose.Time)
-
 			vinDataBytes, err := json.Marshal(transactionVerbose.Vin)
 			if err != nil {
 				log.Error("Error marshaling vin data", "err", err)
@@ -330,21 +332,22 @@ func (ws *WorkerService) SaveTransactions(ctx context.Context, chainMagicNumber 
 			}
 
 			transactionModels = append(transactionModels, baseModel.BaseTransaction{
-				ChainMagicNumber: chainMagicNumber,
-				Hex:              transactionVerbose.Hex,
-				Txid:             transactionVerbose.Txid,
-				TransactionHash:  transactionVerbose.Hash,
-				Size:             transactionVerbose.Size,
-				Vsize:            transactionVerbose.Vsize,
-				Weight:           transactionVerbose.Weight,
-				LockTime:         transactionVerbose.LockTime,
-				Vin:              vinDataBytes,
-				Vout:             voutDataBytes,
-				BlockHash:        transactionVerbose.BlockHash,
-				Confirmations:    transactionVerbose.Confirmations,
-				TransactionTime:  transactionVerbose.Time,
-				BlockTime:        transactionVerbose.Blocktime,
-				CreateAt:         now,
+				MagicNumber:     ws.magicNumber,
+				Net:             ws.net,
+				Hex:             transactionVerbose.Hex,
+				Txid:            transactionVerbose.Txid,
+				TransactionHash: transactionVerbose.Hash,
+				Size:            transactionVerbose.Size,
+				Vsize:           transactionVerbose.Vsize,
+				Weight:          transactionVerbose.Weight,
+				LockTime:        transactionVerbose.LockTime,
+				Vin:             vinDataBytes,
+				Vout:            voutDataBytes,
+				BlockHash:       transactionVerbose.BlockHash,
+				Confirmations:   transactionVerbose.Confirmations,
+				TransactionTime: transactionVerbose.Time,
+				BlockTime:       transactionVerbose.Blocktime,
+				CreateAt:        now,
 			})
 		}
 	}
@@ -369,7 +372,7 @@ func (ws *WorkerService) SaveTransactions(ctx context.Context, chainMagicNumber 
 }
 
 // 保存文件
-func (ws *WorkerService) SaveFiles(ctx context.Context, chainMagicNumber string, blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) error {
+func (ws *WorkerService) SaveFiles(ctx context.Context, blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) error {
 	fileModels := make([]baseModel.BaseFile, 0)
 
 	now := tool.TimeStampNowSecond()
@@ -397,16 +400,17 @@ func (ws *WorkerService) SaveFiles(ctx context.Context, chainMagicNumber string,
 				log.Info("INSCRIPTION Verbose", "index", index, "offset", offset, "contentType", contentType, "contentLength", contentLength)
 
 				fileModels = append(fileModels, baseModel.BaseFile{
-					ChainMagicNumber: chainMagicNumber,
-					BlockHeight:      blockHeight,
-					BlockHash:        blockVerbose.Hash,
-					TransactionHash:  tx,
-					ContentType:      contentType,
-					ContentLength:    contentLength,
-					ContentBody:      contentBody,
-					Index:            index,
-					Offset:           offset,
-					CreateAt:         now,
+					MagicNumber:     ws.magicNumber,
+					Net:             ws.net,
+					BlockHeight:     blockHeight,
+					BlockHash:       blockVerbose.Hash,
+					TransactionHash: tx,
+					ContentType:     contentType,
+					ContentLength:   contentLength,
+					ContentBody:     contentBody,
+					Index:           index,
+					Offset:          offset,
+					CreateAt:        now,
 				})
 			}
 		}
