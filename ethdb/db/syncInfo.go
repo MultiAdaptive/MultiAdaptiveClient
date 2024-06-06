@@ -1,12 +1,15 @@
 package db
 
-import "gorm.io/gorm"
+import (
+	"github.com/ethereum/go-ethereum/log"
+	"gorm.io/gorm"
+)
 
 type SyncInfo struct {
 	LastBlockNum uint64 `gorm:"primaryKey"`
 }
 
-func UpDataLastBlocNum(tx *gorm.DB,orgNum,blockNum uint64) error {
+func UpDataLastBlocNum(tx *gorm.DB, orgNum, blockNum uint64) error {
 	// 更新SyncInfo表格的值
 	result := tx.Model(&SyncInfo{}).Where("last_block_num = ?", orgNum).Updates(SyncInfo{LastBlockNum: blockNum})
 	if result.Error != nil {
@@ -17,7 +20,7 @@ func UpDataLastBlocNum(tx *gorm.DB,orgNum,blockNum uint64) error {
 	return nil
 }
 
-func AddLastBlockNum(tx *gorm.DB,num uint64) error {
+func AddLastBlockNum(tx *gorm.DB, num uint64) error {
 	sy := SyncInfo{
 		LastBlockNum: num,
 	}
@@ -30,13 +33,25 @@ func AddLastBlockNum(tx *gorm.DB,num uint64) error {
 	return nil
 }
 
-func GetLastBlockNum(db *gorm.DB) (uint64,error) {
+func GetLastBlockNum(db *gorm.DB) (uint64, error) {
+	var gormdb *gorm.DB
+
+	var count int64
+	gormdb = db.Model(&SyncInfo{}).Count(&count)
+	if gormdb.Error != nil {
+		log.Error("Error count SyncInfo", "err", gormdb.Error)
+		return 0, gormdb.Error
+	}
+	if count == 0 {
+		log.Info("SyncInfo is empty")
+		return 0, nil
+	}
+
 	var syncInfo SyncInfo
-	result := db.Last(&syncInfo)
-	if result.Error != nil {
-		return 0, result.Error
+	gormdb = db.Last(&syncInfo)
+	if gormdb.Error != nil {
+		log.Error("Error Last SyncInfo", "err", gormdb.Error)
+		return 0, gormdb.Error
 	}
 	return syncInfo.LastBlockNum, nil
 }
-
-
