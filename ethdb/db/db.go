@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	baseModel "github.com/ethereum/go-ethereum/eth/basemodel"
 	"github.com/ethereum/go-ethereum/log"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -16,7 +17,18 @@ func NewSqlDB(path string) (*gorm.DB, error) {
 }
 
 func MigrateUp(db *gorm.DB) error {
-	return db.AutoMigrate(&Transaction{}, &Block{}, &Receipt{}, &Log{}, &SyncInfo{}, &DA{})
+	return db.AutoMigrate(
+		&Transaction{},
+		&Block{},
+		&Receipt{},
+		&Log{},
+		&SyncInfo{},
+		&DA{},
+		&baseModel.BaseChain{},
+		&baseModel.BaseBlock{},
+		&baseModel.BaseTransaction{},
+		&baseModel.BaseFile{},
+	)
 }
 
 var Tx *gorm.DB
