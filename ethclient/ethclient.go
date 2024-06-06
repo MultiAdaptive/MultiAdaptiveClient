@@ -306,9 +306,9 @@ func (ec *Client) SendDAByParams(ctx context.Context, sender common.Address, ind
 	return result, err
 }
 
-func (ec *Client) SendBTCDAByParams(ctx context.Context,commitment ,data []byte,dasKey [32]byte,proof []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte, error) {
+func (ec *Client) SendBTCDAByParams(ctx context.Context,commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte, error) {
 	var result []byte
-	err := ec.c.CallContext(ctx, &result, "eth_sendBTCDAByParams", commitment, data, dasKey, proof,revealTxBytes,commitTxBytes,inscriptionScript)
+	err := ec.c.CallContext(ctx, &result, "eth_sendBTCDAByParams", commitment, data, dasKey, proof,claimedValue,revealTxBytes,commitTxBytes,inscriptionScript)
 	return result, err
 }
 
