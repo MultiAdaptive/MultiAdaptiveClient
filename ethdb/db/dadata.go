@@ -7,6 +7,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
 	"gorm.io/gorm"
 	"time"
 )
@@ -89,55 +90,99 @@ func AddBatchCommitment(tx *gorm.DB, das []*types.DA, parentHash common.Hash) er
 }
 
 func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
-	var da DA
-	tx := db.First(&da, "commitment = ?", common.Bytes2Hex(commitment))
-	if tx.Error == nil {
-		var digest kzg.Digest
-		str, _ := hex.DecodeString(da.Commitment)
-		digest.SetBytes(str)
-		parsedTime, err := time.Parse(layout, da.ReceiveAt)
-		if err != nil {
-			fmt.Println("Error parsing time:", err)
-		}
-		return &types.DA{
-			Sender:     common.HexToAddress(da.Sender),
-			Index:      uint64(da.Index),
-			Length:     uint64(da.Length),
-			Commitment: digest,
-			Data:       common.Hex2Bytes(da.Data),
-			SignData:   common.Hex2Bytes(da.SignData),
-			TxHash:     common.HexToHash(da.TxHash),
-			ReceiveAt:  parsedTime,
-		}, tx.Error
+	var gormdb *gorm.DB
+
+	var count int64
+	gormdb = db.Model(&DA{}).Count(&count)
+	if gormdb.Error != nil {
+		log.Error("Error count DA", "err", gormdb.Error)
+		return nil, gormdb.Error
 	}
-	errstr := fmt.Sprintf("can not find DA with given commitment :%d", common.Bytes2Hex(commitment))
-	return nil, errors.New(errstr)
+	if count == 0 {
+		msg := fmt.Sprintf("DA table is empty")
+		log.Info(msg)
+		return nil, errors.New(msg)
+	}
+
+	var da DA
+	gormdb = db.First(&da, "commitment = ?", common.Bytes2Hex(commitment))
+	if gormdb.Error != nil {
+		log.Error("can not find DA with given commitment", "commitment", common.Bytes2Hex(commitment), "err", gormdb.Error)
+		return nil, gormdb.Error
+	}
+
+	var digest kzg.Digest
+	str, err := hex.DecodeString(da.Commitment)
+	if err != nil {
+		return nil, err
+	}
+	_, err = digest.SetBytes(str)
+	if err != nil {
+		return nil, err
+	}
+	parsedTime, err := time.Parse(layout, da.ReceiveAt)
+	if err != nil {
+		log.Debug("Error parsing time", "err", err)
+		return nil, err
+	}
+	return &types.DA{
+		Sender:     common.HexToAddress(da.Sender),
+		Index:      uint64(da.Index),
+		Length:     uint64(da.Length),
+		Commitment: digest,
+		Data:       common.Hex2Bytes(da.Data),
+		SignData:   common.Hex2Bytes(da.SignData),
+		TxHash:     common.HexToHash(da.TxHash),
+		ReceiveAt:  parsedTime,
+	}, nil
 }
 
 func GetCommitmentByHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
-	var da DA
-	tx := db.First(&da, "tx_hash = ?", txHash)
-	if tx.Error == nil {
-		var digest kzg.Digest
-		str, _ := hex.DecodeString(da.Commitment)
-		digest.SetBytes(str)
-		parsedTime, err := time.Parse(layout, da.ReceiveAt)
-		if err != nil {
-			fmt.Println("Error parsing time:", err)
-		}
-		return &types.DA{
-			Sender:     common.HexToAddress(da.Sender),
-			Index:      uint64(da.Index),
-			Length:     uint64(da.Length),
-			Commitment: digest,
-			Data:       common.Hex2Bytes(da.Data),
-			SignData:   common.Hex2Bytes(da.SignData),
-			TxHash:     common.HexToHash(da.TxHash),
-			ReceiveAt:  parsedTime,
-		}, tx.Error
+	var gormdb *gorm.DB
+
+	var count int64
+	gormdb = db.Model(&DA{}).Count(&count)
+	if gormdb.Error != nil {
+		log.Error("Error count DA", "err", gormdb.Error)
+		return nil, gormdb.Error
 	}
-	errstr := fmt.Sprintf("can not find DA with given txHash :%d", txHash.Hex())
-	return nil, errors.New(errstr)
+	if count == 0 {
+		msg := fmt.Sprintf("DA table is empty")
+		log.Info(msg)
+		return nil, errors.New(msg)
+	}
+
+	var da DA
+	gormdb = db.First(&da, "tx_hash = ?", txHash)
+	if gormdb.Error != nil {
+		log.Error("can not find DA with given txHash", "txHash", txHash.Hex(), "err", gormdb.Error)
+		return nil, gormdb.Error
+	}
+
+	var digest kzg.Digest
+	str, err := hex.DecodeString(da.Commitment)
+	if err != nil {
+		return nil, err
+	}
+	_, err = digest.SetBytes(str)
+	if err != nil {
+		return nil, err
+	}
+	parsedTime, err := time.Parse(layout, da.ReceiveAt)
+	if err != nil {
+		log.Debug("Error parsing time", "err", err)
+		return nil, err
+	}
+	return &types.DA{
+		Sender:     common.HexToAddress(da.Sender),
+		Index:      uint64(da.Index),
+		Length:     uint64(da.Length),
+		Commitment: digest,
+		Data:       common.Hex2Bytes(da.Data),
+		SignData:   common.Hex2Bytes(da.SignData),
+		TxHash:     common.HexToHash(da.TxHash),
+		ReceiveAt:  parsedTime,
+	}, nil
 }
 
 // 获取ID最大的DA记录
