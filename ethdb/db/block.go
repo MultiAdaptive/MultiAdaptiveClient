@@ -81,15 +81,34 @@ func GetBlockByHash(db *gorm.DB, blockHash common.Hash) (*types.Block, error) {
 }
 
 func GetBlockByNum(db *gorm.DB, blockNum uint64) (*types.Block, error) {
-	var block Block
-	tx := db.First(&block, "block_num = ?", blockNum)
-	if tx.Error == nil {
-		var roiBlock types.Block
-		err := rlp.DecodeBytes(common.Hex2Bytes(block.EncodeData), &roiBlock)
-		return &roiBlock, err
+	var gormdb *gorm.DB
+
+	var count int64
+	gormdb = db.Model(&Block{}).Count(&count)
+	if gormdb.Error != nil {
+		log.Error("Error count Block", "err", gormdb.Error)
+		return nil, gormdb.Error
 	}
-	errstr := fmt.Sprintf("can not find block with given blocknum :%d", blockNum)
-	return nil, errors.New(errstr)
+	if count == 0 {
+		log.Info("Block is empty")
+		errstr := fmt.Sprintf("can not find block with given blocknum :%d", blockNum)
+		return nil, errors.New(errstr)
+	}
+
+	var block Block
+	gormdb = db.First(&block, "block_num = ?", blockNum)
+	if gormdb.Error != nil {
+		log.Error("can not find block with given block number", "blockNum", blockNum, "err", gormdb.Error)
+		return nil, gormdb.Error
+	}
+
+	var roiBlock types.Block
+	err := rlp.DecodeBytes(common.Hex2Bytes(block.EncodeData), &roiBlock)
+	if err != nil {
+		log.Error("Decode block data fail", "err", err)
+		return nil, err
+	}
+	return &roiBlock, nil
 }
 
 func DeleteBlockByHash(db *gorm.DB, blockHash common.Hash) error {
