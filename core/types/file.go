@@ -10,8 +10,8 @@ import (
 )
 
 type NameSpace struct {
-	Creater           common.Address
-	StorageList       []common.Address
+	Creater     common.Address
+	StorageList []common.Address
 }
 
 // DA struct
@@ -25,23 +25,23 @@ type NameSpace struct {
 
 type DA struct {
 	NameSpace
-	Sender     common.Address  	                  `json:"Sender"` //文件发送者
-	Index      uint64						`json:"Index"`//文件发送者类nonce 相同的index认为是重复交易
-	Length     uint64						`json:"Length"`//长度
-	Data       []byte						`json:"Data"`//上传的的文件
-	Commitment kzg.Digest                           `json:"Commitment"`
-	SignData   []byte                               `json:"SignData"`
-	DasKey     [32]byte                              `json:"DasKey"`
-	TxHash     common.Hash                           `json:"TxHash"`
-	ReceiveAt  time.Time                            `json:"ReceiveAt"`
-	Proof      []byte                               `json:"Proof"`
+	Sender     common.Address `json:"Sender"` //文件发送者
+	Index      uint64         `json:"Index"`  //文件发送者类nonce 相同的index认为是重复交易
+	Length     uint64         `json:"Length"` //长度
+	Data       []byte         `json:"Data"`   //上传的的文件
+	Commitment kzg.Digest     `json:"Commitment"`
+	SignData   []byte         `json:"SignData"`
+	DasKey     [32]byte       `json:"DasKey"`
+	TxHash     common.Hash    `json:"TxHash"`
+	ReceiveAt  time.Time      `json:"ReceiveAt"`
+	Proof      []byte         `json:"Proof"`
 }
 
-func NewDA(sender common.Address,index,length uint64,commitment kzg.Digest, data []byte, dasKey [32]byte,proof []byte) *DA {
+func NewDA(sender common.Address, index, length uint64, commitment kzg.Digest, data []byte, dasKey [32]byte, proof []byte) *DA {
 	return &DA{
 		Sender:     sender,
 		Index:      index,
-		Length:	length,
+		Length:     length,
 		Commitment: commitment,
 		Data:       data,
 		DasKey:     dasKey,
@@ -59,13 +59,13 @@ func (f *DA) Decode(data []byte) error {
 }
 
 func (f *DA) Size() uint64 {
-	data,_ := rlp.EncodeToBytes(f)
+	data, _ := rlp.EncodeToBytes(f)
 	return uint64(len(data))
 }
 
-func (f *DA) WithSignature(signer FdSigner,sign []byte) (*DA,error) {
+func (f *DA) WithSignature(signer FdSigner, sign []byte) (*DA, error) {
 	if len(sign) == 0 {
-		return nil,errors.New("sign is empty")
+		return nil, errors.New("sign is empty")
 	}
 	r, s, v, err := signer.SignatureValues(f, sign)
 	if err != nil {
@@ -76,7 +76,7 @@ func (f *DA) WithSignature(signer FdSigner,sign []byte) (*DA,error) {
 	newSign = append(newSign, s.Bytes()...)
 	newSign = append(newSign, v.Bytes()...)
 	f.SignData = newSign
-	return f,nil
+	return f, nil
 }
 
 func (f *DA) RawSignatureValues() (r, s, v *big.Int) {

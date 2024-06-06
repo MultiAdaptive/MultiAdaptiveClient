@@ -90,9 +90,9 @@ func GetBlockByNum(db *gorm.DB, blockNum uint64) (*types.Block, error) {
 		return nil, gormdb.Error
 	}
 	if count == 0 {
-		log.Info("Block is empty")
-		errstr := fmt.Sprintf("can not find block with given blocknum :%d", blockNum)
-		return nil, errors.New(errstr)
+		msg := fmt.Sprintf("Block table is empty")
+		log.Info(msg)
+		return nil, errors.New(msg)
 	}
 
 	var block Block
