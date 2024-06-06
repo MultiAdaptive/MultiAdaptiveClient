@@ -231,6 +231,11 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 		cfg.Eth.ChainName = ethconfig.Defaults.ChainName
 	}
 
+	if ctx.IsSet(utils.BtcPrivateFlag.Name) {
+		btcPriv := ctx.String(utils.BtcPrivateFlag.Name)
+		cfg.Eth.BtcPrivate = btcPriv
+	}
+
 	backend, eth := utils.RegisterEthService(stack, &cfg.Eth)
 
 	// Create gauge with geth system and build information

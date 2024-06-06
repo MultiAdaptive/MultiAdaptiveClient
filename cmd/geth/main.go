@@ -51,6 +51,7 @@ const (
 var (
 	// flags that configure the node
 	nodeFlags = flags.Merge([]cli.Flag{
+		utils.BtcPrivateFlag,
 		utils.IdentityFlag,
 		utils.L1ScanUrlFlag,
 		utils.L1ScanHostFlag,
@@ -143,7 +144,6 @@ var (
 		utils.IPCPathFlag,
 		utils.InsecureUnlockAllowedFlag,
 		utils.RPCGlobalGasCapFlag,
-		utils.RPCGlobalEVMTimeoutFlag,
 		utils.RPCGlobalTxFeeCapFlag,
 		utils.AllowUnprotectedTxs,
 		utils.BatchRequestLimit,

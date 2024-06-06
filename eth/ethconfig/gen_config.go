@@ -41,7 +41,6 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		FilterLogCacheSize                      int
 		DocRoot                                 string `toml:"-"`
 		RPCGasCap                               uint64
-		RPCEVMTimeout                           time.Duration
 		RPCTxFeeCap                             float64
 		OverrideVerkle                          *uint64 `toml:",omitempty"`
 		ApplySuperchainUpgrades                 bool    `toml:",omitempty"`
@@ -75,7 +74,6 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.FilterLogCacheSize = c.FilterLogCacheSize
 	enc.DocRoot = c.DocRoot
 	enc.RPCGasCap = c.RPCGasCap
-	enc.RPCEVMTimeout = c.RPCEVMTimeout
 	enc.RPCTxFeeCap = c.RPCTxFeeCap
 	enc.OverrideVerkle = c.OverrideVerkle
 	enc.ApplySuperchainUpgrades = c.ApplySuperchainUpgrades
@@ -116,7 +114,6 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		EnablePreimageRecording                 *bool
 		DocRoot                                 *string `toml:"-"`
 		RPCGasCap                               *uint64
-		RPCEVMTimeout                           *time.Duration
 		RPCTxFeeCap                             *float64
 		OverrideVerkle                          *uint64 `toml:",omitempty"`
 		OverrideOptimismCanyon                  *uint64 `toml:",omitempty"`
@@ -210,9 +207,6 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	}
 	if dec.RPCGasCap != nil {
 		c.RPCGasCap = *dec.RPCGasCap
-	}
-	if dec.RPCEVMTimeout != nil {
-		c.RPCEVMTimeout = *dec.RPCEVMTimeout
 	}
 	if dec.RPCTxFeeCap != nil {
 		c.RPCTxFeeCap = *dec.RPCTxFeeCap

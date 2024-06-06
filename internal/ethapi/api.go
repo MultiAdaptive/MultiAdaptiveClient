@@ -857,6 +857,10 @@ func (f *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitm
 	return f.b.SendDAByParams(sender,index,length,commitment,data,dasKey,proof)
 }
 
+func (f *DAAPI) SendBTCDAParams(commitment ,data []byte,dasKey [32]byte,proof []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error) {
+	return f.b.SendBTCDAByParams(commitment ,data,dasKey,proof,revealTxBytes, commitTxBytes, inscriptionScript)
+}
+
 func (f *DAAPI) GetDAByHash(hash common.Hash) (*RPCDA, error) {
 	log.Info("FileDataAPI----", "GetFileDataByHash---called--", hash.String())
 	fd,err := f.b.GetDAByHash(hash)
