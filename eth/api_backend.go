@@ -124,6 +124,7 @@ func (b *EthAPIBackend) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byt
 	da.DasKey = dasKey
 	da.Data = data
 	da.ClaimedValue = claimedValue
+	log.Info("SendBTCDAByParams------","commitment",common.Bytes2Hex(commitment))
 	flag,err := b.eth.singer.VerifyBtc(da)
 	if err != nil || flag == false {
 		return nil, err
