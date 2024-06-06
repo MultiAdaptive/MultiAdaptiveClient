@@ -417,7 +417,6 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 				da.ReceiveAt = time.Now()
 				cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
 				daDatas = append(daDatas, da)
-
 			}
 		}
 	}
