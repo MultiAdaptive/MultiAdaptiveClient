@@ -19,6 +19,8 @@ package flags
 import "github.com/urfave/cli/v2"
 
 const (
+	ChainCategory      = "CHAIN NAME"
+	BtcCategory        = "BITCOIN"
 	EthCategory        = "ETHEREUM"
 	LightCategory      = "LIGHT CLIENT"
 	DevCategory        = "DEVELOPER CHAIN"

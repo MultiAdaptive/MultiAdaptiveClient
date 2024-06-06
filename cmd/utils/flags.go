@@ -165,21 +165,21 @@ var (
 		Name:     "l1Host",
 		Usage:    "scan l1 host",
 		Value:    ethconfig.Defaults.L1ScanHost,
-		Category: flags.EthCategory,
+		Category: flags.BtcCategory,
 	}
 
 	L1ScanUserFlag = &cli.StringFlag{
 		Name:     "l1User",
 		Usage:    "scan l1 user",
 		Value:    ethconfig.Defaults.L1ScanUser,
-		Category: flags.EthCategory,
+		Category: flags.BtcCategory,
 	}
 
 	L1ScanPasswordFlag = &cli.StringFlag{
 		Name:     "l1Password",
 		Usage:    "scan l1 password",
 		Value:    ethconfig.Defaults.L1ScanPassword,
-		Category: flags.EthCategory,
+		Category: flags.BtcCategory,
 	}
 
 	NodeTypeFlag = &cli.StringFlag{
@@ -193,7 +193,7 @@ var (
 		Name:     "chainName",
 		Usage:    "chain name: ethereum or bitcoin",
 		Value:    ethconfig.Defaults.ChainName,
-		Category: flags.EthCategory,
+		Category: flags.ChainCategory,
 	}
 
 	BtcPrivateFlag = &cli.StringFlag{

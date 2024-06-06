@@ -209,7 +209,7 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 	if ctx.IsSet(utils.NodeTypeFlag.Name) {
 		ndType := ctx.String(utils.NodeTypeFlag.Name)
 		switch ndType {
-		case "d","s":
+		case "d", "s":
 			cfg.Eth.NodeType = ndType
 		default:
 			cfg.Eth.NodeType = ethconfig.Defaults.NodeType
@@ -218,7 +218,7 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 		cfg.Eth.NodeType = ethconfig.Defaults.NodeType
 	}
 
-	log.Info("ChainName", "chain name", ctx.String(utils.ChainNameFlag.Name))
+	log.Info("ChainName", "ChainName", ctx.String(utils.ChainNameFlag.Name))
 	if ctx.IsSet(utils.ChainNameFlag.Name) {
 		chainName := ctx.String(utils.ChainNameFlag.Name)
 		switch chainName {
