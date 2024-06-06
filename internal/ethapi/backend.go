@@ -55,6 +55,7 @@ type Backend interface {
 
 	// FileData pool API
 	SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte,proof []byte) ([]byte,error)
+	SendBTCDAByParams(commitment ,data []byte,dasKey [32]byte,proof []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error)
 	SendBatchDA(datas [][]byte) ([][]byte,[]error)
 	GetDAByHash(hash common.Hash) (*types.DA,error)
 	GetBatchDAsByHashes(hashes []common.Hash) ([]*types.DA,[]error)

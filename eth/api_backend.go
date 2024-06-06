@@ -127,7 +127,8 @@ func (b *EthAPIBackend) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byt
 	if err != nil || flag == false {
 		return nil, err
 	}else {
-		sign,err := sigSdk.SigWithSchnorr(commitment,[]byte{},commitTxBytes,revealTxBytes,inscriptionScript)
+		priv := common.Hex2Bytes(b.eth.config.BtcPrivate)
+		sign,err := sigSdk.SigWithSchnorr(commitment,priv,commitTxBytes,revealTxBytes,inscriptionScript)
 		if err != nil {
 			return nil,err
 		}

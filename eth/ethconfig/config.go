@@ -47,7 +47,6 @@ var Defaults = Config{
 	L1ScanUser:         "",
 	L1ScanPassword:     "",
 	RPCGasCap:          50000000,
-	RPCEVMTimeout:      5 * time.Second,
 	RPCTxFeeCap:        1, // 1 ether
 }
 
@@ -115,7 +114,9 @@ type Config struct {
 
 	NodeType string
 
-	ChainName string
+	ChainName string  //switch to ethereum or btc
+
+	BtcPrivate string
 
 	// This is the number of blocks for which logs will be cached in the filter system.
 	FilterLogCacheSize int
@@ -131,20 +132,12 @@ type Config struct {
 	// RPCGasCap is the global gas cap for eth-call variants.
 	RPCGasCap uint64
 
-	// RPCEVMTimeout is the global timeout for eth-call.
-	RPCEVMTimeout time.Duration
-
 	// RPCTxFeeCap is the global transaction fee(price * gaslimit) cap for
 	// send-transaction variants. The unit is ether.
 	RPCTxFeeCap float64
 
-	// OverrideCancun (TODO: remove after the fork)
-	//	OverrideCancun *uint64 `toml:",omitempty"`
-
 	// OverrideVerkle (TODO: remove after the fork)
 	OverrideVerkle *uint64 `toml:",omitempty"`
-
-	//OverrideOptimismCanyon *uint64 `toml:",omitempty"`
 
 	// ApplySuperchainUpgrades requests the node to load chain-configuration from the superchain-registry.
 	ApplySuperchainUpgrades bool `toml:",omitempty"`

@@ -196,6 +196,11 @@ var (
 		Category: flags.EthCategory,
 	}
 
+	BtcPrivateFlag = &cli.StringFlag{
+		Name:     "btcPrivate",
+		Usage:    "private key to the btc",
+		Category: flags.EthCategory,
+	}
 	// Dev mode
 	DeveloperFlag = &cli.BoolFlag{
 		Name:     "dev",
@@ -484,12 +489,7 @@ var (
 		Value:    ethconfig.Defaults.RPCGasCap,
 		Category: flags.APICategory,
 	}
-	RPCGlobalEVMTimeoutFlag = &cli.DurationFlag{
-		Name:     "rpc.evmtimeout",
-		Usage:    "Sets a timeout used for eth_call (0=infinite)",
-		Value:    ethconfig.Defaults.RPCEVMTimeout,
-		Category: flags.APICategory,
-	}
+
 	RPCGlobalTxFeeCapFlag = &cli.Float64Flag{
 		Name:     "rpc.txfeecap",
 		Usage:    "Sets a cap on transaction fee (in ether) that can be sent via the RPC APIs (0 = no cap)",
@@ -1568,9 +1568,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		log.Info("Set global gas cap", "cap", cfg.RPCGasCap)
 	} else {
 		log.Info("Global gas cap disabled")
-	}
-	if ctx.IsSet(RPCGlobalEVMTimeoutFlag.Name) {
-		cfg.RPCEVMTimeout = ctx.Duration(RPCGlobalEVMTimeoutFlag.Name)
 	}
 	if ctx.IsSet(RPCGlobalTxFeeCapFlag.Name) {
 		cfg.RPCTxFeeCap = ctx.Float64(RPCGlobalTxFeeCapFlag.Name)
