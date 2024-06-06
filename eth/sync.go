@@ -208,9 +208,10 @@ func (cs *chainSyncer) doBitcoinSync() error {
 	log.Info("doBitcoinSync-----")
 	chainMagicNumber := "0xDAB5BFFA"
 	chainName := "bitcoinregtest"
+	startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
 
 	ctx := context.Background()
-	ws := NewWorkerService(cs.db, cs.btcClient)
+	ws := NewWorkerService(cs.db, cs.btcClient, startNum)
 
 	err := ws.RunSync(ctx, chainMagicNumber, chainName)
 	if err != nil {

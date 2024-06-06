@@ -24,17 +24,20 @@ const (
 var SatoshiToBitcoin = float64(100000000)
 
 type WorkerService struct {
-	gdb    *gorm.DB
-	btcCli *rpcclient.Client
+	gdb      *gorm.DB
+	btcCli   *rpcclient.Client
+	startNum uint64
 }
 
 func NewWorkerService(
 	gdb *gorm.DB,
 	btcCli *rpcclient.Client,
+	startNum uint64,
 ) *WorkerService {
 	return &WorkerService{
-		gdb:    gdb,
-		btcCli: btcCli,
+		gdb:      gdb,
+		btcCli:   btcCli,
+		startNum: startNum,
 	}
 }
 
@@ -160,10 +163,10 @@ func (ws *WorkerService) GetPresentBlockHeight(ctx context.Context, chainMagicNu
 
 	gormdb = ws.gdb.WithContext(ctx).
 		Where(baseModel.BaseChain{ChainMagicNumber: chainMagicNumber}).
-		Attrs(baseModel.BaseChain{ChainName: chainName, CurrentHeight: 0, CreateAt: now}).
+		Attrs(baseModel.BaseChain{ChainName: chainName, CurrentHeight: ws.startNum, CreateAt: now}).
 		FirstOrCreate(&bc)
 	if gormdb.Error != nil {
-		return 0, gormdb.Error
+		return int64(ws.startNum), gormdb.Error
 	}
 	return int64(bc.CurrentHeight), nil
 }
