@@ -99,10 +99,10 @@ func (b *EthAPIBackend) GetTd(ctx context.Context) *big.Int {
 	return b.eth.blockchain.GetTd()
 }
 
-func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,dasKey [32]byte,proof []byte) ([]byte,error) {
+func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte) ([]byte,error) {
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
-	fd := types.NewDA(sender, index, length, digest, data, dasKey, proof)
+	fd := types.NewDA(sender, index, length, digest, data, dasKey, proof, claimedValue)
 	flag,err := b.eth.singer.VerifyEth(fd)
 	if err != nil || flag == false {
 		return nil, err
@@ -115,7 +115,7 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 	}
 }
 
-func (b *EthAPIBackend) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byte,proof []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error)  {
+func (b *EthAPIBackend) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error)  {
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
 	da := new(types.DA)
@@ -123,6 +123,7 @@ func (b *EthAPIBackend) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byt
 	da.Proof = proof
 	da.DasKey = dasKey
 	da.Data = data
+	da.ClaimedValue = claimedValue
 	flag,err := b.eth.singer.VerifyBtc(da)
 	if err != nil || flag == false {
 		return nil, err

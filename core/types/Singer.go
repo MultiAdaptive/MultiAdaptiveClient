@@ -1,10 +1,9 @@
 package types
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"errors"
-	kzg "github.com/domicon-labs/kzg-sdk"
+	kzgSdk "github.com/domicon-labs/kzg-sdk"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	//"github.com/ethereum/go-ethereum/accounts"
@@ -41,48 +40,35 @@ func (s *SingerTool) Sender(da *DA) common.Address {
 	return addr
 }
 
-
 func (s *SingerTool) VerifyEth(da *DA) (bool,error) {
 	if da.Length != uint64(len(da.Data)) {
 		return false,errors.New("da data length is not match")
 	}
 	currentPath, _ := os.Getwd()
 	path := strings.Split(currentPath,"/build")[0] + "/srs"
-	domiconSDK,err := kzg.InitDomiconSdk(dSrsSize,path)
+	domiconSDK,err := kzgSdk.InitDomiconSdk(dSrsSize,path)
 	if err != nil {
 		return false,err
 	}
-
-	digst,err := domiconSDK.GenerateDataCommit(da.Data)
+	commit := da.Commitment.Marshal()
+	flag,err := domiconSDK.VerifyCommitWithProof(commit,da.Proof,da.ClaimedValue)
 	if err != nil {
-		return false,errors.New("GenerateDataCommit failed")
+		return false,err
 	}
-	x := digst.X.Marshal()
-	y := digst.Y.Marshal()
-
-	if (bytes.Compare(x,da.Commitment.X.Marshal()) == 0) && (bytes.Compare(y,da.Commitment.Y.Marshal()) == 0){
-		return true,nil
-	}
-	return false,errors.New("commit is not match with da")
+	return flag,nil
 }
 
 func (s *SingerTool) VerifyBtc(da *DA) (bool,error) {
 	currentPath, _ := os.Getwd()
 	path := strings.Split(currentPath,"/build")[0] + "/srs"
-	domiconSDK,err := kzg.InitDomiconSdk(dSrsSize,path)
+	domiconSDK,err := kzgSdk.InitDomiconSdk(dSrsSize,path)
 	if err != nil {
 		return false,err
 	}
-
-	digst,err := domiconSDK.GenerateDataCommit(da.Data)
+	commit := da.Commitment.Marshal()
+	flag,err := domiconSDK.VerifyCommitWithProof(commit,da.Proof,da.ClaimedValue)
 	if err != nil {
-		return false,errors.New("GenerateDataCommit failed")
+		return false,err
 	}
-	x := digst.X.Marshal()
-	y := digst.Y.Marshal()
-
-	if (bytes.Compare(x,da.Commitment.X.Marshal()) == 0) && (bytes.Compare(y,da.Commitment.Y.Marshal()) == 0){
-		return true,nil
-	}
-	return false,errors.New("commit is not match with da")
+	return flag,nil
 }

@@ -54,8 +54,8 @@ type Backend interface {
 	GetTransaction(ctx context.Context, txHash common.Hash) (*types.Transaction, common.Hash, uint64, uint64, error)
 
 	// FileData pool API
-	SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte,proof []byte) ([]byte,error)
-	SendBTCDAByParams(commitment ,data []byte,dasKey [32]byte,proof []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error)
+	SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte) ([]byte,error)
+	SendBTCDAByParams(commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error)
 	SendBatchDA(datas [][]byte) ([][]byte,[]error)
 	GetDAByHash(hash common.Hash) (*types.DA,error)
 	GetBatchDAsByHashes(hashes []common.Hash) ([]*types.DA,[]error)

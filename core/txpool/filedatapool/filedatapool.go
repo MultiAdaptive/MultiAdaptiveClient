@@ -402,13 +402,6 @@ func (fp *FilePool) Add(fds []*types.DA, local, sync bool) []error {
 			knownFdMeter.Mark(1)
 			continue
 		}
-		// Exclude fileDatas with basic errors, e.g invalid signatures
-		if err := fp.validateFileDataSignature(fd, local); err != nil {
-			errs[i] = err
-			invalidFdMeter.Mark(1)
-			log.Info("FilePool----validateFileDataSignature","err",err.Error())
-			continue
-		}
 		news = append(news, fd)
 	}
 	if len(news) == 0 {

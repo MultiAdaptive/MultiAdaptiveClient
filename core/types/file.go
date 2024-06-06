@@ -34,10 +34,11 @@ type DA struct {
 	DasKey     [32]byte                              `json:"DasKey"`
 	TxHash     common.Hash                           `json:"TxHash"`
 	ReceiveAt  time.Time                            `json:"ReceiveAt"`
-	Proof      []byte                               `json:"Proof"`
+	Proof      []byte                                `json:"Proof"`
+	ClaimedValue []byte                                 `json:"ClaimedValue"`
 }
 
-func NewDA(sender common.Address,index,length uint64,commitment kzg.Digest, data []byte, dasKey [32]byte,proof []byte) *DA {
+func NewDA(sender common.Address,index,length uint64,commitment kzg.Digest, data []byte, dasKey [32]byte,proof []byte,claimedValue []byte) *DA {
 	return &DA{
 		Sender:     sender,
 		Index:      index,
@@ -46,6 +47,7 @@ func NewDA(sender common.Address,index,length uint64,commitment kzg.Digest, data
 		Data:       data,
 		DasKey:     dasKey,
 		Proof:      proof,
+		ClaimedValue: claimedValue,
 	}
 }
 
