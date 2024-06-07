@@ -291,7 +291,7 @@ func (fp *FilePool) Has(hash common.Hash) bool{
 
 func (fp *FilePool) GetDAByCommit(commit []byte) (*types.DA,error){
 	cmHash := common.BytesToHash(commit)
-	log.Info("GetDAByCommit-----","cmHash",cmHash)
+	log.Info("GetDAByCommit-----","cmHash",cmHash.Hex())
 	fd := fp.get(cmHash)
 	if fd != nil {
 		return fd,nil
