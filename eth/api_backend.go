@@ -124,14 +124,11 @@ func (b *EthAPIBackend) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byt
 	da.DasKey = dasKey
 	da.Data = data
 	da.ClaimedValue = claimedValue
-	log.Info("SendBTCDAByParams------","commitment",common.Bytes2Hex(commitment))
 	flag,err := b.eth.singer.VerifyBtc(da)
 	if err != nil || flag == false {
 		return nil, err
 	}else {
-		log.Info("SendBTCDAByParams------","VerifyBtc",flag)
 		priv := common.Hex2Bytes(b.eth.config.BtcPrivate)
-		log.Info("SendBTCDAByParams------","priv",b.eth.config.BtcPrivate)
 		ctxByte := common.Bytes2Hex(commitTxBytes)
 		revByte := common.Bytes2Hex(revealTxBytes)
 		insByte := common.Bytes2Hex(inscriptionScript)
@@ -141,6 +138,9 @@ func (b *EthAPIBackend) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byt
 			log.Info("SendBTCDAByParams------SigWithSchnorr","err",err.Error())
 			return nil,err
 		}
+		da.SignData = sign
+		da.ReceiveAt = time.Now()
+		b.eth.fdPool.Add([]*types.DA{da},true,false)
 		return sign,nil
 	}
 }
