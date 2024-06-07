@@ -19,6 +19,7 @@ import (
 
 const (
 	confirmationBlockNum = 6 //6区块确认
+	CUSTOM_CONTENT_TYPE  = "MultiAaptiveCM;charset=utf-8"
 )
 
 var SatoshiToBitcoin = float64(100000000)
@@ -79,7 +80,7 @@ func (ws *WorkerService) SyncBlock(ctx context.Context, blockHeight int64) error
 	}
 
 	// 保存文件
-	err = ws.SaveFiles(ctx, blockHeightAndBlockMap)
+	_, err = ws.SaveFiles(ctx, blockHeightAndBlockMap)
 	if err != nil {
 		return err
 	}
@@ -87,28 +88,28 @@ func (ws *WorkerService) SyncBlock(ctx context.Context, blockHeight int64) error
 	return nil
 }
 
-func (ws *WorkerService) RunSync(ctx context.Context) error {
+func (ws *WorkerService) RunSync(ctx context.Context) (map[string][][]byte, error) {
 	var err error
 
 	// 获取当前区块高度
 	currentBlockHeight, err := ws.GetCurrentBlockHeight(ctx)
 	if err != nil {
 		log.Error("get current block number fail", "err", err)
-		return err
+		return nil, err
 	}
 	log.Info("current block number", "currentBlockHeight", currentBlockHeight)
 
 	// 读取数据库中的区块高度
 	presentBlockHeight, err := ws.GetPresentBlockHeight(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.Info("present block number", "presentBlockHeight", presentBlockHeight)
 
 	// 如果当前区块高度等于数据库中的区块高度，则不处理
 	if presentBlockHeight >= currentBlockHeight {
 		log.Info("The current blockchain height is not greater than the height of synchronized blocks in the database")
-		return nil
+		return nil, nil
 	}
 
 	beginBlockHeight := presentBlockHeight + 1
@@ -117,34 +118,34 @@ func (ws *WorkerService) RunSync(ctx context.Context) error {
 	// 遍历获取block
 	blockHeightAndBlockMap, blockHeightAndBlockHeaderMap, err := ws.GetBlocks(ctx, beginBlockHeight, endBlockHeight)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	//保存区块
 	err = ws.SaveBlocks(ctx, blockHeightAndBlockHeaderMap, blockHeightAndBlockMap)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// 保存交易
 	err = ws.SaveTransactions(ctx, blockHeightAndBlockMap)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// 保存文件
-	err = ws.SaveFiles(ctx, blockHeightAndBlockMap)
+	transaction2Commitments, err := ws.SaveFiles(ctx, blockHeightAndBlockMap)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// 更新当前区块高度
 	err = ws.UpdateChain(ctx, endBlockHeight)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return transaction2Commitments, nil
 }
 
 // 获取链上当前区块高度
@@ -236,7 +237,7 @@ func (ws *WorkerService) GetBlocks(ctx context.Context, from int64, to int64) (m
 			log.Error("Error getting block header by hash", "blockHash", blockHash, "err", err)
 			return nil, nil, errors.New("get block header by hash err:" + err.Error())
 		}
-		
+
 		blockHeightAndBlockHeaderMap[i] = blockHeader
 	}
 
@@ -372,8 +373,10 @@ func (ws *WorkerService) SaveTransactions(ctx context.Context, blockHeightAndBlo
 }
 
 // 保存文件
-func (ws *WorkerService) SaveFiles(ctx context.Context, blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) error {
+func (ws *WorkerService) SaveFiles(ctx context.Context, blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) (map[string][][]byte, error) {
 	fileModels := make([]baseModel.BaseFile, 0)
+
+	transaction2Commitments := make(map[string][][]byte)
 
 	now := tool.TimeStampNowSecond()
 
@@ -390,14 +393,19 @@ func (ws *WorkerService) SaveFiles(ctx context.Context, blockHeightAndBlockVerbo
 				continue
 			}
 
-			for _, v := range transactionInscriptions {
-				ins := v
+			commitments := make([][]byte, 0)
+			for _, ins := range transactionInscriptions {
 				contentType := string(ins.Inscription.ContentType)
 				contentLength := ins.Inscription.ContentLength
 				contentBody := string(ins.Inscription.ContentBody)
+				commitment := ins.Inscription.ContentBody
 				index := ins.TxInIndex
 				offset := ins.TxInOffset
 				log.Info("INSCRIPTION Verbose", "index", index, "offset", offset, "contentType", contentType, "contentLength", contentLength)
+				if contentType != CUSTOM_CONTENT_TYPE {
+					log.Info("Not custom content", "contentType", contentType)
+					continue
+				}
 
 				fileModels = append(fileModels, baseModel.BaseFile{
 					MagicNumber:     ws.magicNumber,
@@ -412,11 +420,15 @@ func (ws *WorkerService) SaveFiles(ctx context.Context, blockHeightAndBlockVerbo
 					Offset:          offset,
 					CreateAt:        now,
 				})
+				commitments = append(commitments, commitment)
 			}
+
+			transaction2Commitments[tx] = commitments
 		}
 	}
 
 	log.Info("number of files", "number", len(fileModels))
+	log.Info("number of commitments", "number", len(transaction2Commitments))
 
 	var gormdb *gorm.DB
 
@@ -429,10 +441,10 @@ func (ws *WorkerService) SaveFiles(ctx context.Context, blockHeightAndBlockVerbo
 		CreateInBatches(&fileModels, 5)
 
 	if gormdb.Error != nil {
-		return gormdb.Error
+		return nil, gormdb.Error
 	}
 
-	return nil
+	return transaction2Commitments, nil
 }
 
 // 解析交易

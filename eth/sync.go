@@ -213,10 +213,43 @@ func (cs *chainSyncer) doBitcoinSync() error {
 	ctx := context.Background()
 	ws := NewWorkerService(cs.db, cs.btcClient, magicNumber, net, startNum)
 
-	err := ws.RunSync(ctx)
+	transaction2Commitments, err := ws.RunSync(ctx)
 	if err != nil {
 		log.Error("bitcoin sync fail", "err", err)
 		return err
+	}
+	log.Info("Sync", "transaction2Commitments", transaction2Commitments)
+
+	daDatas := make([]*types.DA, 0)
+
+	for tx, commitments := range transaction2Commitments {
+		for _, commitment := range commitments {
+			//new commit get from memory pool
+			da, err := cs.handler.fileDataPool.GetDAByCommit(commitment)
+			if err != nil || da == nil {
+				continue
+			}
+			da.TxHash = common.HexToHash(tx)
+			da.ReceiveAt = time.Now()
+			cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
+			daDatas = append(daDatas, da)
+		}
+	}
+
+	if len(daDatas) != 0 {
+		parentHashData, err := db.GetMaxIDDAStateHash(cs.db)
+		if err != nil {
+			parentHashData = ""
+		}
+		parentHash := common.HexToHash(parentHashData)
+		cs.handler.fileDataPool.SendNewFileDataEvent(daDatas)
+		switch cs.nodeType {
+		case "b", "s":
+			db.Begin(cs.db)
+			db.AddBatchCommitment(db.Tx, daDatas, parentHash)
+			db.Commit(db.Tx)
+			cs.handler.fileDataPool.RemoveFileData(daDatas)
+		}
 	}
 
 	return nil
