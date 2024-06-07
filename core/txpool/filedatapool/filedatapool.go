@@ -291,6 +291,7 @@ func (fp *FilePool) Has(hash common.Hash) bool{
 
 func (fp *FilePool) GetDAByCommit(commit []byte) (*types.DA,error){
 	cmHash := common.BytesToHash(commit)
+	log.Info("GetDAByCommit-----","cmHash",cmHash)
 	fd := fp.get(cmHash)
 	if fd != nil {
 		return fd,nil
@@ -465,6 +466,7 @@ func (fp *FilePool) add(fd *types.DA, local bool) (replaced bool, err error) {
 	}else {
 		hash = common.BytesToHash(fd.Commitment.Marshal())
 	}
+	log.Info("FilePool----add","hash",hash.Hex())
 	if fp.all.Get(hash) != nil {
 		log.Trace("Discarding already known fileData", "hash", hash)
 		knownFdMeter.Mark(1)
