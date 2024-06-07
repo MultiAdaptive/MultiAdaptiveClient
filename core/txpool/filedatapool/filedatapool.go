@@ -296,7 +296,6 @@ func (fp *FilePool) GetDAByCommit(commit []byte) (*types.DA,error){
 	if fd != nil {
 		return fd,nil
 	}
-
 	da,err := db.GetDAByCommitment(fp.chain.SqlDB(),commit)
 	if err != nil {
 		return nil, err
@@ -458,15 +457,15 @@ func (fp *FilePool) addFdsLocked(fds []*types.DA, local bool) []error {
 // add validates a fileData and inserts it into the non-executable queue for later
 // saved. 
 func (fp *FilePool) add(fd *types.DA, local bool) (replaced bool, err error) {
-	log.Info("FilePool----add","fd",common.Bytes2Hex(fd.Commitment.Marshal()))
 	var hash common.Hash
 	// If the fileData is already known, discard it
 	if fd.TxHash.Cmp(common.Hash{}) != 0 {
 		hash = fd.TxHash
+		log.Info("FilePool----add","TxHash---hash",hash.Hex())
 	}else {
 		hash = common.BytesToHash(fd.Commitment.Marshal())
+		log.Info("FilePool----add","Commitment --hash",hash.Hex())
 	}
-	log.Info("FilePool----add","hash",hash.Hex())
 	if fp.all.Get(hash) != nil {
 		log.Trace("Discarding already known fileData", "hash", hash)
 		knownFdMeter.Mark(1)
@@ -604,9 +603,10 @@ func (t *lookup) Add(fd *types.DA) {
 	log.Info("Add-----加进来了")
 	if fd.TxHash.Cmp(common.Hash{}) != 0 {
 		t.collector[fd.TxHash] = fd
+	}else {
+		hash := common.BytesToHash(fd.Commitment.Marshal())
+		t.collector[hash] = fd
 	}
-	hash := common.BytesToHash(fd.Commitment.Marshal())
-	t.collector[hash] = fd
 }
 
 // Slots returns the current number of slots used in the lookup.
