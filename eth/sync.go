@@ -243,13 +243,10 @@ func (cs *chainSyncer) doBitcoinSync() error {
 		}
 		parentHash := common.HexToHash(parentHashData)
 		cs.handler.fileDataPool.SendNewFileDataEvent(daDatas)
-		switch cs.nodeType {
-		case "b", "s":
-			db.Begin(cs.db)
-			db.AddBatchCommitment(db.Tx, daDatas, parentHash)
-			db.Commit(db.Tx)
-			cs.handler.fileDataPool.RemoveFileData(daDatas)
-		}
+		db.Begin(cs.db)
+		db.AddBatchCommitment(db.Tx, daDatas, parentHash)
+		db.Commit(db.Tx)
+		cs.handler.fileDataPool.RemoveFileData(daDatas)
 	}
 
 	return nil
