@@ -8,6 +8,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/ethereum/go-ethereum/common"
 	baseModel "github.com/ethereum/go-ethereum/eth/basemodel"
 	"github.com/ethereum/go-ethereum/eth/scriptparser"
 	"github.com/ethereum/go-ethereum/eth/tool"
@@ -392,18 +393,19 @@ func (ws *WorkerService) SaveFiles(ctx context.Context, blockHeightAndBlockVerbo
 				log.Error("Error parse transaction", "txid", txid, "err", err)
 				continue
 			}
+			log.Info("parse transaction", "tx", tx, "transactionInscriptions", transactionInscriptions)
 
 			commitments := make([][]byte, 0)
 			for _, ins := range transactionInscriptions {
-				contentType := string(ins.Inscription.ContentType)
+				contentType := ins.Inscription.ContentType
 				contentLength := ins.Inscription.ContentLength
-				contentBody := string(ins.Inscription.ContentBody)
-				commitment := ins.Inscription.ContentBody
+				contentBody := ins.Inscription.ContentBody
+				commitment := contentBody
 				index := ins.TxInIndex
 				offset := ins.TxInOffset
-				log.Info("INSCRIPTION Verbose", "index", index, "offset", offset, "contentType", contentType, "contentLength", contentLength)
-				if contentType != CUSTOM_CONTENT_TYPE {
-					log.Info("Not custom content", "contentType", contentType)
+				log.Info("INSCRIPTION Verbose", "index", index, "offset", offset, "contentType", string(contentType), "contentLength", contentLength, "contentBody", common.Bytes2Hex(contentBody))
+				if string(contentType) != CUSTOM_CONTENT_TYPE {
+					log.Info("Not custom content", "contentType", string(contentType))
 					continue
 				}
 
@@ -458,5 +460,6 @@ func (ws *WorkerService) ParseTransaction(txHash *chainhash.Hash) ([]*scriptpars
 	if len(transactionInscriptions) == 0 {
 		log.Info("NO INSCRIPTIONS", "txHash", txHash)
 	}
+	log.Info("SOME INSCRIPTIONS", "txHash", txHash, "number", len(transactionInscriptions))
 	return transactionInscriptions, nil
 }

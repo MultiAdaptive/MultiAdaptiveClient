@@ -55,6 +55,43 @@ func AddCommitment(tx *gorm.DB, da *types.DA, parentHash common.Hash) error {
 	return res.Error
 }
 
+func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) error {
+	currentParentHash := parentHash
+	dataCollect := make([]byte, 0)
+	wdas := make([]DA, 0)
+
+	// 遍历每个区块，依次插入数据库
+	for _, da := range das {
+		dataCollect = append(dataCollect, da.Commitment.X.Marshal()...)
+		dataCollect = append(dataCollect, da.Commitment.Y.Marshal()...)
+		dataCollect = append(dataCollect, da.Sender.Bytes()...)
+		dataCollect = append(dataCollect, currentParentHash.Bytes()...)
+		stateHash := common.BytesToHash(dataCollect)
+		wda := DA{
+			Sender:          da.Sender.Hex(),
+			TxHash:          da.TxHash.String(),
+			Index:           int64(da.Index),
+			Length:          int64(da.Length),
+			Data:            common.Bytes2Hex(da.Data),
+			Commitment:      common.Bytes2Hex(da.Commitment.Marshal()),
+			SignData:        common.Bytes2Hex(da.SignData),
+			ParentStateHash: currentParentHash.String(),
+			StateHash:       stateHash.Hex(),
+			ReceiveAt:       da.ReceiveAt.String(),
+		}
+		wdas = append(wdas, wda)
+
+		currentParentHash = stateHash
+	}
+
+	result := db.Create(&wdas)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
 func AddBatchCommitment(tx *gorm.DB, das []*types.DA, parentHash common.Hash) error {
 	currentParentHash := parentHash
 	dataCollect := make([]byte, 0)

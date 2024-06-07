@@ -10,9 +10,9 @@ type BaseFile struct {
 	BlockHeight     int64  `gorm:"column:f_block_height;not null;comment:区块高度" json:"block_height"`               // 区块高度
 	BlockHash       string `gorm:"column:f_block_hash;not null;comment:区块哈希" json:"block_hash"`                   // 区块哈希
 	TransactionHash string `gorm:"column:f_transaction_hash;not null;comment:交易哈希" json:"transaction_hash"`       // 交易哈希
-	ContentType     string `gorm:"column:f_content_type;not null;comment:内容类型" json:"content_type"`               // 内容类型
+	ContentType     []byte `gorm:"column:f_content_type;not null;comment:内容类型" json:"content_type"`               // 内容类型
 	ContentLength   uint64 `gorm:"column:f_content_length;not null;default:0;comment:内容长度" json:"content_length"` //内容长度
-	ContentBody     string `gorm:"column:f_content_body;not null;comment:内容体" json:"content_body"`                //内容体
+	ContentBody     []byte `gorm:"column:f_content_body;not null;comment:内容体" json:"content_body"`                //内容体
 	Index           uint32 `gorm:"column:f_index;not null;default:0;comment:序号" json:"index"`                     //序号
 	Offset          uint64 `gorm:"column:f_offset;not null;default:0;comment:偏移量" json:"offset"`                  //偏移量
 	Data            string `gorm:"column:f_data;not null" json:"data"`

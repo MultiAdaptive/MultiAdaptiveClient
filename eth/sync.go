@@ -237,6 +237,8 @@ func (cs *chainSyncer) doBitcoinSync() error {
 		}
 	}
 
+	log.Info("number of daDatas", "number", len(daDatas))
+
 	if len(daDatas) != 0 {
 		parentHashData, err := db.GetMaxIDDAStateHash(cs.db)
 		if err != nil {
@@ -244,9 +246,7 @@ func (cs *chainSyncer) doBitcoinSync() error {
 		}
 		parentHash := common.HexToHash(parentHashData)
 		cs.handler.fileDataPool.SendNewFileDataEvent(daDatas)
-		db.Begin(cs.db)
-		db.AddBatchCommitment(db.Tx, daDatas, parentHash)
-		db.Commit(db.Tx)
+		_ = db.SaveBatchCommitment(cs.db, daDatas, parentHash)
 		cs.handler.fileDataPool.RemoveFileData(daDatas)
 	}
 
