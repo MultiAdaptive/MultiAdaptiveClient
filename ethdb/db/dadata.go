@@ -91,7 +91,6 @@ func AddBatchCommitment(tx *gorm.DB, das []*types.DA, parentHash common.Hash) er
 
 func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 	var gormdb *gorm.DB
-
 	var count int64
 	gormdb = db.Model(&DA{}).Count(&count)
 	if gormdb.Error != nil {
@@ -104,14 +103,15 @@ func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 		return nil, errors.New(msg)
 	}
 
+	var digest kzg.Digest
+	digest.SetBytes(commitment)
 	var da DA
-	gormdb = db.First(&da, "commitment = ?", common.Bytes2Hex(commitment))
+	gormdb = db.First(&da, "commitment = ?", common.Bytes2Hex(digest.Marshal()))
 	if gormdb.Error != nil {
 		log.Error("can not find DA with given commitment", "commitment", common.Bytes2Hex(commitment), "err", gormdb.Error)
 		return nil, gormdb.Error
 	}
 
-	var digest kzg.Digest
 	str, err := hex.DecodeString(da.Commitment)
 	if err != nil {
 		return nil, err
