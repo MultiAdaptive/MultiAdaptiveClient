@@ -11,12 +11,13 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	kzg "github.com/domicon-labs/kzg-sdk"
+	kzgSDK "github.com/domicon-labs/kzg-sdk"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/params"
 )
@@ -290,7 +291,9 @@ func (fp *FilePool) Has(hash common.Hash) bool{
 }
 
 func (fp *FilePool) GetDAByCommit(commit []byte) (*types.DA,error){
-	cmHash := common.BytesToHash(commit)
+	var digest kzg.Digest
+	digest.SetBytes(commit)
+	cmHash := common.BytesToHash(digest.Marshal())
 	log.Info("GetDAByCommit-----","cmHash",cmHash.Hex())
 	fd := fp.get(cmHash)
 	if fd != nil {
@@ -515,7 +518,7 @@ func (fp *FilePool) validateFileDataSignature(fd *types.DA, local bool) error {
 	
 	currentPath, _ := os.Getwd()
 	path := strings.Split(currentPath,"/build")[0] + "/srs"
-	domiconSDK,err := kzg.InitDomiconSdk(dSrsSize,path)
+	domiconSDK,err := kzgSDK.InitDomiconSdk(dSrsSize,path)
 	if err != nil {
 		return err
 	}
