@@ -72,7 +72,7 @@ require (
 )
 
 require (
-	github.com/MultiAdaptive/sig-sdk v0.1.2
+	github.com/MultiAdaptive/sig-sdk v0.1.3
 	github.com/btcsuite/btcd/btcutil v1.1.5 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f // indirect
