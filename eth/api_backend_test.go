@@ -54,7 +54,6 @@ func TestEthAPIBackend_SendBTCDAByParams(t *testing.T) {
 }
 
 
-
 func TestEthAPIBackend_SendDAByParams(t *testing.T) {
 	currentPath, _ := os.Getwd()
 	parentPath := filepath.Dir(currentPath)
@@ -95,14 +94,16 @@ func TestEthAPIBackend_SendDAByParams(t *testing.T) {
 }
 
 func TestEthereum_ChainDb(t *testing.T) {
-	client,err := ethclient.DialContext(context.TODO(),"http://43.203.215.230:"+port)
+	client,err := ethclient.DialContext(context.TODO(),"http://13.125.118.52:"+port)
 	if err != nil {
 		println("err---dial---",err.Error())
 	}
 	//0xb0074eda3c8677e92978daf87107949668c4e6b9118f630642cb221eb0351a09
-	commitStr := "094bd88dbc30525b003e3732bd9650e316d70b6526a1a3a9b98d76d56ec3b38a02cad0ff924bea9ed54f56de8d13badc107e6f6fc183108d01cb1551ab2d59a9"
+	commitStr := "95604c8c168a0a586ec3a6e4b71708f37ec9a08020b465ccda31acba3ed7aab6"
 	da,err := client.GetDAByCommitment(context.Background(),commitStr)
 	if err == nil {
-		println("da----",da.TxHash.String())
+		println("da----",da.Data)
+	}else {
+		println("da----err",err.Error())
 	}
 }
