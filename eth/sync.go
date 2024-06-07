@@ -429,18 +429,10 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		}
 		parentHash := common.HexToHash(parentHashData)
 		cs.handler.fileDataPool.SendNewFileDataEvent(daDatas)
-		switch cs.nodeType {
-		case "b":
-			db.Begin(cs.db)
-			db.AddBatchCommitment(db.Tx, daDatas, parentHash)
-			db.Commit(db.Tx)
-			cs.handler.fileDataPool.RemoveFileData(daDatas)
-		case "s":
-			db.Begin(cs.db)
-			db.AddBatchCommitment(db.Tx, daDatas, parentHash)
-			db.Commit(db.Tx)
-			cs.handler.fileDataPool.RemoveFileData(daDatas)
-		}
+		db.Begin(cs.db)
+		db.AddBatchCommitment(db.Tx, daDatas, parentHash)
+		db.Commit(db.Tx)
+		cs.handler.fileDataPool.RemoveFileData(daDatas)
 	}
 	cs.chain.SetCurrentBlock(blocks[length-1])
 	return nil
