@@ -129,10 +129,7 @@ func (b *EthAPIBackend) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byt
 		return nil, err
 	}else {
 		priv := common.Hex2Bytes(b.eth.config.BtcPrivate)
-		ctxByte := common.Bytes2Hex(commitTxBytes)
-		revByte := common.Bytes2Hex(revealTxBytes)
-		insByte := common.Bytes2Hex(inscriptionScript)
-		log.Info("SendBTCDAByParams------","ctxByte",ctxByte,"revByte",revByte,"insByte",insByte)
+		log.Info("SendBTCDAByParams------","commit",common.Bytes2Hex(commitment))
 		sign,err := sigSdk.SigWithSchnorr(commitment,priv,commitTxBytes,revealTxBytes,inscriptionScript)
 		if err != nil {
 			log.Info("SendBTCDAByParams------SigWithSchnorr","err",err.Error())
