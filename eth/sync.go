@@ -224,6 +224,7 @@ func (cs *chainSyncer) doBitcoinSync() error {
 
 	for tx, commitments := range transaction2Commitments {
 		for _, commitment := range commitments {
+			log.Info("new commit get from memory pool", "tx", tx, "commitment", string(commitment))
 			//new commit get from memory pool
 			da, err := cs.handler.fileDataPool.GetDAByCommit(commitment)
 			if err != nil || da == nil {
