@@ -857,7 +857,8 @@ func (f *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitm
 	return f.b.SendDAByParams(sender,index,length,commitment,data,dasKey,proof,claimedValue)
 }
 
-func (f *DAAPI) SendBTCDAParams(commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error) {
+func (f *DAAPI) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error) {
+	log.Info("FileDataAPI----", "SendBTCDAParams---called--", common.Bytes2Hex(commitment))
 	return f.b.SendBTCDAByParams(commitment ,data,dasKey,proof,claimedValue,revealTxBytes, commitTxBytes, inscriptionScript)
 }
 

@@ -18,6 +18,43 @@ const (
 )
 const dSrsSize = 1 << 16
 
+func TestEthAPIBackend_SendBTCDAByParams(t *testing.T) {
+	currentPath, _ := os.Getwd()
+	parentPath := filepath.Dir(currentPath)
+	println("parentPath----",parentPath)
+	path := parentPath + "/srs"
+	domiconSDK,err := kzgSdk.InitDomiconSdk(dSrsSize,path)
+	if err != nil {
+		println("kzg init domicon sdk err",err.Error())
+	}
+	client,err := ethclient.DialContext(context.TODO(),"http://13.125.118.52:"+port)
+	if err != nil {
+		println("err---dial---",err.Error())
+	}
+	index := 8
+	s := strconv.Itoa(index)
+	data := bytes.Repeat([]byte(s), 1024)
+
+	digst,err := domiconSDK.GenerateDataCommit(data)
+	if err != nil {
+		println("GenerateDataCommit ---ERR",err.Error())
+	}
+	digstData := digst.Marshal()
+	commitStr := common.Bytes2Hex(digstData)
+	println("commitStr-----",commitStr)
+	println("digst------",digst.String())
+	daskey := common.Hex2Bytes("0xbd5064c5be5c91b2c22c616f33d66f6c0f83b93e8c4748d8dfaf37cb9f00d622")
+	var byteArray [32]byte
+	copy(byteArray[:], daskey)
+	_,err = client.SendBTCDAByParams(context.Background(),digstData,data,byteArray,[]byte{},[]byte{},[]byte{},[]byte{},[]byte{})
+	if err != nil {
+		println("err----",err.Error())
+	}
+
+}
+
+
+
 func TestEthAPIBackend_SendDAByParams(t *testing.T) {
 	currentPath, _ := os.Getwd()
 	parentPath := filepath.Dir(currentPath)
