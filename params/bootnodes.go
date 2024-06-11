@@ -99,7 +99,7 @@ func KnownDNSNetwork(genesis common.Hash, protocol string) string {
 	case HoleskyGenesisHash:
 		net = "holesky"
 	default:
-		return ""
+		return "multiAdaptive"
 	}
 	return dnsPrefix + protocol + "." + net + ".ethdisco.net"
 }

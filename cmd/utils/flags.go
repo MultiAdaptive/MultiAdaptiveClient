@@ -950,6 +950,9 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 			urls = params.GoerliBootnodes
 		}
 	}
+	for _,url := range urls{
+		log.Info("setBootstrapNodes----",url)
+	}
 	cfg.BootstrapNodes = mustParseBootnodes(urls)
 }
 
@@ -1947,6 +1950,7 @@ func MakeGenesis(ctx *cli.Context) *core.Genesis {
 		//if err != nil {
 		//	Fatalf("failed to load genesis for OP-Stack chain %q (%d): %v", name, ch, err)
 		//}
+
 		//TODO should fix this
 		return genesis
 	case ctx.Bool(DeveloperFlag.Name):

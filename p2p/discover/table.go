@@ -212,6 +212,7 @@ func (tab *Table) setFallbackNodes(nodes []*enode.Node) error {
 			tab.log.Error("Bootstrap node filtered by netrestrict", "id", n.ID(), "ip", n.IP())
 			continue
 		}
+		log.Info("setFallbackNodes------","n",n.String())
 		nursery = append(nursery, wrapNode(n))
 	}
 	tab.nursery = nursery

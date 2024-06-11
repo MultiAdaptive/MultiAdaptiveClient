@@ -117,6 +117,7 @@ func (p *Peer) readStatus(network uint64, status *StatusPacket, genesis common.H
 		log.Info("readStatus----forkFilter","err",err)
 		return fmt.Errorf("%w: %v", errForkIDRejected, err)
 	}
+	log.Info("peer id",p.ID(),"status Genesis",status.Genesis.Hex(),"node",p.Info().Enode)
 	return nil
 }
 
