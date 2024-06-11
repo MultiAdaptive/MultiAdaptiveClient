@@ -19,6 +19,7 @@ package eth
 import (
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/log"
 	"math/big"
 	"time"
 
@@ -51,6 +52,7 @@ func (p *Peer) Handshake(network uint64, td *big.Int, head common.Hash, genesis 
 			Genesis:         genesis,
 			ForkID:          forkID,
 		})
+		log.Info("p2p send message","network",network,"head",head.Hex(),"Genesis",genesis.Hex())
 	}()
 	go func() {
 		errc <- p.readStatus(network, &status, genesis, forkFilter)
@@ -73,9 +75,9 @@ func (p *Peer) Handshake(network uint64, td *big.Int, head common.Hash, genesis 
 
 	// TD at mainnet block #7753254 is 76 bits. If it becomes 100 million times
 	// larger, it will still fit within 100 bits
-	if tdlen := p.td.BitLen(); tdlen > 100 {
-		return fmt.Errorf("too large total difficulty: bitlen %d", tdlen)
-	}
+////	if tdlen := p.td.BitLen(); tdlen > 100 {
+//		return fmt.Errorf("too large total difficulty: bitlen %d", tdlen)
+//	}
 	return nil
 }
 
@@ -83,28 +85,36 @@ func (p *Peer) Handshake(network uint64, td *big.Int, head common.Hash, genesis 
 func (p *Peer) readStatus(network uint64, status *StatusPacket, genesis common.Hash, forkFilter forkid.Filter) error {
 	msg, err := p.rw.ReadMsg()
 	if err != nil {
+		log.Info("readStatus----","err",err)
 		return err
 	}
 	if msg.Code != StatusMsg {
-		return fmt.Errorf("%w: first msg has code %x (!= %x)", errNoStatusMsg, msg.Code, StatusMsg)
+		err = fmt.Errorf("%w: first msg has code %x (!= %x)", errNoStatusMsg, msg.Code, StatusMsg)
+		log.Info("readStatus----msg.Code != StatusMsg","err",err)
+		return err
 	}
 	if uint64(msg.Size) > maxMessageSize {
 		return fmt.Errorf("%w: %v > %v", errMsgTooLarge, msg.Size, maxMessageSize)
 	}
 	// Decode the handshake and make sure everything matches
 	if err := msg.Decode(&status); err != nil {
+		log.Info("readStatus----msg.Decode(&status)","err",err)
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
 	}
 	if status.NetworkID != network {
+		log.Info("readStatus----status.NetworkID != network","network",network)
 		return fmt.Errorf("%w: %d (!= %d)", errNetworkIDMismatch, status.NetworkID, network)
 	}
 	if uint(status.ProtocolVersion) != p.version {
+		log.Info("readStatus----status.ProtocolVersion) != p.version","status.ProtocolVersion",status.ProtocolVersion,"p.version",p.version)
 		return fmt.Errorf("%w: %d (!= %d)", errProtocolVersionMismatch, status.ProtocolVersion, p.version)
 	}
 	if status.Genesis != genesis {
+		log.Info("readStatus----status.Genesis != genesis","status.Genesis",status.Genesis.Hex(),"genesis",genesis.Hex())
 		return fmt.Errorf("%w: %x (!= %x)", errGenesisMismatch, status.Genesis, genesis)
 	}
 	if err := forkFilter(status.ForkID); err != nil {
+		log.Info("readStatus----forkFilter","err",err)
 		return fmt.Errorf("%w: %v", errForkIDRejected, err)
 	}
 	return nil
