@@ -300,9 +300,10 @@ func (ec *Client) TransactionCount(ctx context.Context, blockHash common.Hash) (
 	return uint(num), err
 }
 
-func (ec *Client) SendDAByParams(ctx context.Context, sender common.Address, index, length uint64, commitment, data []byte, dasKey [32]byte) ([]byte, error) {
+
+func (ec *Client) SendDAByParams(ctx context.Context, sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte) ([]byte, error) {
 	var result []byte
-	err := ec.c.CallContext(ctx, &result, "eth_sendDAByParams", sender, index, length, commitment, data, dasKey)
+	err := ec.c.CallContext(ctx, &result, "eth_sendDAByParams", sender, index, length, commitment, data, dasKey,proof,claimedValue)
 	return result, err
 }
 
