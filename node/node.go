@@ -55,14 +55,15 @@ type Node struct {
 	state         int           // Tracks state of node lifecycle
 
 	lock          sync.Mutex
-	lifecycles    []Lifecycle // All registered backends, services, and auxiliary services that have a lifecycle
-	rpcAPIs       []rpc.API   // List of APIs currently provided by the node
-	http          *httpServer //
-	ws            *httpServer //
-	httpAuth      *httpServer //
-	wsAuth        *httpServer //
-	ipc           *ipcServer  // Stores information about the ipc http server
-	inprocHandler *rpc.Server // In-process RPC request handler to process the API requests
+	lifecycles    []Lifecycle     // All registered backends, services, and auxiliary services that have a lifecycle
+	rpcAPIs       []rpc.API       // List of APIs currently provided by the node
+	http          *httpServer     //
+	ws            *httpServer     //
+	httpAuth      *httpServer     //
+	wsAuth        *httpServer     //
+	explorer      *explorerServer //
+	ipc           *ipcServer      // Stores information about the ipc http server
+	inprocHandler *rpc.Server     // In-process RPC request handler to process the API requests
 
 	databases map[*closeTrackingDB]struct{} // All open databases
 }
@@ -153,6 +154,7 @@ func New(conf *Config) (*Node, error) {
 	node.ws = newHTTPServer(node.log, rpc.DefaultHTTPTimeouts)
 	node.wsAuth = newHTTPServer(node.log, rpc.DefaultHTTPTimeouts)
 	node.ipc = newIPCServer(node.log, conf.IPCEndpoint())
+	node.explorer = newExplorerServer(node.log, conf.HTTPTimeouts)
 
 	return node, nil
 }
@@ -401,6 +403,7 @@ func (n *Node) startRPC() error {
 	}
 	var (
 		servers           []*httpServer
+		eServers          []*explorerServer
 		openAPIs, allAPIs = n.getAPIs()
 	)
 
@@ -423,6 +426,23 @@ func (n *Node) startRPC() error {
 			return err
 		}
 		servers = append(servers, server)
+		return nil
+	}
+
+	initExplorer := func(server *explorerServer, port int) error {
+		if err := server.setListenAddr(n.config.HTTPHost, port); err != nil {
+			return err
+		}
+		//if err := server.enableRPC(openAPIs, httpConfig{
+		//	CorsAllowedOrigins: n.config.HTTPCors,
+		//	Vhosts:             n.config.HTTPVirtualHosts,
+		//	Modules:            n.config.HTTPModules,
+		//	prefix:             n.config.HTTPPathPrefix,
+		//	rpcEndpointConfig:  rpcConfig,
+		//}); err != nil {
+		//	return err
+		//}
+		eServers = append(eServers, server)
 		return nil
 	}
 
@@ -489,6 +509,12 @@ func (n *Node) startRPC() error {
 			return err
 		}
 	}
+
+	if true {
+		if err := initExplorer(n.explorer, 18080); err != nil {
+			return err
+		}
+	}
 	// Configure WebSocket.
 	if n.config.WSHost != "" {
 		// legacy unauthenticated
@@ -512,6 +538,13 @@ func (n *Node) startRPC() error {
 			return err
 		}
 	}
+
+	for _, server := range eServers {
+		if err := server.start(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -532,6 +565,7 @@ func (n *Node) stopRPC() {
 	n.httpAuth.stop()
 	n.wsAuth.stop()
 	n.ipc.stop()
+	n.explorer.stop()
 	n.stopInProc()
 }
 
