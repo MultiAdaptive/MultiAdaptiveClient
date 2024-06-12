@@ -116,7 +116,7 @@ type FilePool struct {
 	chain            BlockChain
 	fileDataFeed     event.Feed
 	fileDataHashFeed event.Feed
-	mu              sync.RWMutex
+	mu              sync.Mutex
 	signer          types.FdSigner
 	journal         *journal                // Journal of local fileData to back up to disk
 	subs            event.SubscriptionScope // Subscription scope to unsubscribe all on shutdown
@@ -310,6 +310,8 @@ func (fp *FilePool) GetDAByCommit(commit []byte) (*types.DA,error){
 // Get retrieves the fileData from local fileDataPool with given
 // tx hash.
 func (fp *FilePool) Get(hash common.Hash) (*types.DA,error){
+	fp.mu.Lock()
+	defer fp.mu.Unlock()
 	var getTimes uint64
 Lable:
 	fd := fp.get(hash)
@@ -379,6 +381,8 @@ func (fp *FilePool) addLocals(fds []*types.DA) []error {
 // If sync is set, the method will block until all internal maintenance related
 // to the add is finished. Only use this during tests for determinism!
 func (fp *FilePool) Add(fds []*types.DA, local, sync bool) []error {
+	fp.mu.Lock()
+	defer fp.mu.Unlock()
 	// Filter out known ones without obtaining the pool lock or recovering signatures
 	var (
 		errs = make([]error, len(fds))
@@ -438,6 +442,8 @@ func (fp *FilePool) SendNewFileDataEvent(fileData []*types.DA) {
 }
 
 func (fp *FilePool) RemoveFileData(das []*types.DA) {
+	fp.mu.Lock()
+	defer fp.mu.Unlock()
 	for _,da := range das{
 		if len(da.TxHash) != 0 {
 			delete(fp.all.collector, da.TxHash)
