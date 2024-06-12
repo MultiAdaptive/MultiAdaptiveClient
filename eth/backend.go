@@ -212,26 +212,29 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	}
 	eth.fdPool = fileDataPool
 
-	keyStores, err := ioutil.ReadDir(stack.KeyStoreDir())
-	if err != nil {
-		log.Error("New----failed", "Read KeyStore File err", err.Error())
+	if config.ChainName == "ethereum" || config.ChainName == "eth" {
+		keyStores, err := ioutil.ReadDir(stack.KeyStoreDir())
+		if err != nil {
+			log.Error("New----failed", "Read KeyStore File err", err.Error())
+		}
+		if len(keyStores) == 0 {
+			log.Error("New----ReadDir", "empty keystore")
+			return nil, errors.New("no keystore file is path")
+		}
+		filePath := stack.KeyStoreDir() + "/" + keyStores[0].Name()
+		log.Info("filePath-----", "filePath", filePath)
+		keyjson, err := ioutil.ReadFile(filePath)
+		if err != nil {
+			log.Error("New----failed", "Read KeyStore File err", err.Error())
+		}
+		// 解密keystore文件，获取私钥
+		key, err := keystore.DecryptKey(keyjson, eth.config.Passphrase)
+		if err != nil {
+			log.Error("New----failed", "DecryptKey  err", err.Error())
+		}
+		eth.singer = types.NewSingerTool(eth.blockchain.Config(), key.PrivateKey)
 	}
-	if len(keyStores) == 0 {
-		log.Error("New----ReadDir", "empty keystore")
-		return nil, errors.New("no keystore file is path")
-	}
-	filePath := stack.KeyStoreDir() + "/" + keyStores[0].Name()
-	log.Info("filePath-----", "filePath", filePath)
-	keyjson, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		log.Error("New----failed", "Read KeyStore File err", err.Error())
-	}
-	// 解密keystore文件，获取私钥
-	key, err := keystore.DecryptKey(keyjson, eth.config.Passphrase)
-	if err != nil {
-		log.Error("New----failed", "DecryptKey  err", err.Error())
-	}
-	eth.singer = types.NewSingerTool(eth.blockchain.Config(), key.PrivateKey)
+
 	// Permit the downloader to use the trie cache allowance during fast sync
 	cacheLimit := cacheConfig.TrieCleanLimit + cacheConfig.TrieDirtyLimit + cacheConfig.SnapshotLimit
 	if eth.handler, err = newHandler(&handlerConfig{
