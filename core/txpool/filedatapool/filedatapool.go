@@ -116,7 +116,7 @@ type FilePool struct {
 	chain            BlockChain
 	fileDataFeed     event.Feed
 	fileDataHashFeed event.Feed
-	mu              sync.Mutex
+	mu              sync.RWMutex
 	signer          types.FdSigner
 	journal         *journal                // Journal of local fileData to back up to disk
 	subs            event.SubscriptionScope // Subscription scope to unsubscribe all on shutdown
@@ -310,8 +310,8 @@ func (fp *FilePool) GetDAByCommit(commit []byte) (*types.DA,error){
 // Get retrieves the fileData from local fileDataPool with given
 // tx hash.
 func (fp *FilePool) Get(hash common.Hash) (*types.DA,error){
-	fp.mu.Lock()
-	defer fp.mu.Unlock()
+	fp.mu.RLock()
+	defer fp.mu.RUnlock()
 	var getTimes uint64
 Lable:
 	fd := fp.get(hash)
