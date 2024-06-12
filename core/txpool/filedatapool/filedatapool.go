@@ -414,11 +414,8 @@ func (fp *FilePool) Add(fds []*types.DA, local, sync bool) []error {
 	if len(news) == 0 {
 		return errs
 	}
-	
-	fp.mu.Lock()
-	newErrs := fp.addFdsLocked(news, local)
-	fp.mu.Unlock()
 
+	newErrs := fp.addFdsLocked(news, local)
 	var nilSlot = 0
 	var final = make([]*types.DA, 0)
 	for index, err := range newErrs {
