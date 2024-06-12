@@ -1197,16 +1197,18 @@ func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error
 
 // setEtherbase retrieves the etherbase from the directly specified command line flags.
 func setEtherbase(ctx *cli.Context, cfg *ethconfig.Config) {
-	addr := ctx.String(EtherbaseFlag.Name)
-	if strings.HasPrefix(addr, "0x") || strings.HasPrefix(addr, "0X") {
-		addr = addr[2:]
+	if  ctx.IsSet(EtherbaseFlag.Name) {
+		addr := ctx.String(EtherbaseFlag.Name)
+		if strings.HasPrefix(addr, "0x") || strings.HasPrefix(addr, "0X") {
+			addr = addr[2:]
+		}
+		b, err := hex.DecodeString(addr)
+		if err != nil || len(b) != common.AddressLength {
+			Fatalf("-%s: invalid etherbase address %q", EtherbaseFlag.Name, addr)
+			return
+		}
+		cfg.Etherbase = common.BytesToAddress(b)
 	}
-	b, err := hex.DecodeString(addr)
-	if err != nil || len(b) != common.AddressLength {
-		Fatalf("-%s: invalid etherbase address %q", EtherbaseFlag.Name, addr)
-		return
-	}
-	cfg.Etherbase = common.BytesToAddress(b)
 }
 
 // MakePasswordList reads password lines from the file specified by the global --password flag.
@@ -1509,12 +1511,14 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		cfg.DatabaseFreezer = ctx.String(AncientFlag.Name)
 	}
 
-	pwlist := MakePasswordList(ctx)
-	if len(pwlist) == 0 {
-		log.Error("local node did not config password file", "use PasswordFileFlag.Name", PasswordFileFlag.Name)
-		return
-	} else {
-		cfg.Passphrase = pwlist[0]
+	if ctx.IsSet(PasswordFileFlag.Name) {
+		pwlist := MakePasswordList(ctx)
+		if len(pwlist) == 0 {
+			log.Error("local node did not config password file", "use PasswordFileFlag.Name", PasswordFileFlag.Name)
+			return
+		} else {
+			cfg.Passphrase = pwlist[0]
+		}
 	}
 
 	if gcmode := ctx.String(GCModeFlag.Name); gcmode != "full" && gcmode != "archive" {
@@ -1621,6 +1625,9 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		cfg.Genesis = core.DefaultGoerliGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.GoerliGenesisHash)
 	case ctx.Bool(DeveloperFlag.Name):
+
+
+
 		if !ctx.IsSet(NetworkIdFlag.Name) {
 			cfg.NetworkId = 1337
 		}

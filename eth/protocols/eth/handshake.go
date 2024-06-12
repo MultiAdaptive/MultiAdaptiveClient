@@ -85,12 +85,10 @@ func (p *Peer) Handshake(network uint64, td *big.Int, head common.Hash, genesis 
 func (p *Peer) readStatus(network uint64, status *StatusPacket, genesis common.Hash, forkFilter forkid.Filter) error {
 	msg, err := p.rw.ReadMsg()
 	if err != nil {
-		log.Info("readStatus----","err",err)
 		return err
 	}
 	if msg.Code != StatusMsg {
 		err = fmt.Errorf("%w: first msg has code %x (!= %x)", errNoStatusMsg, msg.Code, StatusMsg)
-		log.Info("readStatus----msg.Code != StatusMsg","err",err)
 		return err
 	}
 	if uint64(msg.Size) > maxMessageSize {
@@ -98,23 +96,18 @@ func (p *Peer) readStatus(network uint64, status *StatusPacket, genesis common.H
 	}
 	// Decode the handshake and make sure everything matches
 	if err := msg.Decode(&status); err != nil {
-		log.Info("readStatus----msg.Decode(&status)","err",err)
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
 	}
 	if status.NetworkID != network {
-		log.Info("readStatus----status.NetworkID != network","network",network)
 		return fmt.Errorf("%w: %d (!= %d)", errNetworkIDMismatch, status.NetworkID, network)
 	}
 	if uint(status.ProtocolVersion) != p.version {
-		log.Info("readStatus----status.ProtocolVersion) != p.version","status.ProtocolVersion",status.ProtocolVersion,"p.version",p.version)
 		return fmt.Errorf("%w: %d (!= %d)", errProtocolVersionMismatch, status.ProtocolVersion, p.version)
 	}
 	if status.Genesis != genesis {
-		log.Info("readStatus----status.Genesis != genesis","status.Genesis",status.Genesis.Hex(),"genesis",genesis.Hex())
 		return fmt.Errorf("%w: %x (!= %x)", errGenesisMismatch, status.Genesis, genesis)
 	}
 	if err := forkFilter(status.ForkID); err != nil {
-		log.Info("readStatus----forkFilter","err",err)
 		return fmt.Errorf("%w: %v", errForkIDRejected, err)
 	}
 	log.Info("peer id",p.ID(),"status Genesis",status.Genesis.Hex(),"node",p.Info().Enode)
