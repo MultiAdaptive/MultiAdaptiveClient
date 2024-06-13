@@ -25,7 +25,6 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -167,7 +166,7 @@ func nodeInfo(chain *core.BlockChain, network uint64) *NodeInfo {
 func Handle(backend Backend, peer *Peer) error {
 	for {
 		if err := handleMessage(backend, peer); err != nil {
-			log.Info("Handle----handleMessage--","err",err.Error())
+			//log.Info("Handle----handleMessage--","err",err.Error())
 			peer.Log().Debug("Message handling failed in `eth`", "err", err)
 			return err
 		}
@@ -181,39 +180,15 @@ type Decoder interface {
 }
 
 var eth67 = map[uint64]msgHandler{
-	//NewBlockHashesMsg:             handleNewBlockhashes,
-	//NewBlockMsg:                   handleNewBlock,
-	//TransactionsMsg:               handleTransactions,
-	//NewPooledTransactionHashesMsg: handleNewPooledTransactionHashes67,
-	//GetBlockHeadersMsg:            handleGetBlockHeaders,
-	//BlockHeadersMsg:               handleBlockHeaders,
-	//GetBlockBodiesMsg:             handleGetBlockBodies,
-	//BlockBodiesMsg:                handleBlockBodies,
-	//GetReceiptsMsg:                handleGetReceipts,
-	//ReceiptsMsg:                   handleReceipts,
-	//GetPooledTransactionsMsg:      handleGetPooledTransactions,
 	FileDataMsg:				   				 handleFileDatas,
 	ResFileDatasMsg:							 handleResFileDatas,
- 	ReqFileDatasMsg:							 handleReqFileDatas,	
-	//PooledTransactionsMsg:         handlePooledTransactions,
+ 	ReqFileDatasMsg:							 handleReqFileDatas,
 	GetPooledFileDatasMsg:         handleGetPooledFileDatas,
 	NewPooledFileDataHashesMsg:    handleNewPooledFileDataHashes67,
 	PooledFileDatasMsg:			  		 handlePooledFileDatas,
 }
 
 var eth68 = map[uint64]msgHandler{
-	//NewBlockHashesMsg:             handleNewBlockhashes,
-	//NewBlockMsg:                   handleNewBlock,
-	//TransactionsMsg:               handleTransactions,
-	//NewPooledTransactionHashesMsg: handleNewPooledTransactionHashes68,
-	//GetBlockHeadersMsg:            handleGetBlockHeaders,
-	//BlockHeadersMsg:               handleBlockHeaders,
-	//GetBlockBodiesMsg:             handleGetBlockBodies,
-	//BlockBodiesMsg:                handleBlockBodies,
-	//GetReceiptsMsg:                handleGetReceipts,
-	//ReceiptsMsg:                   handleReceipts,
-	//GetPooledTransactionsMsg:      handleGetPooledTransactions,
-	//PooledTransactionsMsg:         handlePooledTransactions,
 	FileDataMsg:			 handleFileDatas,
 	ReqFileDatasMsg:			 handleReqFileDatas,
  	ResFileDatasMsg:			 handleResFileDatas,

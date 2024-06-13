@@ -52,7 +52,7 @@ func (p *Peer) Handshake(network uint64, td *big.Int, head common.Hash, genesis 
 			Genesis:         genesis,
 			ForkID:          forkID,
 		})
-		log.Info("p2p send message","network",network,"head",head.Hex(),"Genesis",genesis.Hex())
+		//log.Info("p2p send message","network",network,"head",head.Hex(),"Genesis",genesis.Hex())
 	}()
 	go func() {
 		errc <- p.readStatus(network, &status, genesis, forkFilter)
