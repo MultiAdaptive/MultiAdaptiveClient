@@ -290,11 +290,41 @@ func (fp *FilePool) Has(hash common.Hash) bool{
 	return fd != nil
 }
 
+func (fp *FilePool) GetDA(hash common.Hash) (*types.DA,error)  {
+	var getTimes uint64
+Lable:
+	fd := fp.get(hash)
+	if fd != nil {
+		return fd,nil
+	}
+	da,err := db.GetDAByCommitmentHash(fp.chain.SqlDB(),hash)
+	if err != nil {
+		return nil, err
+	}
+	if err != nil || da == nil {
+		log.Info("本地节点没有从需要从远端要--------", "cmHash", hash.String())
+		if getTimes < 1 {
+			fp.fileDataHashFeed.Send(core.FileDataHashEvent{Hashes: []common.Hash{hash}})
+			log.Info("本地节点没有从需要从远端要---进来了么")
+		}
+		time.Sleep(200 * time.Millisecond)
+		getTimes++
+		if getTimes <= 1 {
+			goto Lable
+		}
+	}
+	return da,nil
+}
+
 func (fp *FilePool) GetDAByCommit(commit []byte) (*types.DA,error){
+	fp.mu.RLock()
+	defer fp.mu.RUnlock()
 	var digest kzg.Digest
 	digest.SetBytes(commit)
 	cmHash := common.BytesToHash(digest.Marshal())
 	log.Info("GetDAByCommit-----","cmHash",cmHash.Hex())
+	var getTimes uint64
+Lable:
 	fd := fp.get(cmHash)
 	if fd != nil {
 		return fd,nil
@@ -302,6 +332,19 @@ func (fp *FilePool) GetDAByCommit(commit []byte) (*types.DA,error){
 	da,err := db.GetDAByCommitment(fp.chain.SqlDB(),commit)
 	if err != nil {
 		return nil, err
+	}
+
+	if err != nil || da == nil {
+		log.Info("本地节点没有从需要从远端要--------", "cmHash", cmHash.String())
+		if getTimes < 1 {
+			fp.fileDataHashFeed.Send(core.FileDataHashEvent{Hashes: []common.Hash{cmHash}})
+			log.Info("本地节点没有从需要从远端要---进来了么")
+		}
+		time.Sleep(200 * time.Millisecond)
+		getTimes++
+		if getTimes <= 1 {
+			goto Lable
+		}
 	}
 	return da,nil
 }
@@ -316,7 +359,7 @@ func (fp *FilePool) Get(hash common.Hash) (*types.DA,error){
 Lable:
 	fd := fp.get(hash)
 	if fd == nil {
-		da,err := db.GetCommitmentByHash(fp.chain.SqlDB(),hash)
+		da,err := db.GetCommitmentByTxHash(fp.chain.SqlDB(),hash)
 		if err != nil || da == nil {
 			log.Info("本地节点没有从需要从远端要--------","hash",hash.String())
 			if getTimes < 1 {
@@ -607,9 +650,18 @@ func (t *lookup) Add(fd *types.DA) {
 	t.slots += 1
 	slotsGauge.Update(int64(t.slots))
 	log.Info("Add-----加进来了")
-	if fd.TxHash.Cmp(common.Hash{}) != 0 {
+	var commitIsEmpty bool
+	if fd.Commitment.X.IsZero() && fd.Commitment.Y.IsZero() {
+		commitIsEmpty = true
+	}
+
+	if fd.TxHash.Cmp(common.Hash{}) != 0 && commitIsEmpty  {
 		t.collector[fd.TxHash] = fd
-	}else {
+	}else if fd.TxHash.Cmp(common.Hash{}) != 0 && !commitIsEmpty{
+		t.collector[fd.TxHash] = fd
+		hash := common.BytesToHash(fd.Commitment.Marshal())
+		t.collector[hash] = fd
+	}else if fd.TxHash.Cmp(common.Hash{}) == 0 && !commitIsEmpty{
 		hash := common.BytesToHash(fd.Commitment.Marshal())
 		t.collector[hash] = fd
 	}

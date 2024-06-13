@@ -386,7 +386,7 @@ type PooledFileDataStatusResponse []uint
 type PooledFileDataRLPPacket struct {
 	RequestId uint64
 	PooledFileDataRLPResponse
-	PooledFileDataStatusResponse
+	//PooledFileDataStatusResponse
 }
 
 func (*StatusPacket) Name() string { return "Status" }

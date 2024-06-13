@@ -66,6 +66,8 @@ type fileDataPool interface {
 	// tx hash.
 	Get(hash common.Hash) (*types.DA, error)
 
+	GetDA(hash common.Hash) (*types.DA, error)
+
 	GetDAByCommit(commit []byte) (*types.DA, error)
 
 	SendNewFileDataEvent(fileData []*types.DA)
@@ -428,19 +430,11 @@ func (h *handler) BroadcastFileData(fds types.DAs) {
 	for _, fd := range fds {
 		log.Info("BroadcastFileData---", "需要广播的fileData", fd.TxHash.String())
 		peers := h.peers.peerWithOutFileData(fd.TxHash)
-		//numDirect := len(peers)/2
-		// TODO dont do broadcast fileData directly
 		// Send the fileData unconditionally to a subset of our peers
 		for _, peer := range peers {
 			fdset[peer] = append(fdset[peer], fd.TxHash)
 		}
 		log.Info("全量广播----", "length", len(peers))
-		// For the remaining peers, send announcement only
-		// for _, peer := range peers[numDirect:] {
-		// 	//for _, peer := range peers {
-		// 	annos[peer] = append(annos[peer], fd.TxHash)
-		// }
-		//log.Info("广播hash----","length",len(peers[numDirect:]))
 	}
 
 	for peer, hashes := range fdset {

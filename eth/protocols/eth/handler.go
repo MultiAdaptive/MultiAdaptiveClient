@@ -98,6 +98,7 @@ type Backend interface {
 type FileDataPool interface {
 	// Get retrieves the fileData from the local fileDatapool with the given hash.
 	Get(hash common.Hash) (*types.DA,error)
+	GetDA(hash common.Hash) (*types.DA,error)
 }
 
 
@@ -213,12 +214,12 @@ var eth68 = map[uint64]msgHandler{
 	//ReceiptsMsg:                   handleReceipts,
 	//GetPooledTransactionsMsg:      handleGetPooledTransactions,
 	//PooledTransactionsMsg:         handlePooledTransactions,
-	FileDataMsg:				  				 handleFileDatas,
-	ReqFileDatasMsg:							 handleReqFileDatas,
- 	ResFileDatasMsg:							 handleResFileDatas,	
+	FileDataMsg:			 handleFileDatas,
+	ReqFileDatasMsg:			 handleReqFileDatas,
+ 	ResFileDatasMsg:			 handleResFileDatas,
 	GetPooledFileDatasMsg:         handleGetPooledFileDatas,
 	NewPooledFileDataHashesMsg:    handleNewPooledFileDataHashes68,
-	PooledFileDatasMsg:			 		   handlePooledFileDatas,
+	PooledFileDatasMsg:		 handlePooledFileDatas,
 }
 
 // handleMessage is invoked whenever an inbound message is received from a remote

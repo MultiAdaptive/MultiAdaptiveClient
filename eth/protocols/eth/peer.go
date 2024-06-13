@@ -260,14 +260,14 @@ func (p *Peer) AsyncSendPooledFileDataHashes(hashes []common.Hash) {
 }
 
 // ReplyPooledFileDatasRLP is the response to RequestTxs.
-func (p *Peer) ReplyPooledFileDatasRLP(id uint64, hashes []common.Hash, fds []rlp.RawValue, status []uint) error {
+func (p *Peer) ReplyPooledFileDatasRLP(id uint64, hashes []common.Hash, fds []rlp.RawValue) error {
 	// Mark all the fileData as known, but ensure we don't overflow our limits
 	p.knownFds.Add(hashes...)
 	// Not packed into PooledFileDataResponse to avoid RLP decoding
 	return p2p.Send(p.rw, PooledFileDatasMsg, &PooledFileDataRLPPacket{
 		RequestId:                 id,
 		PooledFileDataRLPResponse: fds,
-		PooledFileDataStatusResponse: status,
+		//PooledFileDataStatusResponse: status,
 	})
 }
 
