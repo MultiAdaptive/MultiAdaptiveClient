@@ -80,6 +80,16 @@ func GetBlockByHash(db *gorm.DB, blockHash common.Hash) (*types.Block, error) {
 	return nil, errors.New(errstr)
 }
 
+// 获取ID最大的DA记录
+func GetMaxIDBlockNum(db *gorm.DB) (int64, error) {
+	var block Block
+	if err := db.Order("id DESC").First(&block).Error; err != nil {
+		return 0, err
+	}
+	return block.BlockNum, nil
+}
+
+
 func GetBlockByNum(db *gorm.DB, blockNum uint64) (*types.Block, error) {
 	var gormdb *gorm.DB
 

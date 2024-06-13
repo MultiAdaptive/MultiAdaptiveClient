@@ -275,8 +275,11 @@ func (bc *BlockChain) SetCurrentBlock(block *types.Block) error {
 	rawdb.WriteBlock(bc.db,block)
 	db.Begin(bc.sqlDb)
 	num,err := db.GetLastBlockNum(bc.sqlDb)
-	if err != nil {
-		db.AddLastBlockNum(db.Tx,block.NumberU64())
+	if err != nil || num == 0{
+		err = db.AddLastBlockNum(db.Tx,block.NumberU64())
+		if err != nil {
+			log.Info("SetCurrentBlock------","err",err.Error())
+		}
 	}else {
 		db.UpDataLastBlocNum(db.Tx,num,block.NumberU64())
 	}
@@ -308,6 +311,9 @@ func (bc *BlockChain) loadLastState() error {
 	var headBlock *types.Block
 	lastNum,err := db.GetLastBlockNum(bc.sqlDb)
 	if err != nil {
+
+
+
 		log.Info("loadLastState","GetLastBlockNum-----lastNum",lastNum,"err",err.Error())
 		// Restore the last known head block
 		head := rawdb.ReadHeadBlockHash(bc.db)
