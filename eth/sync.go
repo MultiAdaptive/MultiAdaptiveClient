@@ -474,7 +474,11 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		db.Commit(db.Tx)
 		cs.handler.fileDataPool.RemoveFileData(daDatas)
 	}
-	cs.chain.SetCurrentBlock(blocks[length-1])
+	if len(blocks) >= 1 {
+		cs.chain.SetCurrentBlock(blocks[length-1])
+	}else {
+		return nil
+	}
 	return nil
 }
 
