@@ -119,7 +119,7 @@ func AddBatchCommitment(tx *gorm.DB, das []*types.DA, parentHash common.Hash) er
 			StateHash:       stateHash.Hex(),
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
 		}
-		log.Info("AddBatchCommitment----","CommitmentHash",wda.CommitmentHash)
+		log.Info("AddBatchCommitment----","CommitmentHash",wda.CommitmentHash,"TxHash",wda.TxHash)
 		result := tx.Create(&wda)
 		if result.Error != nil {
 			// 插入失败，回滚事务并返回错误
