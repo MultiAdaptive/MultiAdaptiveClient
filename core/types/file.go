@@ -35,7 +35,7 @@ type DA struct {
 	TxHash     common.Hash                           `json:"TxHash"`
 	ReceiveAt  time.Time                            `json:"ReceiveAt"`
 	Proof      []byte                                `json:"Proof"`
-	ClaimedValue []byte                                 `json:"ClaimedValue"`
+	ClaimedValue []byte                              `json:"ClaimedValue"`
 }
 
 func NewDA(sender common.Address,index,length uint64,commitment kzg.Digest, data []byte, dasKey [32]byte,proof []byte,claimedValue []byte) *DA {

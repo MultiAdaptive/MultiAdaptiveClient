@@ -530,7 +530,7 @@ func (g *Genesis) Commit(db ethdb.Database, triedb *trie.Database) (*types.Block
 	rawdb.WriteHeadFastBlockHash(db, block.Hash())
 	rawdb.WriteHeadHeaderHash(db, block.Hash())
 	rawdb.WriteChainConfig(db, block.Hash(), config)
-	log.Info("config-----","GenesisBlockNumber",config.L1Conf.GenesisBlockNumber,"DomiconCommitmentProxy",config.L1Conf.DomiconCommitmentProxy)
+	log.Info("config-----","GenesisBlockNumber",config.L1Conf.GenesisBlockNumber,"CommitmentProxy",config.L1Conf.CommitmentManagerProxy)
 	return block, nil
 }
 
