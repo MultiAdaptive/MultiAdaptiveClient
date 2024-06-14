@@ -36,8 +36,27 @@ func handleFileDatas(backend Backend, msg Decoder, peer *Peer) error {
 	if err := msg.Decode(&fds); err != nil {
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
 	}
-	
-	flag := peer.knownFds.Contains(fds[0].TxHash)
+
+	txHash := fds[0].TxHash
+	commitData := fds[0].Commitment
+	var commitIsEmpty bool
+	if commitData.X.IsZero() && commitData.Y.IsZero() {
+		commitIsEmpty = true
+	}
+	var flag bool
+	switch  {
+	case txHash.Cmp(common.Hash{}) == 0 && commitIsEmpty:
+		return errDADataIllegal
+	case txHash.Cmp(common.Hash{}) == 0 && !commitIsEmpty:
+		cmHash := common.BytesToHash(commitData.Marshal())
+		flag = peer.knownFds.Contains(cmHash)
+	case txHash.Cmp(common.Hash{}) != 0 && !commitIsEmpty:
+		cmHash := common.BytesToHash(commitData.Marshal())
+		flag = peer.knownFds.Contains(cmHash) || peer.knownFds.Contains(txHash)
+	case txHash.Cmp(common.Hash{}) != 0 && !commitIsEmpty:
+		flag = peer.knownFds.Contains(txHash)
+	}
+
 	if flag {
 		return nil
 	}
@@ -49,8 +68,23 @@ func handleFileDatas(backend Backend, msg Decoder, peer *Peer) error {
 		if fd == nil {
 			return fmt.Errorf("%w: fileData %d is nil", errDecode, i)
 		}
-		log.Info("handleFileDatas----","TxHash",fd.TxHash)
-		peer.markFileData(fd.TxHash)
+		commitData = fd.Commitment
+		if commitData.X.IsZero() && commitData.Y.IsZero() {
+			commitIsEmpty = true
+		}
+		switch  {
+		case fd.TxHash.Cmp(common.Hash{}) == 0 && commitIsEmpty:
+			return errDADataIllegal
+		case fd.TxHash.Cmp(common.Hash{}) == 0 && !commitIsEmpty:
+			cmHash := common.BytesToHash(commitData.Marshal())
+			peer.markFileData(cmHash)
+		case fd.TxHash.Cmp(common.Hash{}) != 0 && commitIsEmpty:
+			peer.markFileData(fd.TxHash)
+		case fd.TxHash.Cmp(common.Hash{}) != 0 && !commitIsEmpty:
+			cmHash := common.BytesToHash(commitData.Marshal())
+			peer.markFileData(cmHash)
+			peer.markFileData(fd.TxHash)
+		}
 	}
 	log.Info("handleFileDatas----收到了FileDataPacket","fileDataReceiveTimes",fileDataReceiveTimes)
 	return backend.Handle(peer, &fds)
@@ -74,9 +108,12 @@ func answerGetPooledFileDatas(backend Backend, query GetPooledFileDatasRequest) 
 		fds    []rlp.RawValue
 	)
 	for _, hash := range query {
+		if hash.Cmp(common.Hash{}) == 0 {
+			return []common.Hash{}, []rlp.RawValue{}
+		}
 		// Retrieve the requested fileData, skipping if unknown to us
 		fd,err := backend.FildDataPool().Get(hash)
-		if err != nil {
+		if err != nil  {
 			fd,err = backend.FildDataPool().GetDA(hash)
 			if err != nil {
 				continue

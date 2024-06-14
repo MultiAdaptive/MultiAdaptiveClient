@@ -363,8 +363,13 @@ Lable:
 		if err != nil || da == nil {
 			log.Info("本地节点没有从需要从远端要--------","hash",hash.String())
 			if getTimes < 1 {
-				fp.fileDataHashFeed.Send(core.FileDataHashEvent{Hashes: []common.Hash{hash}})
-				log.Info("本地节点没有从需要从远端要---进来了么")
+				da,err = db.GetDAByCommitmentHash(fp.chain.SqlDB(),hash)
+				if da == nil || err != nil{
+					fp.fileDataHashFeed.Send(core.FileDataHashEvent{Hashes: []common.Hash{hash}})
+					log.Info("本地节点没有从需要从远端要---进来了么")
+				}else {
+					return da,nil
+				}
 			}
 			time.Sleep(200 * time.Millisecond)
 			getTimes ++

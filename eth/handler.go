@@ -426,15 +426,43 @@ func (h *handler) BroadcastFileData(fds types.DAs) {
 		fdset = make(map[*ethPeer][]common.Hash)
 		//annos = make(map[*ethPeer][]common.Hash) // Set peer->hash to announce
 	)
-
 	for _, fd := range fds {
-		log.Info("BroadcastFileData---", "需要广播的fileData", fd.TxHash.String())
-		peers := h.peers.peerWithOutFileData(fd.TxHash)
-		// Send the fileData unconditionally to a subset of our peers
-		for _, peer := range peers {
-			fdset[peer] = append(fdset[peer], fd.TxHash)
+		var commitIsEmpty bool
+		if fd.Commitment.X.IsZero() && fd.Commitment.Y.IsZero() {
+			commitIsEmpty = true
 		}
-		log.Info("全量广播----", "length", len(peers))
+
+		var peers []*ethPeer
+		switch {
+
+		case fd.TxHash.Cmp(common.Hash{}) == 0 && commitIsEmpty:
+			return
+		case fd.TxHash.Cmp(common.Hash{}) == 0 && !commitIsEmpty:
+			cmHash := common.BytesToHash(fd.Commitment.Marshal())
+			peers = h.peers.peerWithOutFileData(cmHash)
+			// Send the fileData unconditionally to a subset of our peers
+			for _, peer := range peers {
+				fdset[peer] = append(fdset[peer], cmHash)
+			}
+			log.Info("BroadcastFileData---", "需要广播的fileData",cmHash)
+
+		case fd.TxHash.Cmp(common.Hash{}) != 0 && !commitIsEmpty:
+			cmHash := common.BytesToHash(fd.Commitment.Marshal())
+			peers = h.peers.peerWithOutFileData2(fd.TxHash,cmHash)
+			// Send the fileData unconditionally to a subset of our peers
+			for _, peer := range peers {
+				fdset[peer] = append(fdset[peer], cmHash)
+			}
+			log.Info("BroadcastFileData---", "需要广播的fileData", fd.TxHash.String())
+		case fd.TxHash.Cmp(common.Hash{}) != 0 && commitIsEmpty:
+			peers = h.peers.peerWithOutFileData(fd.TxHash)
+			// Send the fileData unconditionally to a subset of our peers
+			for _, peer := range peers {
+				fdset[peer] = append(fdset[peer], fd.TxHash)
+			}
+			log.Info("BroadcastFileData---", "需要广播的fileData",fd.TxHash)
+		}
+		log.Info("全量广播----", "peer count", len(peers))
 	}
 
 	for peer, hashes := range fdset {

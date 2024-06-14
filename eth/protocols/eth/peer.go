@@ -198,9 +198,25 @@ func (p *Peer) markFileData(hash common.Hash) {
 // in its fileData hash set for future reference.
 func (p *Peer) SendFileDatas(fds []*types.DA) error {
 	var txHash common.Hash
+	var commitIsEmpty bool
 	for _, fd := range fds {
 		txHash = fd.TxHash
-		p.knownFds.Add(fd.TxHash)
+		if fd.Commitment.X.IsZero() && fd.Commitment.Y.IsZero() {
+			commitIsEmpty = true
+		}
+		switch  {
+		case txHash.Cmp(common.Hash{}) == 0 && commitIsEmpty:
+			return errDADataIllegal
+		case txHash.Cmp(common.Hash{}) == 0 && !commitIsEmpty:
+			cmHash := common.BytesToHash(fd.Commitment.Marshal())
+			p.knownFds.Add(cmHash)
+		case txHash.Cmp(common.Hash{}) != 0 && !commitIsEmpty:
+			cmHash := common.BytesToHash(fd.Commitment.Marshal())
+			p.knownFds.Add(cmHash)
+			p.knownFds.Add(fd.TxHash)
+		case txHash.Cmp(common.Hash{}) != 0 && commitIsEmpty:
+			p.knownFds.Add(fd.TxHash)
+		}
 	}
 	log.Info("SendFileDatas----", "FileDataMsg", FileDataMsg, "fds length", len(fds), "peer id", p.ID(), "txHash", txHash.String())
 	return p2p.Send(p.rw, FileDataMsg, fds)

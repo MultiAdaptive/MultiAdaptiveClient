@@ -453,6 +453,9 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		if flag {
 			//new commit get from memory pool
 			da, err := cs.handler.fileDataPool.GetDAByCommit(commitment)
+			if err != nil {
+				log.Info("processBlocks-----","err",err.Error())
+			}
 			if err == nil && da != nil {
 				da.TxHash = common.HexToHash(txHash)
 				da.ReceiveAt = time.Now()
@@ -468,10 +471,10 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			parentHashData = ""
 		}
 		parentHash := common.HexToHash(parentHashData)
-		cs.handler.fileDataPool.SendNewFileDataEvent(daDatas)
 		db.Begin(cs.db)
 		db.AddBatchCommitment(db.Tx, daDatas, parentHash)
 		db.Commit(db.Tx)
+		cs.handler.fileDataPool.SendNewFileDataEvent(daDatas)
 		cs.handler.fileDataPool.RemoveFileData(daDatas)
 	}
 	if len(blocks) >= 1 {

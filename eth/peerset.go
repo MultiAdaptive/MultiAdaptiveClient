@@ -197,6 +197,20 @@ func (ps *peerSet) peerWithOutFileData(hash common.Hash) []*ethPeer {
 	return list
 }
 
+// fileData in their set of known hashes.
+func (ps *peerSet) peerWithOutFileData2(txHash common.Hash,commitHash common.Hash) []*ethPeer {
+	ps.lock.RLock()
+	defer ps.lock.RUnlock()
+
+	list := make([]*ethPeer, 0, len(ps.peers))
+	for _, p := range ps.peers {
+		if !p.KnownFileData(txHash) && !p.KnownFileData(commitHash) {
+			list = append(list, p)
+		}
+	}
+	return list
+}
+
 // peersToGetFileData retrieves a list of peers.
 func (ps *peerSet) peersToGetFileData() []*ethPeer {
 	ps.lock.RLock()
