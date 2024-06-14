@@ -114,39 +114,6 @@ type Validator struct {
 }
 
 // Sample data for demonstration
-//var blobs = []Blob{
-//	{"1", "Confirmed", "Commit1", 100, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000001", "Valid"},
-//	{"2", "Pending", "Commit2", 101, "2024-06-02T12:00:00Z", 0.02, "Validator2", "0x0000002", "Valid"},
-//	{"3", "Failed", "Commit3", 102, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000003", "Valid"},
-//	{"4", "Confirmed", "Commit4", 103, "2024-06-01T12:00:00Z", 0.01, "Validator3", "0x0000004", "Valid"},
-//	{"5", "Confirmed", "Commit5", 104, "2024-06-01T12:00:00Z", 0.01, "Validator4", "0x0000005", "Valid"},
-//	{"6", "Confirmed", "Commit6", 105, "2024-06-01T12:00:00Z", 0.01, "Validator5", "0x0000006", "Valid"},
-//}
-
-//var btc_blobs = []Blob{
-//	{"1", "Confirmed", "Commit1", 100, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000001", "Valid"},
-//	{"2", "Pending", "Commit2", 101, "2024-06-02T12:00:00Z", 0.02, "Validator2", "0x0000002", "Valid"},
-//	{"3", "Failed", "Commit3", 102, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000003", "Valid"},
-//	{"4", "Confirmed", "Commit4", 103, "2024-06-01T12:00:00Z", 0.01, "Validator3", "0x0000004", "Valid"},
-//	{"5", "Confirmed", "Commit5", 104, "2024-06-01T12:00:00Z", 0.01, "Validator4", "0x0000005", "Valid"},
-//	{"6", "Confirmed", "Commit6", 105, "2024-06-01T12:00:00Z", 0.01, "Validator5", "0x0000006", "Valid"},
-//	{"7", "Confirmed", "Commit7", 106, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000007", "Valid"},
-//	{"8", "Confirmed", "Commit8", 107, "2024-06-01T12:00:00Z", 0.01, "Validator5", "0x0000008", "Valid"},
-//	{"9", "Confirmed", "Commit9", 108, "2024-06-01T12:00:00Z", 0.01, "Validator2", "0x0000009", "Valid"},
-//	{"10", "Confirmed", "Commit10", 109, "2024-06-01T12:00:00Z", 0.01, "Validator6", "0x0000010", "Valid"},
-//	{"11", "Confirmed", "Commit11", 110, "2024-06-01T12:00:00Z", 0.01, "Validator3", "0x0000011", "Valid"},
-//	{"12", "Confirmed", "Commit12", 111, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000012", "Valid"},
-//	{"13", "Confirmed", "Commit13", 112, "2024-06-01T12:00:00Z", 0.01, "Validator2", "0x0000013", "Valid"},
-//	{"14", "Confirmed", "Commit14", 113, "2024-06-01T12:00:00Z", 0.01, "Validator7", "0x0000014", "Valid"},
-//	{"15", "Confirmed", "Commit15", 114, "2024-06-01T12:00:00Z", 0.01, "Validator7", "0x0000015", "Valid"},
-//	{"16", "Confirmed", "Commit16", 115, "2024-06-01T12:00:00Z", 0.01, "Validator7", "0x0000016", "Inalid"},
-//	{"17", "Confirmed", "Commit17", 116, "2024-06-01T12:00:00Z", 0.01, "Validator5", "0x0000017", "Inalid"},
-//	{"18", "Confirmed", "Commit18", 117, "2024-06-01T12:00:00Z", 0.01, "Validator2", "0x0000018", "Inalid"},
-//	{"19", "Confirmed", "Commit19", 118, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000019", "Inalid"},
-//	{"20", "Confirmed", "Commit20", 119, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000020", "Inalid"},
-//}
-
-// Sample data for demonstration
 var blobDetails = []BlobDetail{
 	{"1", "Confirmed", "0x1234567890abcdef", 100, "2024-06-01T12:00:00Z", 0.01, "Validator1", 1024, "valid", struct {
 		X string `json:"x"`
