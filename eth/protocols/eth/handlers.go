@@ -62,23 +62,25 @@ func handleGetPooledFileDatas(backend Backend,msg Decoder,peer *Peer) error {
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
 	}	
 	log.Info("handleGetPooledFileDatas----获取要拿的请求","query hash",query.GetPooledFileDatasRequest[0].String())
-	hashes,fds,status := answerGetPooledFileDatas(backend, query.GetPooledFileDatasRequest)
-	return peer.ReplyPooledFileDatasRLP(query.RequestId, hashes, fds, status)
+	hashes,fds := answerGetPooledFileDatas(backend, query.GetPooledFileDatasRequest)
+	return peer.ReplyPooledFileDatasRLP(query.RequestId, hashes, fds)
 }
 
-func answerGetPooledFileDatas(backend Backend, query GetPooledFileDatasRequest) ([]common.Hash, []rlp.RawValue, []uint) {
+func answerGetPooledFileDatas(backend Backend, query GetPooledFileDatasRequest) ([]common.Hash, []rlp.RawValue) {
 	// Gather fileDatas until the fetch or network limits is reached
 	var (
 		bytes  int
 		hashes []common.Hash
 		fds    []rlp.RawValue
-		states []uint
 	)
 	for _, hash := range query {
 		// Retrieve the requested fileData, skipping if unknown to us
 		fd,err := backend.FildDataPool().Get(hash)
 		if err != nil {
-			continue
+			fd,err = backend.FildDataPool().GetDA(hash)
+			if err != nil {
+				continue
+			}
 		}
 		if fd != nil {
 			// If known, encode and queue for response packet
@@ -91,7 +93,7 @@ func answerGetPooledFileDatas(backend Backend, query GetPooledFileDatasRequest) 
 			}	
 		}
 	}
-	return hashes, fds, states
+	return hashes, fds
 }
 
 func handleNewPooledFileDataHashes67(backend Backend, msg Decoder, peer *Peer) error {

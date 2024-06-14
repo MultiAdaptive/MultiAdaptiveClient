@@ -260,12 +260,21 @@ func (cs *chainSyncer) doEthereumSync() error {
 	}
 	var currentHeader uint64
 	currentBlock := cs.chain.CurrentBlock()
-	if currentBlock == nil || currentBlock.Number == nil {
+	if currentBlock == nil || currentBlock.Number == nil || currentBlock.Number.Uint64() == 0 {
 		num, err := db.GetLastBlockNum(cs.db)
 		if err != nil {
 			return err
 		}
-		currentHeader = num
+		blockNum,err := db.GetMaxIDBlockNum(cs.db)
+		if err != nil {
+			log.Info("doEthereumSync----GetMaxIDBlockNum","err",err.Error())
+		}
+		log.Info("doEthereumSync----GetMaxIDBlockNum","blockNum",blockNum)
+		if uint64(blockNum) >= num {
+			currentHeader = uint64(blockNum)
+		}else {
+			currentHeader = num
+		}
 	} else {
 		currentHeader = currentBlock.Number.Uint64()
 	}
@@ -284,7 +293,7 @@ func (cs *chainSyncer) doEthereumSync() error {
 		var shouldBreak bool
 		for i := startNum; true; i += SyncChunkSize {
 			log.Info("chainSyncer---", "i----", i)
-			blocks := make([]*types.Block, SyncChunkSize)
+			blocks := make([]*types.Block, 0)
 			for j := i; j < i+SyncChunkSize; j++ {
 				if j >= l1Num {
 					shouldBreak = true
@@ -296,7 +305,7 @@ func (cs *chainSyncer) doEthereumSync() error {
 				case <-requireTime.C:
 					block, err := cs.ethClient.BlockByNumber(cs.ctx, new(big.Int).SetUint64(toBlockNum))
 					if err == nil {
-						blocks[j-i] = block
+						blocks= append(blocks,block)
 						requireTime.Reset(QuickReqTime)
 					} else {
 						cs.forced = false
@@ -465,7 +474,11 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		db.Commit(db.Tx)
 		cs.handler.fileDataPool.RemoveFileData(daDatas)
 	}
-	cs.chain.SetCurrentBlock(blocks[length-1])
+	if len(blocks) >= 1 {
+		cs.chain.SetCurrentBlock(blocks[length-1])
+	}else {
+		return nil
+	}
 	return nil
 }
 

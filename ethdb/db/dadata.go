@@ -22,6 +22,7 @@ type DA struct {
 	Length          int64
 	TxHash          string `gorm:"unique;column:tx_hash"`
 	Commitment      string
+	CommitmentHash  string
 	Data            string
 	DAsKey          string
 	SignData        string
@@ -67,13 +68,16 @@ func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) e
 		dataCollect = append(dataCollect, da.Sender.Bytes()...)
 		dataCollect = append(dataCollect, currentParentHash.Bytes()...)
 		stateHash := common.BytesToHash(dataCollect)
+
+		commitData := da.Commitment.Marshal()
 		wda := DA{
 			Sender:          da.Sender.Hex(),
 			TxHash:          da.TxHash.String(),
 			Index:           int64(da.Index),
 			Length:          int64(da.Length),
 			Data:            common.Bytes2Hex(da.Data),
-			Commitment:      common.Bytes2Hex(da.Commitment.Marshal()),
+			Commitment:      common.Bytes2Hex(commitData),
+			CommitmentHash:  common.BytesToHash(commitData).Hex(),
 			SignData:        common.Bytes2Hex(da.SignData),
 			ParentStateHash: currentParentHash.String(),
 			StateHash:       stateHash.Hex(),
@@ -102,13 +106,15 @@ func AddBatchCommitment(tx *gorm.DB, das []*types.DA, parentHash common.Hash) er
 		dataCollect = append(dataCollect, da.Sender.Bytes()...)
 		dataCollect = append(dataCollect, currentParentHash.Bytes()...)
 		stateHash := common.BytesToHash(dataCollect)
+		commitData := da.Commitment.Marshal()
 		wda := DA{
 			Sender:          da.Sender.Hex(),
 			TxHash:          da.TxHash.String(),
 			Index:           int64(da.Index),
 			Length:          int64(da.Length),
 			Data:            common.Bytes2Hex(da.Data),
-			Commitment:      common.Bytes2Hex(da.Commitment.Marshal()),
+			Commitment:      common.Bytes2Hex(commitData),
+			CommitmentHash:  common.BytesToHash(commitData).Hex(),
 			SignData:        common.Bytes2Hex(da.SignData),
 			ParentStateHash: currentParentHash.String(),
 			StateHash:       stateHash.Hex(),
@@ -174,7 +180,53 @@ func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 	}, nil
 }
 
-func GetCommitmentByHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
+func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
+	var gormdb *gorm.DB
+	var count int64
+	gormdb = db.Model(&DA{}).Count(&count)
+	if gormdb.Error != nil {
+		log.Error("Error count DA", "err", gormdb.Error)
+		return nil, gormdb.Error
+	}
+	if count == 0 {
+		msg := fmt.Sprintf("DA table is empty")
+		log.Info(msg)
+		return nil, errors.New(msg)
+	}
+	var da DA
+	gormdb = db.First(&da, "commitment_hash = ?", cmHash)
+	if gormdb.Error != nil {
+		log.Error("can not find DA with given commitment_hash", "commitment_hash", cmHash.Hex(), "err", gormdb.Error)
+		return nil, gormdb.Error
+	}
+
+	var digest kzg.Digest
+	str, err := hex.DecodeString(da.Commitment)
+	if err != nil {
+		return nil, err
+	}
+	_, err = digest.SetBytes(str)
+	if err != nil {
+		return nil, err
+	}
+	parsedTime, err := time.Parse(layout, da.ReceiveAt)
+	if err != nil {
+		log.Debug("Error parsing time", "err", err)
+		return nil, err
+	}
+	return &types.DA{
+		Sender:     common.HexToAddress(da.Sender),
+		Index:      uint64(da.Index),
+		Length:     uint64(da.Length),
+		Commitment: digest,
+		Data:       common.Hex2Bytes(da.Data),
+		SignData:   common.Hex2Bytes(da.SignData),
+		TxHash:     common.HexToHash(da.TxHash),
+		ReceiveAt:  parsedTime,
+	}, nil
+}
+
+func GetCommitmentByTxHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 	var gormdb *gorm.DB
 
 	var count int64
