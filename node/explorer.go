@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 // Database 实例
@@ -46,15 +45,19 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 
 // Blob represents the blob data structure
 type Blob struct {
-	BlobID     string  `json:"BlobID"`
-	Status     string  `json:"Status"`
-	Commitment string  `json:"Commitment"`
-	BlockNum   int     `json:"Block"`
-	Timestamp  string  `json:"Timestamp"`
-	Fee        float64 `json:"Fee"`
-	Validator  string  `json:"Validator"`
-	TxHash     string  `json:"TxHash"`
-	State      string  `json:"State"`
+	Sender          string `json:"sender"`
+	Index           int64  `json:"index"`
+	Length          int64  `json:"length"`
+	TxHash          string `json:"tx_hash"`
+	Commitment      string `json:"commitment"`
+	CommitmentHash  string `json:"commitment_hash"`
+	Data            string `json:"data"`
+	DAsKey          string `json:"das_key"`
+	SignData        string `json:"sign_data"`
+	ParentStateHash string `json:"parent_state_hash"`
+	StateHash       string `json:"state_hash"`
+	BlockNum        int64  `json:"block_num"`
+	ReceiveAt       string `json:"receive_at"`
 }
 
 type ChainBlobs struct {
@@ -100,37 +103,37 @@ type Validator struct {
 }
 
 // Sample data for demonstration
-var blobs = []Blob{
-	{"1", "Confirmed", "Commit1", 100, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000001", "Valid"},
-	{"2", "Pending", "Commit2", 101, "2024-06-02T12:00:00Z", 0.02, "Validator2", "0x0000002", "Valid"},
-	{"3", "Failed", "Commit3", 102, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000003", "Valid"},
-	{"4", "Confirmed", "Commit4", 103, "2024-06-01T12:00:00Z", 0.01, "Validator3", "0x0000004", "Valid"},
-	{"5", "Confirmed", "Commit5", 104, "2024-06-01T12:00:00Z", 0.01, "Validator4", "0x0000005", "Valid"},
-	{"6", "Confirmed", "Commit6", 105, "2024-06-01T12:00:00Z", 0.01, "Validator5", "0x0000006", "Valid"},
-}
+//var blobs = []Blob{
+//	{"1", "Confirmed", "Commit1", 100, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000001", "Valid"},
+//	{"2", "Pending", "Commit2", 101, "2024-06-02T12:00:00Z", 0.02, "Validator2", "0x0000002", "Valid"},
+//	{"3", "Failed", "Commit3", 102, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000003", "Valid"},
+//	{"4", "Confirmed", "Commit4", 103, "2024-06-01T12:00:00Z", 0.01, "Validator3", "0x0000004", "Valid"},
+//	{"5", "Confirmed", "Commit5", 104, "2024-06-01T12:00:00Z", 0.01, "Validator4", "0x0000005", "Valid"},
+//	{"6", "Confirmed", "Commit6", 105, "2024-06-01T12:00:00Z", 0.01, "Validator5", "0x0000006", "Valid"},
+//}
 
-var btc_blobs = []Blob{
-	{"1", "Confirmed", "Commit1", 100, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000001", "Valid"},
-	{"2", "Pending", "Commit2", 101, "2024-06-02T12:00:00Z", 0.02, "Validator2", "0x0000002", "Valid"},
-	{"3", "Failed", "Commit3", 102, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000003", "Valid"},
-	{"4", "Confirmed", "Commit4", 103, "2024-06-01T12:00:00Z", 0.01, "Validator3", "0x0000004", "Valid"},
-	{"5", "Confirmed", "Commit5", 104, "2024-06-01T12:00:00Z", 0.01, "Validator4", "0x0000005", "Valid"},
-	{"6", "Confirmed", "Commit6", 105, "2024-06-01T12:00:00Z", 0.01, "Validator5", "0x0000006", "Valid"},
-	{"7", "Confirmed", "Commit7", 106, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000007", "Valid"},
-	{"8", "Confirmed", "Commit8", 107, "2024-06-01T12:00:00Z", 0.01, "Validator5", "0x0000008", "Valid"},
-	{"9", "Confirmed", "Commit9", 108, "2024-06-01T12:00:00Z", 0.01, "Validator2", "0x0000009", "Valid"},
-	{"10", "Confirmed", "Commit10", 109, "2024-06-01T12:00:00Z", 0.01, "Validator6", "0x0000010", "Valid"},
-	{"11", "Confirmed", "Commit11", 110, "2024-06-01T12:00:00Z", 0.01, "Validator3", "0x0000011", "Valid"},
-	{"12", "Confirmed", "Commit12", 111, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000012", "Valid"},
-	{"13", "Confirmed", "Commit13", 112, "2024-06-01T12:00:00Z", 0.01, "Validator2", "0x0000013", "Valid"},
-	{"14", "Confirmed", "Commit14", 113, "2024-06-01T12:00:00Z", 0.01, "Validator7", "0x0000014", "Valid"},
-	{"15", "Confirmed", "Commit15", 114, "2024-06-01T12:00:00Z", 0.01, "Validator7", "0x0000015", "Valid"},
-	{"16", "Confirmed", "Commit16", 115, "2024-06-01T12:00:00Z", 0.01, "Validator7", "0x0000016", "Inalid"},
-	{"17", "Confirmed", "Commit17", 116, "2024-06-01T12:00:00Z", 0.01, "Validator5", "0x0000017", "Inalid"},
-	{"18", "Confirmed", "Commit18", 117, "2024-06-01T12:00:00Z", 0.01, "Validator2", "0x0000018", "Inalid"},
-	{"19", "Confirmed", "Commit19", 118, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000019", "Inalid"},
-	{"20", "Confirmed", "Commit20", 119, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000020", "Inalid"},
-}
+//var btc_blobs = []Blob{
+//	{"1", "Confirmed", "Commit1", 100, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000001", "Valid"},
+//	{"2", "Pending", "Commit2", 101, "2024-06-02T12:00:00Z", 0.02, "Validator2", "0x0000002", "Valid"},
+//	{"3", "Failed", "Commit3", 102, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000003", "Valid"},
+//	{"4", "Confirmed", "Commit4", 103, "2024-06-01T12:00:00Z", 0.01, "Validator3", "0x0000004", "Valid"},
+//	{"5", "Confirmed", "Commit5", 104, "2024-06-01T12:00:00Z", 0.01, "Validator4", "0x0000005", "Valid"},
+//	{"6", "Confirmed", "Commit6", 105, "2024-06-01T12:00:00Z", 0.01, "Validator5", "0x0000006", "Valid"},
+//	{"7", "Confirmed", "Commit7", 106, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000007", "Valid"},
+//	{"8", "Confirmed", "Commit8", 107, "2024-06-01T12:00:00Z", 0.01, "Validator5", "0x0000008", "Valid"},
+//	{"9", "Confirmed", "Commit9", 108, "2024-06-01T12:00:00Z", 0.01, "Validator2", "0x0000009", "Valid"},
+//	{"10", "Confirmed", "Commit10", 109, "2024-06-01T12:00:00Z", 0.01, "Validator6", "0x0000010", "Valid"},
+//	{"11", "Confirmed", "Commit11", 110, "2024-06-01T12:00:00Z", 0.01, "Validator3", "0x0000011", "Valid"},
+//	{"12", "Confirmed", "Commit12", 111, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000012", "Valid"},
+//	{"13", "Confirmed", "Commit13", 112, "2024-06-01T12:00:00Z", 0.01, "Validator2", "0x0000013", "Valid"},
+//	{"14", "Confirmed", "Commit14", 113, "2024-06-01T12:00:00Z", 0.01, "Validator7", "0x0000014", "Valid"},
+//	{"15", "Confirmed", "Commit15", 114, "2024-06-01T12:00:00Z", 0.01, "Validator7", "0x0000015", "Valid"},
+//	{"16", "Confirmed", "Commit16", 115, "2024-06-01T12:00:00Z", 0.01, "Validator7", "0x0000016", "Inalid"},
+//	{"17", "Confirmed", "Commit17", 116, "2024-06-01T12:00:00Z", 0.01, "Validator5", "0x0000017", "Inalid"},
+//	{"18", "Confirmed", "Commit18", 117, "2024-06-01T12:00:00Z", 0.01, "Validator2", "0x0000018", "Inalid"},
+//	{"19", "Confirmed", "Commit19", 118, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000019", "Inalid"},
+//	{"20", "Confirmed", "Commit20", 119, "2024-06-01T12:00:00Z", 0.01, "Validator1", "0x0000020", "Inalid"},
+//}
 
 // Sample data for demonstration
 var blobDetails = []BlobDetail{
@@ -207,8 +210,34 @@ var validators = []Validator{
 // HomeDataHandler handles the GET /api/home-data endpoint
 func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		btcBlobs := btc_blobs
-		ethBlobs := blobs
+		var gormdb *gorm.DB
+		var das []db.DA
+		gormdb = stateSqlDB.Find(&das)
+		if gormdb.Error != nil {
+			log.Error("can not find DA", "err", gormdb.Error)
+		}
+
+		btcBlobs := make([]Blob, 0)
+		ethBlobs := make([]Blob, 0)
+		for _, da := range das {
+			blob := Blob{
+				Sender:          da.Sender,
+				Index:           da.Index,
+				Length:          da.Length,
+				TxHash:          da.TxHash,
+				Commitment:      da.Commitment,
+				CommitmentHash:  da.CommitmentHash,
+				Data:            da.Data,
+				DAsKey:          da.DAsKey,
+				SignData:        da.SignData,
+				ParentStateHash: da.ParentStateHash,
+				StateHash:       da.StateHash,
+				BlockNum:        da.BlockNum,
+				ReceiveAt:       da.ReceiveAt,
+			}
+			btcBlobs = append(btcBlobs, blob)
+			ethBlobs = append(ethBlobs, blob)
+		}
 
 		response := map[string]interface{}{
 			"result": []ChainBlobs{
@@ -246,7 +275,7 @@ func CreateBlobHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		blobs = append(blobs, newBlob)
+		//blobs = append(blobs, newBlob)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(newBlob)
@@ -256,190 +285,190 @@ func CreateBlobHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // SearchHandler handles the GET /api/search endpoint with query parameters
-func SearchHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		query := r.URL.Query().Get("q")
-		category := r.URL.Query().Get("category")
-
-		if query == "" {
-			http.Error(w, "Missing query or category parameter", http.StatusBadRequest)
-			return
-		}
-
-		var results []Blob
-		switch category {
-		case "Validator", "TxHash", "BlobID", "Commitment", "BlockNum":
-			for _, blob := range btc_blobs {
-				if category == "BlobID" && strings.Contains(blob.BlobID, query) ||
-					category == "Commitment" && strings.Contains(blob.Commitment, query) ||
-					category == "BlockNum" && fmt.Sprintf("%d", blob.BlockNum) == query ||
-					category == "TxHash" && fmt.Sprintf("%d", blob.TxHash) == query ||
-					category == "Validator" && fmt.Sprintf("%d", blob.Validator) == query {
-					results = append(results, blob)
-				}
-			}
-		default:
-			http.Error(w, "Invalid category parameter", http.StatusBadRequest)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(results)
-	} else {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-	}
-}
-
-// BtcBlobsHandler handles the GET /api/btc-blobs endpoint with pagination and filtering
-func BtcBlobsHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		chain := r.URL.Query().Get("chain")
-		if chain != "btc" {
-			http.Error(w, "Invalid or missing chain parameter", http.StatusBadRequest)
-			return
-		}
-
-		pageStr := r.URL.Query().Get("page")
-		page, err := strconv.Atoi(pageStr)
-		if err != nil || page < 1 {
-			http.Error(w, "Invalid page parameter", http.StatusBadRequest)
-			return
-		}
-
-		if chain == "" || pageStr == "" {
-			http.Error(w, "Missing chain or pageStr parameter", http.StatusBadRequest)
-			return
-		}
-
-		filter := r.URL.Query().Get("filter")
-
-		// Filter blobs based on the provided filter parameter
-		var filteredBlobs []Blob
-		for _, blob := range blobs {
-			if filter == "" || strings.Contains(blob.BlobID, filter) || strings.Contains(blob.Commitment, filter) ||
-				strings.Contains(blob.Status, filter) || strings.Contains(blob.Validator, filter) ||
-				strings.Contains(blob.TxHash, filter) {
-				filteredBlobs = append(filteredBlobs, blob)
-			}
-		}
-
-		// Pagination
-		const perPage = 10
-		total := len(filteredBlobs)
-		start := (page - 1) * perPage
-		end := start + perPage
-		if start > total {
-			start = total
-		}
-		if end > total {
-			end = total
-		}
-		paginatedBlobs := filteredBlobs[start:end]
-
-		// Response
-		response := struct {
-			Data       []Blob `json:"data"`
-			Pagination struct {
-				Total   int `json:"total"`
-				Page    int `json:"page"`
-				PerPage int `json:"perPage"`
-			} `json:"pagination"`
-		}{
-			Data: paginatedBlobs,
-			Pagination: struct {
-				Total   int `json:"total"`
-				Page    int `json:"page"`
-				PerPage int `json:"perPage"`
-			}{
-				Total:   total,
-				Page:    page,
-				PerPage: perPage,
-			},
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
-	} else {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-	}
-}
+//func SearchHandler(w http.ResponseWriter, r *http.Request) {
+//	if r.Method == http.MethodGet {
+//		query := r.URL.Query().Get("q")
+//		category := r.URL.Query().Get("category")
+//
+//		if query == "" {
+//			http.Error(w, "Missing query or category parameter", http.StatusBadRequest)
+//			return
+//		}
+//
+//		var results []Blob
+//		switch category {
+//		case "Validator", "TxHash", "BlobID", "Commitment", "BlockNum":
+//			for _, blob := range btc_blobs {
+//				if category == "BlobID" && strings.Contains(blob.BlobID, query) ||
+//					category == "Commitment" && strings.Contains(blob.Commitment, query) ||
+//					category == "BlockNum" && fmt.Sprintf("%d", blob.BlockNum) == query ||
+//					category == "TxHash" && fmt.Sprintf("%d", blob.TxHash) == query ||
+//					category == "Validator" && fmt.Sprintf("%d", blob.Validator) == query {
+//					results = append(results, blob)
+//				}
+//			}
+//		default:
+//			http.Error(w, "Invalid category parameter", http.StatusBadRequest)
+//			return
+//		}
+//
+//		w.Header().Set("Content-Type", "application/json")
+//		w.WriteHeader(http.StatusOK)
+//		json.NewEncoder(w).Encode(results)
+//	} else {
+//		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+//	}
+//}
 
 // BtcBlobsHandler handles the GET /api/btc-blobs endpoint with pagination and filtering
-func EthBlobsHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		chain := r.URL.Query().Get("chain")
-		if chain != "eth" {
-			http.Error(w, "Invalid or missing chain parameter", http.StatusBadRequest)
-			return
-		}
+//func BtcBlobsHandler(w http.ResponseWriter, r *http.Request) {
+//	if r.Method == http.MethodGet {
+//		chain := r.URL.Query().Get("chain")
+//		if chain != "btc" {
+//			http.Error(w, "Invalid or missing chain parameter", http.StatusBadRequest)
+//			return
+//		}
+//
+//		pageStr := r.URL.Query().Get("page")
+//		page, err := strconv.Atoi(pageStr)
+//		if err != nil || page < 1 {
+//			http.Error(w, "Invalid page parameter", http.StatusBadRequest)
+//			return
+//		}
+//
+//		if chain == "" || pageStr == "" {
+//			http.Error(w, "Missing chain or pageStr parameter", http.StatusBadRequest)
+//			return
+//		}
+//
+//		filter := r.URL.Query().Get("filter")
+//
+//		// Filter blobs based on the provided filter parameter
+//		var filteredBlobs []Blob
+//		for _, blob := range blobs {
+//			if filter == "" || strings.Contains(blob.BlobID, filter) || strings.Contains(blob.Commitment, filter) ||
+//				strings.Contains(blob.Status, filter) || strings.Contains(blob.Validator, filter) ||
+//				strings.Contains(blob.TxHash, filter) {
+//				filteredBlobs = append(filteredBlobs, blob)
+//			}
+//		}
+//
+//		// Pagination
+//		const perPage = 10
+//		total := len(filteredBlobs)
+//		start := (page - 1) * perPage
+//		end := start + perPage
+//		if start > total {
+//			start = total
+//		}
+//		if end > total {
+//			end = total
+//		}
+//		paginatedBlobs := filteredBlobs[start:end]
+//
+//		// Response
+//		response := struct {
+//			Data       []Blob `json:"data"`
+//			Pagination struct {
+//				Total   int `json:"total"`
+//				Page    int `json:"page"`
+//				PerPage int `json:"perPage"`
+//			} `json:"pagination"`
+//		}{
+//			Data: paginatedBlobs,
+//			Pagination: struct {
+//				Total   int `json:"total"`
+//				Page    int `json:"page"`
+//				PerPage int `json:"perPage"`
+//			}{
+//				Total:   total,
+//				Page:    page,
+//				PerPage: perPage,
+//			},
+//		}
+//
+//		w.Header().Set("Content-Type", "application/json")
+//		w.WriteHeader(http.StatusOK)
+//		json.NewEncoder(w).Encode(response)
+//	} else {
+//		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+//	}
+//}
 
-		pageStr := r.URL.Query().Get("page")
-		page, err := strconv.Atoi(pageStr)
-		if err != nil || page < 1 {
-			http.Error(w, "Invalid page parameter", http.StatusBadRequest)
-			return
-		}
-
-		if chain == "" || pageStr == "" {
-			http.Error(w, "Missing chain or pageStr parameter", http.StatusBadRequest)
-			return
-		}
-
-		filter := r.URL.Query().Get("filter")
-
-		// Filter blobs based on the provided filter parameter
-		var filteredBlobs []Blob
-		for _, blob := range blobs {
-			if filter == "" || strings.Contains(blob.BlobID, filter) || strings.Contains(blob.Commitment, filter) ||
-				strings.Contains(blob.Status, filter) || strings.Contains(blob.Validator, filter) ||
-				strings.Contains(blob.TxHash, filter) {
-				filteredBlobs = append(filteredBlobs, blob)
-			}
-		}
-
-		// Pagination
-		const perPage = 10
-		total := len(filteredBlobs)
-		start := (page - 1) * perPage
-		end := start + perPage
-		if start > total {
-			start = total
-		}
-		if end > total {
-			end = total
-		}
-		paginatedBlobs := filteredBlobs[start:end]
-
-		// Response
-		response := struct {
-			Data       []Blob `json:"data"`
-			Pagination struct {
-				Total   int `json:"total"`
-				Page    int `json:"page"`
-				PerPage int `json:"perPage"`
-			} `json:"pagination"`
-		}{
-			Data: paginatedBlobs,
-			Pagination: struct {
-				Total   int `json:"total"`
-				Page    int `json:"page"`
-				PerPage int `json:"perPage"`
-			}{
-				Total:   total,
-				Page:    page,
-				PerPage: perPage,
-			},
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
-	} else {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-	}
-}
+// BtcBlobsHandler handles the GET /api/btc-blobs endpoint with pagination and filtering
+//func EthBlobsHandler(w http.ResponseWriter, r *http.Request) {
+//	if r.Method == http.MethodGet {
+//		chain := r.URL.Query().Get("chain")
+//		if chain != "eth" {
+//			http.Error(w, "Invalid or missing chain parameter", http.StatusBadRequest)
+//			return
+//		}
+//
+//		pageStr := r.URL.Query().Get("page")
+//		page, err := strconv.Atoi(pageStr)
+//		if err != nil || page < 1 {
+//			http.Error(w, "Invalid page parameter", http.StatusBadRequest)
+//			return
+//		}
+//
+//		if chain == "" || pageStr == "" {
+//			http.Error(w, "Missing chain or pageStr parameter", http.StatusBadRequest)
+//			return
+//		}
+//
+//		filter := r.URL.Query().Get("filter")
+//
+//		// Filter blobs based on the provided filter parameter
+//		var filteredBlobs []Blob
+//		for _, blob := range blobs {
+//			if filter == "" || strings.Contains(blob.BlobID, filter) || strings.Contains(blob.Commitment, filter) ||
+//				strings.Contains(blob.Status, filter) || strings.Contains(blob.Validator, filter) ||
+//				strings.Contains(blob.TxHash, filter) {
+//				filteredBlobs = append(filteredBlobs, blob)
+//			}
+//		}
+//
+//		// Pagination
+//		const perPage = 10
+//		total := len(filteredBlobs)
+//		start := (page - 1) * perPage
+//		end := start + perPage
+//		if start > total {
+//			start = total
+//		}
+//		if end > total {
+//			end = total
+//		}
+//		paginatedBlobs := filteredBlobs[start:end]
+//
+//		// Response
+//		response := struct {
+//			Data       []Blob `json:"data"`
+//			Pagination struct {
+//				Total   int `json:"total"`
+//				Page    int `json:"page"`
+//				PerPage int `json:"perPage"`
+//			} `json:"pagination"`
+//		}{
+//			Data: paginatedBlobs,
+//			Pagination: struct {
+//				Total   int `json:"total"`
+//				Page    int `json:"page"`
+//				PerPage int `json:"perPage"`
+//			}{
+//				Total:   total,
+//				Page:    page,
+//				PerPage: perPage,
+//			},
+//		}
+//
+//		w.Header().Set("Content-Type", "application/json")
+//		w.WriteHeader(http.StatusOK)
+//		json.NewEncoder(w).Encode(response)
+//	} else {
+//		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+//	}
+//}
 
 func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
@@ -527,11 +556,11 @@ func (h *explorerServer) start() error {
 
 	// 注册 /info 路径和处理器
 	router.HandleFunc("/info", InfoHandler).Methods("GET")
-	router.HandleFunc("/api/home-data", HomeDataHandler)
+	router.HandleFunc("/api/home-data", HomeDataHandler).Methods("GET")
 	router.HandleFunc("/api/create-blob", CreateBlobHandler)
-	router.HandleFunc("/api/search", SearchHandler)
-	router.HandleFunc("/api/btc-blobs", BtcBlobsHandler)
-	router.HandleFunc("/api/eth-blobs", EthBlobsHandler)
+	//router.HandleFunc("/api/search", SearchHandler)
+	//router.HandleFunc("/api/btc-blobs", BtcBlobsHandler)
+	//router.HandleFunc("/api/eth-blobs", EthBlobsHandler)
 	router.HandleFunc("/api/blob-detail", BlobDetailHandler)
 	router.HandleFunc("/api/nodes", NodesHandler)
 	router.HandleFunc("/api/getValidator", GetValidatorHandler)
