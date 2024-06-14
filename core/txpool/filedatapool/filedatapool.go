@@ -290,32 +290,6 @@ func (fp *FilePool) Has(hash common.Hash) bool{
 	return fd != nil
 }
 
-func (fp *FilePool) GetDA(hash common.Hash) (*types.DA,error)  {
-	var getTimes uint64
-Lable:
-	fd := fp.get(hash)
-	if fd != nil {
-		return fd,nil
-	}
-	da,err := db.GetDAByCommitmentHash(fp.chain.SqlDB(),hash)
-	if err != nil {
-		return nil, err
-	}
-	if err != nil || da == nil {
-		log.Info("本地节点没有从需要从远端要--------", "cmHash", hash.String())
-		if getTimes < 1 {
-			fp.fileDataHashFeed.Send(core.FileDataHashEvent{Hashes: []common.Hash{hash}})
-			log.Info("本地节点没有从需要从远端要---进来了么")
-		}
-		time.Sleep(200 * time.Millisecond)
-		getTimes++
-		if getTimes <= 1 {
-			goto Lable
-		}
-	}
-	return da,nil
-}
-
 func (fp *FilePool) GetDAByCommit(commit []byte) (*types.DA,error){
 	fp.mu.RLock()
 	defer fp.mu.RUnlock()
@@ -367,6 +341,7 @@ Lable:
 				if da == nil || err != nil{
 					fp.fileDataHashFeed.Send(core.FileDataHashEvent{Hashes: []common.Hash{hash}})
 					log.Info("本地节点没有从需要从远端要---进来了么")
+					return nil,nil
 				}else {
 					return da,nil
 				}

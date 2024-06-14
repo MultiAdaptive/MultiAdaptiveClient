@@ -114,10 +114,7 @@ func answerGetPooledFileDatas(backend Backend, query GetPooledFileDatasRequest) 
 		// Retrieve the requested fileData, skipping if unknown to us
 		fd,err := backend.FildDataPool().Get(hash)
 		if err != nil  {
-			fd,err = backend.FildDataPool().GetDA(hash)
-			if err != nil {
-				continue
-			}
+			continue
 		}
 		if fd != nil {
 			// If known, encode and queue for response packet
