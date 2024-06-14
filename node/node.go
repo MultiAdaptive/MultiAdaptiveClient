@@ -154,7 +154,7 @@ func New(conf *Config) (*Node, error) {
 	node.ws = newHTTPServer(node.log, rpc.DefaultHTTPTimeouts)
 	node.wsAuth = newHTTPServer(node.log, rpc.DefaultHTTPTimeouts)
 	node.ipc = newIPCServer(node.log, conf.IPCEndpoint())
-	node.explorer = newExplorerServer(node.log, conf.HTTPTimeouts)
+	node.explorer = newExplorerServer(node.log, conf.DataDir)
 
 	return node, nil
 }
