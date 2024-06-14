@@ -471,7 +471,9 @@ func (fp *FilePool) Add(fds []*types.DA, local, sync bool) []error {
 		errs[nilSlot] = err
 		nilSlot++
 	}
-
+	if len(final) != 0 {
+		fp.fileDataFeed.Send(core.NewFileDataEvent{Fileds: final})
+	}
 	return errs
 }
 
