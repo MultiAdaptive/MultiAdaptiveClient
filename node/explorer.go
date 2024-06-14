@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 )
@@ -264,7 +264,7 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 func CreateBlobHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		var newBlob Blob
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
@@ -275,7 +275,6 @@ func CreateBlobHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		//blobs = append(blobs, newBlob)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(newBlob)
@@ -557,7 +556,7 @@ func (h *explorerServer) start() error {
 	// 注册 /info 路径和处理器
 	router.HandleFunc("/info", InfoHandler).Methods("GET")
 	router.HandleFunc("/api/home-data", HomeDataHandler).Methods("GET")
-	router.HandleFunc("/api/create-blob", CreateBlobHandler)
+	router.HandleFunc("/api/create-blob", CreateBlobHandler).Methods("POST")
 	//router.HandleFunc("/api/search", SearchHandler)
 	//router.HandleFunc("/api/btc-blobs", BtcBlobsHandler)
 	//router.HandleFunc("/api/eth-blobs", EthBlobsHandler)

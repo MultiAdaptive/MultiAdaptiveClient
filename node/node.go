@@ -433,15 +433,6 @@ func (n *Node) startRPC() error {
 		if err := server.setListenAddr(n.config.HTTPHost, port); err != nil {
 			return err
 		}
-		//if err := server.enableRPC(openAPIs, httpConfig{
-		//	CorsAllowedOrigins: n.config.HTTPCors,
-		//	Vhosts:             n.config.HTTPVirtualHosts,
-		//	Modules:            n.config.HTTPModules,
-		//	prefix:             n.config.HTTPPathPrefix,
-		//	rpcEndpointConfig:  rpcConfig,
-		//}); err != nil {
-		//	return err
-		//}
 		eServers = append(eServers, server)
 		return nil
 	}
