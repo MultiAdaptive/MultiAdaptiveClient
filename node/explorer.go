@@ -275,6 +275,29 @@ func CreateBlobHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		var gormdb *gorm.DB
+		da := db.DA{
+			Sender:          newBlob.Sender,
+			Index:           newBlob.Index,
+			Length:          newBlob.Length,
+			TxHash:          newBlob.TxHash,
+			Commitment:      newBlob.Commitment,
+			CommitmentHash:  newBlob.CommitmentHash,
+			Data:            newBlob.Data,
+			DAsKey:          newBlob.DAsKey,
+			SignData:        newBlob.SignData,
+			ParentStateHash: newBlob.ParentStateHash,
+			StateHash:       newBlob.StateHash,
+			BlockNum:        newBlob.BlockNum,
+			ReceiveAt:       newBlob.ReceiveAt,
+		}
+
+		gormdb = stateSqlDB.Save(&da)
+		if gormdb.Error != nil {
+			log.Error("save fail", "err", err)
+			http.Error(w, "save fail", http.StatusOK)
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(newBlob)
