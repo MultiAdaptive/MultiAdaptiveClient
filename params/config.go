@@ -394,10 +394,10 @@ type ChainConfig struct {
 
 type L1Config struct {
 	GenesisBlockNumber     uint64 `json:"genesisBlockNumber"`
-	DomiconCommitment      string `json:"domiconCommitment"`
-	DomiconCommitmentProxy string `json:"domiconCommitmentProxy"`
-	DomiconNode            string `json:"domiconNode"`
-	DomiconNodeProxy       string `json:"domiconNodeProxy"`
+	CommitmentManager      string `json:"commitmentManager"`
+	CommitmentManagerProxy string `json:"commitmentManagerProxy"`
+	NodeManager            string `json:"nodeManager"`
+	NodeManagerProxy       string `json:"nodeManagerProxy"`
 	AddressManager         string `json:"addressManager"`
 	ChallengeContract      string `json:"challengeContract"`
 	ChallengeContractProxy string `json:"challengeContractProxy"`
