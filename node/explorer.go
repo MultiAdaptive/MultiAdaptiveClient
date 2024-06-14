@@ -307,40 +307,73 @@ func CreateBlobHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // SearchHandler handles the GET /api/search endpoint with query parameters
-//func SearchHandler(w http.ResponseWriter, r *http.Request) {
-//	if r.Method == http.MethodGet {
-//		query := r.URL.Query().Get("q")
-//		category := r.URL.Query().Get("category")
-//
-//		if query == "" {
-//			http.Error(w, "Missing query or category parameter", http.StatusBadRequest)
-//			return
-//		}
-//
-//		var results []Blob
-//		switch category {
-//		case "Validator", "TxHash", "BlobID", "Commitment", "BlockNum":
-//			for _, blob := range btc_blobs {
-//				if category == "BlobID" && strings.Contains(blob.BlobID, query) ||
-//					category == "Commitment" && strings.Contains(blob.Commitment, query) ||
-//					category == "BlockNum" && fmt.Sprintf("%d", blob.BlockNum) == query ||
-//					category == "TxHash" && fmt.Sprintf("%d", blob.TxHash) == query ||
-//					category == "Validator" && fmt.Sprintf("%d", blob.Validator) == query {
-//					results = append(results, blob)
-//				}
-//			}
-//		default:
-//			http.Error(w, "Invalid category parameter", http.StatusBadRequest)
-//			return
-//		}
-//
-//		w.Header().Set("Content-Type", "application/json")
-//		w.WriteHeader(http.StatusOK)
-//		json.NewEncoder(w).Encode(results)
-//	} else {
-//		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-//	}
-//}
+func SearchHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		query := r.URL.Query().Get("q")
+		category := r.URL.Query().Get("category")
+
+		if query == "" {
+			http.Error(w, "Missing query or category parameter", http.StatusBadRequest)
+			return
+		}
+		var gormdb *gorm.DB
+		var das []db.DA
+		var results []Blob
+
+		switch category {
+		case "Sender":
+			gormdb = stateSqlDB.
+				Where(db.DA{Sender: query}).
+				Find(&das)
+
+		case "TxHash":
+			gormdb = stateSqlDB.
+				Where(db.DA{TxHash: query}).
+				Find(&das)
+		case "Commitment":
+			gormdb = stateSqlDB.
+				Where(db.DA{Commitment: query}).
+				Find(&das)
+		case "BlockNum":
+			num, _ := strconv.Atoi(query)
+			gormdb = stateSqlDB.
+				Where(db.DA{BlockNum: int64(num)}).
+				Find(&das)
+		default:
+			http.Error(w, "Invalid category parameter", http.StatusBadRequest)
+			return
+		}
+
+		if gormdb != nil && gormdb.Error != nil {
+			log.Error("can not find DA", "query", query, "category", category, "err", gormdb.Error)
+		}
+
+		for _, da := range das {
+			blob := Blob{
+				Sender:          da.Sender,
+				Index:           da.Index,
+				Length:          da.Length,
+				TxHash:          da.TxHash,
+				Commitment:      da.Commitment,
+				CommitmentHash:  da.CommitmentHash,
+				Data:            da.Data,
+				DAsKey:          da.DAsKey,
+				SignData:        da.SignData,
+				ParentStateHash: da.ParentStateHash,
+				StateHash:       da.StateHash,
+				BlockNum:        da.BlockNum,
+				ReceiveAt:       da.ReceiveAt,
+			}
+			results = append(results, blob)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(results)
+	} else {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+	}
+}
 
 // BtcBlobsHandler handles the GET /api/btc-blobs endpoint with pagination and filtering
 //func BtcBlobsHandler(w http.ResponseWriter, r *http.Request) {
@@ -580,7 +613,7 @@ func (h *explorerServer) start() error {
 	router.HandleFunc("/info", InfoHandler).Methods("GET")
 	router.HandleFunc("/api/home-data", HomeDataHandler).Methods("GET")
 	router.HandleFunc("/api/create-blob", CreateBlobHandler).Methods("POST")
-	//router.HandleFunc("/api/search", SearchHandler)
+	router.HandleFunc("/api/search", SearchHandler).Methods("GET")
 	//router.HandleFunc("/api/btc-blobs", BtcBlobsHandler)
 	//router.HandleFunc("/api/eth-blobs", EthBlobsHandler)
 	router.HandleFunc("/api/blob-detail", BlobDetailHandler)
