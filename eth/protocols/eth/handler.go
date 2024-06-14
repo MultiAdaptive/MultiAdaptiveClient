@@ -97,7 +97,7 @@ type Backend interface {
 type FileDataPool interface {
 	// Get retrieves the fileData from the local fileDatapool with the given hash.
 	Get(hash common.Hash) (*types.DA,error)
-	GetDA(hash common.Hash) (*types.DA,error)
+	//GetDA(hash common.Hash) (*types.DA,error)
 }
 
 

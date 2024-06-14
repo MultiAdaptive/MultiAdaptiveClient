@@ -66,7 +66,7 @@ type fileDataPool interface {
 	// tx hash.
 	Get(hash common.Hash) (*types.DA, error)
 
-	GetDA(hash common.Hash) (*types.DA, error)
+	//GetDA(hash common.Hash) (*types.DA, error)
 
 	GetDAByCommit(commit []byte) (*types.DA, error)
 

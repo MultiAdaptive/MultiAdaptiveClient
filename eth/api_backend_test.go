@@ -107,7 +107,7 @@ func TestEthereum_ChainDb(t *testing.T) {
 	//	println("da----err",err.Error())
 	//}
 
-	hash := "0x01a188f3a40cf5fa4a05a25c7db4ba4ac3e292e0d66786c78a354c44a5e0463e"
+	hash := "0x6dbc2256a9b48f3b2bdad4565483500617dc28417696414c7ac9eec4a2f52ed7"
 	txHash := common.HexToHash(hash)
 	da,err := client.GetDAByHash(context.Background(),txHash)
 	if err == nil {

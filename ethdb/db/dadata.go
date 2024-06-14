@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const layout = "2006-01-02 15:04:05.999999999 -0700 MST"
+const layout = "2006-01-02T15:04:05Z07:00"
 
 // 创建commitment表格模型
 type DA struct {
@@ -50,7 +50,7 @@ func AddCommitment(tx *gorm.DB, da *types.DA, parentHash common.Hash) error {
 		SignData:        common.Bytes2Hex(da.SignData),
 		ParentStateHash: currentParentHash.Hex(),
 		StateHash:       stateHash.Hex(),
-		ReceiveAt:       da.ReceiveAt.String(),
+		ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
 	}
 	res := tx.Create(&wd)
 	return res.Error
@@ -81,10 +81,9 @@ func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) e
 			SignData:        common.Bytes2Hex(da.SignData),
 			ParentStateHash: currentParentHash.String(),
 			StateHash:       stateHash.Hex(),
-			ReceiveAt:       da.ReceiveAt.String(),
+			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
 		}
 		wdas = append(wdas, wda)
-
 		currentParentHash = stateHash
 	}
 
@@ -118,8 +117,9 @@ func AddBatchCommitment(tx *gorm.DB, das []*types.DA, parentHash common.Hash) er
 			SignData:        common.Bytes2Hex(da.SignData),
 			ParentStateHash: currentParentHash.String(),
 			StateHash:       stateHash.Hex(),
-			ReceiveAt:       da.ReceiveAt.String(),
+			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
 		}
+		log.Info("AddBatchCommitment----","CommitmentHash",wda.CommitmentHash,"TxHash",wda.TxHash)
 		result := tx.Create(&wda)
 		if result.Error != nil {
 			// 插入失败，回滚事务并返回错误
@@ -163,7 +163,7 @@ func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 	if err != nil {
 		return nil, err
 	}
-	parsedTime, err := time.Parse(layout, da.ReceiveAt)
+	parsedTime, err := time.Parse(time.RFC3339, da.ReceiveAt)
 	if err != nil {
 		log.Debug("Error parsing time", "err", err)
 		return nil, err
@@ -209,7 +209,7 @@ func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
 	if err != nil {
 		return nil, err
 	}
-	parsedTime, err := time.Parse(layout, da.ReceiveAt)
+	parsedTime, err := time.Parse(time.RFC3339, da.ReceiveAt)
 	if err != nil {
 		log.Debug("Error parsing time", "err", err)
 		return nil, err
@@ -257,7 +257,7 @@ func GetCommitmentByTxHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 	if err != nil {
 		return nil, err
 	}
-	parsedTime, err := time.Parse(layout, da.ReceiveAt)
+	parsedTime, err := time.Parse(time.RFC3339, da.ReceiveAt)
 	if err != nil {
 		log.Debug("Error parsing time", "err", err)
 		return nil, err
@@ -309,7 +309,7 @@ func GetAllDARecords(db *gorm.DB) ([]*types.DA, error) {
 		var digest kzg.Digest
 		str, _ := hex.DecodeString(da.Commitment)
 		digest.SetBytes(str)
-		parsedTime, err := time.Parse(layout, da.ReceiveAt)
+		parsedTime, err := time.Parse(time.RFC3339, da.ReceiveAt)
 		if err != nil {
 			fmt.Println("Error parsing time:", err)
 		}

@@ -865,7 +865,7 @@ func (f *DAAPI) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byte,proof 
 func (f *DAAPI) GetDAByHash(hash common.Hash) (*RPCDA, error) {
 	log.Info("FileDataAPI----", "GetFileDataByHash---called--", hash.String())
 	fd,err := f.b.GetDAByHash(hash)
-	if err != nil && fd == nil{
+	if err != nil || fd == nil{
 		return nil, err
 	}
 	rpcFd := NewRPCDA(fd)
