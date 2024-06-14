@@ -422,7 +422,7 @@ func BtcBlobsHandler(w http.ResponseWriter, r *http.Request) {
 		if gormdb.Error != nil {
 			log.Error("can not find DA", "err", gormdb.Error)
 		}
-		
+
 		for _, da := range das {
 			blob := Blob{
 				Sender:          da.Sender,
@@ -474,85 +474,95 @@ func BtcBlobsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // EthBlobsHandler handles the GET /api/btc-blobs endpoint with pagination and filtering
-//func EthBlobsHandler(w http.ResponseWriter, r *http.Request) {
-//	if r.Method == http.MethodGet {
-//		chain := r.URL.Query().Get("chain")
-//		if chain != "eth" {
-//			http.Error(w, "Invalid or missing chain parameter", http.StatusBadRequest)
-//			return
-//		}
-//
-//		pageStr := r.URL.Query().Get("page")
-//		page, err := strconv.Atoi(pageStr)
-//		if err != nil || page < 1 {
-//			http.Error(w, "Invalid page parameter", http.StatusBadRequest)
-//			return
-//		}
-//
-//		if chain == "" || pageStr == "" {
-//			http.Error(w, "Missing chain or pageStr parameter", http.StatusBadRequest)
-//			return
-//		}
-//
-//		filter := r.URL.Query().Get("filter")
-//
-//		// Filter blobs based on the provided filter parameter
-//		var filteredBlobs []Blob
-//		for _, blob := range blobs {
-//			if filter == "" || strings.Contains(blob.BlobID, filter) || strings.Contains(blob.Commitment, filter) ||
-//				strings.Contains(blob.Status, filter) || strings.Contains(blob.Validator, filter) ||
-//				strings.Contains(blob.TxHash, filter) {
-//				filteredBlobs = append(filteredBlobs, blob)
-//			}
-//		}
-//
-//		// Pagination
-//		const perPage = 10
-//		total := len(filteredBlobs)
-//		start := (page - 1) * perPage
-//		end := start + perPage
-//		if start > total {
-//			start = total
-//		}
-//		if end > total {
-//			end = total
-//		}
-//		paginatedBlobs := filteredBlobs[start:end]
-//
-//		// Response
-//		response := struct {
-//			Data       []Blob `json:"data"`
-//			Pagination struct {
-//				Total   int `json:"total"`
-//				Page    int `json:"page"`
-//				PerPage int `json:"perPage"`
-//			} `json:"pagination"`
-//		}{
-//			Data: paginatedBlobs,
-//			Pagination: struct {
-//				Total   int `json:"total"`
-//				Page    int `json:"page"`
-//				PerPage int `json:"perPage"`
-//			}{
-//				Total:   total,
-//				Page:    page,
-//				PerPage: perPage,
-//			},
-//		}
-//
-//		w.Header().Set("Content-Type", "application/json")
-//		w.WriteHeader(http.StatusOK)
-//		json.NewEncoder(w).Encode(response)
-//	} else {
-//		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-//	}
-//}
+func EthBlobsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		chain := r.URL.Query().Get("chain")
+		if chain != "eth" {
+			http.Error(w, "Invalid or missing chain parameter", http.StatusBadRequest)
+			return
+		}
+
+		pageStr := r.URL.Query().Get("page")
+		page, err := strconv.Atoi(pageStr)
+		if err != nil || page < 1 {
+			http.Error(w, "Invalid page parameter", http.StatusBadRequest)
+			return
+		}
+
+		if chain == "" || pageStr == "" {
+			http.Error(w, "Missing chain or pageStr parameter", http.StatusBadRequest)
+			return
+		}
+
+		filter := r.URL.Query().Get("filter")
+
+		// Filter blobs based on the provided filter parameter
+		var filteredBlobs []Blob
+		var gormdb *gorm.DB
+		var das []db.DA
+		gormdb = stateSqlDB.
+			Where("commitment LIKE ?", "%"+filter+"%").
+			Or("sender LIKE ?", "%"+filter+"%").
+			Or("tx_hash LIKE ?", "%"+filter+"%").
+			Find(&das)
+		if gormdb.Error != nil {
+			log.Error("can not find DA", "err", gormdb.Error)
+		}
+
+		for _, da := range das {
+			blob := Blob{
+				Sender:          da.Sender,
+				Index:           da.Index,
+				Length:          da.Length,
+				TxHash:          da.TxHash,
+				Commitment:      da.Commitment,
+				CommitmentHash:  da.CommitmentHash,
+				Data:            da.Data,
+				DAsKey:          da.DAsKey,
+				SignData:        da.SignData,
+				ParentStateHash: da.ParentStateHash,
+				StateHash:       da.StateHash,
+				BlockNum:        da.BlockNum,
+				ReceiveAt:       da.ReceiveAt,
+			}
+			filteredBlobs = append(filteredBlobs, blob)
+		}
+
+		// Pagination
+		const perPage = 10
+		total := len(filteredBlobs)
+		start := (page - 1) * perPage
+		end := start + perPage
+		if start > total {
+			start = total
+		}
+		if end > total {
+			end = total
+		}
+		paginatedBlobs := filteredBlobs[start:end]
+
+		// Response
+		response := PageBlobs{
+			Data: paginatedBlobs,
+			Pagination: Pagination{
+				Total:   total,
+				Page:    page,
+				PerPage: perPage,
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	} else {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+	}
+}
 
 func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		blobID := r.URL.Query().Get("blobID")
 		chain := r.URL.Query().Get("chain")
-		fmt.Println(fmt.Sprintf("*********** %v %v", blobID, chain))
 
 		if chain != "btc" && chain != "eth" {
 			fmt.Println("parameter error")
@@ -638,7 +648,7 @@ func (h *explorerServer) start() error {
 	router.HandleFunc("/api/create-blob", CreateBlobHandler).Methods("POST")
 	router.HandleFunc("/api/search", SearchHandler).Methods("GET")
 	router.HandleFunc("/api/btc-blobs", BtcBlobsHandler).Methods("GET")
-	//router.HandleFunc("/api/eth-blobs", EthBlobsHandler).Methods("GET")
+	router.HandleFunc("/api/eth-blobs", EthBlobsHandler).Methods("GET")
 	router.HandleFunc("/api/blob-detail", BlobDetailHandler).Methods("GET")
 	router.HandleFunc("/api/nodes", NodesHandler).Methods("GET")
 	router.HandleFunc("/api/getValidator", GetValidatorHandler).Methods("GET")
