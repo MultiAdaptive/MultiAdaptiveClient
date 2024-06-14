@@ -396,7 +396,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			for _, tx := range bc.Transactions() {
 				if tx.To() != nil {
 					switch tx.To().String() {
-					case cs.chain.Config().L1Conf.DomiconCommitmentProxy:
+					case cs.chain.Config().L1Conf.CommitmentManagerProxy:
 						//get data from trans data
 						trans = append(trans, tx)
 						txData := tx.Data()
