@@ -358,6 +358,8 @@ Lable:
 				log.Info("WriteString unknowTxHash err",err.Error())
 			}
 			file.Close()
+		}else {
+			return da,nil
 		}
 	}else {
 		return fd,nil

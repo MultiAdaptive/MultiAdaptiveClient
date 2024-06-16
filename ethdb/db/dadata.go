@@ -194,7 +194,7 @@ func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
 		return nil, errors.New(msg)
 	}
 	var da DA
-	gormdb = db.First(&da, "commitment_hash = ?", cmHash)
+	gormdb = db.First(&da, "commitment_hash = ?", cmHash.Hex())
 	if gormdb.Error != nil {
 		log.Error("can not find DA with given commitment_hash", "commitment_hash", cmHash.Hex(), "err", gormdb.Error)
 		return nil, gormdb.Error
@@ -240,9 +240,8 @@ func GetCommitmentByTxHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 		log.Info(msg)
 		return nil, errors.New(msg)
 	}
-
 	var da DA
-	gormdb = db.First(&da, "tx_hash = ?", txHash)
+	gormdb = db.First(&da, "tx_hash = ?", txHash.Hex())
 	if gormdb.Error != nil {
 		log.Error("can not find DA with given txHash", "txHash", txHash.Hex(), "err", gormdb.Error)
 		return nil, gormdb.Error
