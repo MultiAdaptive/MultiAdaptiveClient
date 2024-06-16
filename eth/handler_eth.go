@@ -87,7 +87,6 @@ func (h *ethHandler) Handle(peer *eth.Peer, packet eth.Packet) error {
 		return h.fdFetcher.Enqueue(peer.ID(), *packet, true)
 
 	case *eth.FileDatasResponse:
-
 		log.Info("handle-----receive FileDatasResponse")	
 		var btfd eth.BantchFileData
 	  err := rlp.DecodeBytes(*packet,&btfd)
