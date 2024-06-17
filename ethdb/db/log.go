@@ -70,7 +70,7 @@ func AddBatchLogs(tx *gorm.DB, logs []*types.Log) error {
 
 func GetLogByHash(db *gorm.DB,blockHash common.Hash) ([]*types.Log,error) {
 	var log Log
-	tx := db.First(&log, "block_hash = ?", blockHash)
+	tx := db.First(&log, "block_hash = ?", blockHash.Hex())
 	if tx.Error == nil {
 
 	}
@@ -80,7 +80,7 @@ func GetLogByHash(db *gorm.DB,blockHash common.Hash) ([]*types.Log,error) {
 
 func DeleteLogWithTxHash(db *gorm.DB,txHash common.Hash) error {
 	var log Log
-	err := db.Where("tx_hash", txHash).Delete(&log).Error
+	err := db.Where("tx_hash = ? ", txHash.Hex()).Delete(&log).Error
 	if err != nil {
 		db.Rollback()
 		return err

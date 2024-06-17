@@ -70,7 +70,7 @@ func AddBatchBlocks(tx *gorm.DB, blocks []*types.Block) error {
 
 func GetBlockByHash(db *gorm.DB, blockHash common.Hash) (*types.Block, error) {
 	var block Block
-	tx := db.First(&block, "block_hash = ?", blockHash)
+	tx := db.First(&block, "block_hash = ?", blockHash.Hex())
 	if tx.Error == nil {
 		var roiBlock types.Block
 		err := rlp.DecodeBytes(common.Hex2Bytes(block.EncodeData), roiBlock)
@@ -123,7 +123,7 @@ func GetBlockByNum(db *gorm.DB, blockNum uint64) (*types.Block, error) {
 
 func DeleteBlockByHash(db *gorm.DB, blockHash common.Hash) error {
 	var block Block
-	err := db.Where("block_num = ?", blockHash).Delete(&block).Error
+	err := db.Where("block_num = ?", blockHash.Hex()).Delete(&block).Error
 	if err != nil {
 		db.Rollback()
 		return err

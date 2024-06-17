@@ -358,6 +358,39 @@ Lable:
 				log.Info("WriteString unknowTxHash err",err.Error())
 			}
 			file.Close()
+		}else {
+			return da,nil
+		}
+	}else {
+		return fd,nil
+	}
+	return nil,nil
+}
+
+func (fp *FilePool) GetDA(hash common.Hash) (*types.DA,error) {
+	fp.mu.RLock()
+	defer fp.mu.RUnlock()
+	var getTimes uint64
+Lable:
+	fd := fp.get(hash)
+	if fd == nil {
+		da,err := db.GetCommitmentByTxHash(fp.chain.SqlDB(),hash)
+		if err != nil || da == nil {
+			if getTimes < 1 {
+				da,err = db.GetDAByCommitmentHash(fp.chain.SqlDB(),hash)
+				if da == nil || err != nil{
+					return nil,nil
+				}else {
+					return da,nil
+				}
+			}
+			time.Sleep(200 * time.Millisecond)
+			getTimes ++
+			if getTimes <= 1 {
+				goto Lable
+			}
+		}else {
+			return da,nil
 		}
 	}else {
 		return fd,nil

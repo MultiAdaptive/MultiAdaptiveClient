@@ -94,7 +94,7 @@ func TestEthAPIBackend_SendBTCDAByParams(t *testing.T) {
 //}
 
 func TestEthereum_ChainDb(t *testing.T) {
-	client,err := ethclient.DialContext(context.TODO(),"http://54.151.240.239:"+port)
+	client,err := ethclient.DialContext(context.TODO(),"http://127.0.0.1:"+port)
 	if err != nil {
 		println("err---dial---",err.Error())
 	}
@@ -107,11 +107,11 @@ func TestEthereum_ChainDb(t *testing.T) {
 	//	println("da----err",err.Error())
 	//}
 
-	hash := "0x6dbc2256a9b48f3b2bdad4565483500617dc28417696414c7ac9eec4a2f52ed7"
+	hash := "0x439f2bb5827448616a28d56fccbb35b1878d86f23f07332839cf6fb4e8f90a"
 	txHash := common.HexToHash(hash)
 	da,err := client.GetDAByHash(context.Background(),txHash)
 	if err == nil {
-		println("da----",da.Data)
+		println("da----",da.TxHash.Hex())
 	}else {
 		println("da----err",err.Error())
 	}

@@ -112,7 +112,7 @@ func answerGetPooledFileDatas(backend Backend, query GetPooledFileDatasRequest) 
 			return []common.Hash{}, []rlp.RawValue{}
 		}
 		// Retrieve the requested fileData, skipping if unknown to us
-		fd,err := backend.FildDataPool().Get(hash)
+		fd,err := backend.FildDataPool().GetDA(hash)
 		if err != nil  {
 			continue
 		}

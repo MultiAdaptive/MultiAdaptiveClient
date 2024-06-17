@@ -53,7 +53,7 @@ func AddBatchReceipts(tx *gorm.DB, receipts []*types.Receipt) error {
 
 func DeleteReceiptByHash(db *gorm.DB, txHash common.Hash) error {
 	var receipt Receipt
-	err := db.Where("tx_hash", txHash).Delete(&receipt).Error
+	err := db.Where("tx_hash = ?", txHash.Hex()).Delete(&receipt).Error
 	if err != nil {
 		db.Rollback()
 		return err
@@ -63,7 +63,7 @@ func DeleteReceiptByHash(db *gorm.DB, txHash common.Hash) error {
 
 func DeleteReceiptByNum(db *gorm.DB, num uint64) error {
 	var receipt Receipt
-	err := db.Where("block_num", num).Delete(&receipt).Error
+	err := db.Where("block_num = ?", num).Delete(&receipt).Error
 	if err != nil {
 		db.Rollback()
 		return err
