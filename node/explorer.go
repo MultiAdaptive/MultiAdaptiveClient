@@ -125,7 +125,7 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		var gormdb *gorm.DB
 		var das []db.DA
-		gormdb = stateSqlDB.Order("receive_at desc").Limit(10).Find(&das)
+		gormdb = stateSqlDB.Order("receive_at desc").Limit(5).Find(&das)
 		if gormdb.Error != nil {
 			log.Error("can not find DA", "err", gormdb.Error)
 		}
