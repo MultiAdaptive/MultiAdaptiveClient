@@ -86,21 +86,20 @@ type NodeInfo struct {
 	NodeType    string `json:"node_type"`
 }
 
+type CommitmentCoordinate struct {
+	X string `json:"x"`
+	Y string `json:"y"`
+}
+
 type BlobDetail struct {
-	Status       string  `json:"Status"`
-	Commitment   string  `json:"Commitment"`
-	BlockNum     int     `json:"BlockNum"`
-	Timestamp    string  `json:"Timestamp"`
-	Fee          float64 `json:"Fee"`
-	Validator    string  `json:"Validator"`
-	Size         int     `json:"Size,omitempty"`
-	StorageState string  `json:"StorageState,omitempty"`
-	CommitmentXY struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	} `json:"Commitment_xy,omitempty"`
-	Proof string `json:"Proof,omitempty"`
-	Data  string `json:"Data,omitempty"`
+	Commitment   string               `json:"Commitment"`
+	BlockNum     int64                `json:"BlockNum"`
+	Timestamp    string               `json:"Timestamp"`
+	Validator    string               `json:"Validator"`
+	Size         int64                `json:"Size,omitempty"`
+	StorageState string               `json:"StorageState,omitempty"`
+	CommitmentXY CommitmentCoordinate `json:"Commitment_xy,omitempty"`
+	Data         string               `json:"Data,omitempty"`
 }
 
 // Validator represents the validator data structure
@@ -131,7 +130,7 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		var gormdb *gorm.DB
 		var das []db.DA
-		gormdb = stateSqlDB.Find(&das)
+		gormdb = stateSqlDB.Order("receive_at desc").Limit(10).Find(&das)
 		if gormdb.Error != nil {
 			log.Error("can not find DA", "err", gormdb.Error)
 		}
@@ -413,16 +412,17 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 		digest.SetBytes(commitment)
 
 		foundBlob := BlobDetail{
-			//Status
-			//Commitment
-			//BlockNum
-			//Timestamp
-			//Fee
-			//Validator
-			//Size
-			//StorageState
-			//CommitmentXY
-
+			Commitment:   da.Commitment,
+			BlockNum:     da.BlockNum,
+			Timestamp:    da.ReceiveAt,
+			Validator:    da.SignData,
+			Size:         da.Length,
+			StorageState: da.StateHash,
+			CommitmentXY: CommitmentCoordinate{
+				X: digest.X.String(),
+				Y: digest.Y.String(),
+			},
+			Data: da.Data,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -457,8 +457,8 @@ func NodesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetValidatorHandler handles the GET /api/getValidator endpoint
-func GetValidatorHandler(w http.ResponseWriter, r *http.Request) {
+// ValidatorsHandler handles the GET /api/validators endpoint
+func ValidatorsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		if len(validators) == 0 {
 			http.Error(w, "No validators found", http.StatusNotFound)
@@ -492,7 +492,7 @@ func (h *explorerServer) start() error {
 	router.HandleFunc("/api/filter-blob", FilterBlobHandler).Methods("GET")
 	router.HandleFunc("/api/blob-detail", BlobDetailHandler).Methods("GET")
 	router.HandleFunc("/api/nodes", NodesHandler).Methods("GET")
-	router.HandleFunc("/api/getValidator", GetValidatorHandler).Methods("GET")
+	router.HandleFunc("/api/validators", ValidatorsHandler).Methods("GET")
 
 	// Initialize the server.
 	h.server = &http.Server{
