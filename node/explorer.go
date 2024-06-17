@@ -113,66 +113,6 @@ type Validator struct {
 	VotingPower           float64 `json:"voting_power"`
 }
 
-// Sample data for demonstration
-var blobDetails = []BlobDetail{
-	{"1", "Confirmed", "0x1234567890abcdef", 100, "2024-06-01T12:00:00Z", 0.01, "Validator1", 1024, "valid", struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	}{
-		X: "13258099556300711131786106409830610145994596628458885637226012245852998915913",
-		Y: "11868554521347503492532980178914472193409060128712507356093850651849176305797",
-	}, "0x1234567890abcdef", "https://example.com/image1.jpg"},
-	{"2", "Pending", "0xabcdef1234567891", 101, "2024-06-02T12:00:00Z", 0.02, "Validator2", 2048, "valid", struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	}{
-		X: "0987654321098765432109876543210987654321098765432109876543210987654321",
-		Y: "1234567890123456789012345678901234567890123456789012345678901234567890",
-	}, "0xabcdef1234567890", "https://example.com/image2.jpg"},
-	{"3", "Confirmed", "0x1234567891abcdef", 102, "2024-06-01T12:00:00Z", 0.01, "Validator1", 1024, "valid", struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	}{
-		X: "13258099556300711131786106409830610145994596628458885637226012245852998915913",
-		Y: "11868554521347503492532980178914472193409060128712507356093850651849176305797",
-	}, "0x1234567890abcdef", "https://example.com/image1.jpg"},
-	{"4", "Pending", "0xabcdef1234567892", 103, "2024-06-02T12:00:00Z", 0.02, "Validator3", 2048, "valid", struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	}{
-		X: "0987654321098765432109876543210987654321098765432109876543210987654321",
-		Y: "1234567890123456789012345678901234567890123456789012345678901234567890",
-	}, "0xabcdef1234567890", "https://example.com/image2.jpg"},
-	{"5", "Confirmed", "0x1234567892abcdef", 104, "2024-06-01T12:00:00Z", 0.01, "Validator2", 1024, "valid", struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	}{
-		X: "13258099556300711131786106409830610145994596628458885637226012245852998915913",
-		Y: "11868554521347503492532980178914472193409060128712507356093850651849176305797",
-	}, "0x1234567890abcdef", "https://example.com/image1.jpg"},
-	{"6", "Pending", "0xabcdef1234567893", 105, "2024-06-02T12:00:00Z", 0.02, "Validator1", 2048, "valid", struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	}{
-		X: "0987654321098765432109876543210987654321098765432109876543210987654321",
-		Y: "1234567890123456789012345678901234567890123456789012345678901234567890",
-	}, "0xabcdef1234567890", "https://example.com/image2.jpg"},
-	{"7", "Confirmed", "0x1234567893abcdef", 106, "2024-06-01T12:00:00Z", 0.01, "Validator1", 1024, "valid", struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	}{
-		X: "13258099556300711131786106409830610145994596628458885637226012245852998915913",
-		Y: "11868554521347503492532980178914472193409060128712507356093850651849176305797",
-	}, "0x1234567890abcdef", "https://example.com/image1.jpg"},
-	{"8", "Pending", "0xabcdef1234567894", 107, "2024-06-02T12:00:00Z", 0.02, "Validator2", 2048, "valid", struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	}{
-		X: "0987654321098765432109876543210987654321098765432109876543210987654321",
-		Y: "1234567890123456789012345678901234567890123456789012345678901234567890",
-	}, "0xabcdef1234567890", "https://example.com/image2.jpg"},
-}
-
 var nodes = []NodeInfo{
 	{"Node 1", "0xdjshfdcnvnk324fvf7v78vb89bu98vbv8b", "btc", "Broadcast"},
 	{"Node 2", "0xdjshfdcnvnk324fvf7v78vb89bu98vbv8b", "btc", "Storage"},
@@ -195,8 +135,7 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 			log.Error("can not find DA", "err", gormdb.Error)
 		}
 
-		btcBlobs := make([]Blob, 0)
-		ethBlobs := make([]Blob, 0)
+		blobs := make([]Blob, 0)
 		for _, da := range das {
 			blob := Blob{
 				Sender:          da.Sender,
@@ -213,19 +152,14 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 				BlockNum:        da.BlockNum,
 				ReceiveAt:       da.ReceiveAt,
 			}
-			btcBlobs = append(btcBlobs, blob)
-			ethBlobs = append(ethBlobs, blob)
+			blobs = append(blobs, blob)
 		}
 
 		response := map[string]interface{}{
 			"result": []ChainBlobs{
 				{
 					Chain: "btc",
-					Blobs: btcBlobs,
-				},
-				{
-					Chain: "eth",
-					Blobs: ethBlobs,
+					Blobs: blobs,
 				},
 			},
 		}
@@ -528,7 +462,8 @@ func EthBlobsHandler(w http.ResponseWriter, r *http.Request) {
 
 func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		blobID := r.URL.Query().Get("blobID")
+		txHash := r.URL.Query().Get("tx_hash")
+		commitment := r.URL.Query().Get("commitment")
 		chain := r.URL.Query().Get("chain")
 
 		if chain != "btc" && chain != "eth" {
@@ -537,19 +472,29 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		var foundBlob *BlobDetail
-		for _, blob := range blobDetails {
-			if blob.BlobID == blobID {
-				foundBlob = &blob
-				break
-			}
-		}
-
-		if foundBlob == nil {
-			http.Error(w, "Blob not found", http.StatusNotFound)
+		if txHash == "" && commitment == "" {
+			fmt.Println("parameter error")
+			http.Error(w, "Invalid chain parameter", http.StatusBadRequest)
 			return
 		}
 
+		var foundBlob BlobDetail
+
+		var gormdb *gorm.DB
+		var da db.DA
+
+		gormdb = stateSqlDB.
+			Where(db.DA{TxHash: txHash}).
+			Or(db.DA{Commitment: commitment}).
+			Limit(1).
+			Find(&da)
+
+		if gormdb.Error != nil {
+			log.Error("can not find DA", "err", gormdb.Error)
+			http.Error(w, "Blob not found", http.StatusNotFound)
+			return
+		}
+		
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(foundBlob)
