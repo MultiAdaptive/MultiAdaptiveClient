@@ -86,21 +86,20 @@ type NodeInfo struct {
 	NodeType    string `json:"node_type"`
 }
 
+type CommitmentCoordinate struct {
+	X string `json:"x"`
+	Y string `json:"y"`
+}
+
 type BlobDetail struct {
-	Status       string  `json:"Status"`
-	Commitment   string  `json:"Commitment"`
-	BlockNum     int     `json:"BlockNum"`
-	Timestamp    string  `json:"Timestamp"`
-	Fee          float64 `json:"Fee"`
-	Validator    string  `json:"Validator"`
-	Size         int     `json:"Size,omitempty"`
-	StorageState string  `json:"StorageState,omitempty"`
-	CommitmentXY struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	} `json:"Commitment_xy,omitempty"`
-	Proof string `json:"Proof,omitempty"`
-	Data  string `json:"Data,omitempty"`
+	Commitment   string               `json:"Commitment"`
+	BlockNum     int64                `json:"BlockNum"`
+	Timestamp    string               `json:"Timestamp"`
+	Validator    string               `json:"Validator"`
+	Size         int64                `json:"Size,omitempty"`
+	StorageState string               `json:"StorageState,omitempty"`
+	CommitmentXY CommitmentCoordinate `json:"Commitment_xy,omitempty"`
+	Data         string               `json:"Data,omitempty"`
 }
 
 // Validator represents the validator data structure
@@ -413,16 +412,17 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 		digest.SetBytes(commitment)
 
 		foundBlob := BlobDetail{
-			//Status
-			//Commitment
-			//BlockNum
-			//Timestamp
-			//Fee
-			//Validator
-			//Size
-			//StorageState
-			//CommitmentXY
-
+			Commitment:   da.Commitment,
+			BlockNum:     da.BlockNum,
+			Timestamp:    da.ReceiveAt,
+			Validator:    da.SignData,
+			Size:         da.Length,
+			StorageState: da.StateHash,
+			CommitmentXY: CommitmentCoordinate{
+				X: digest.X.String(),
+				Y: digest.Y.String(),
+			},
+			Data: da.Data,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
