@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb/db"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/gorilla/mux"
@@ -85,7 +87,6 @@ type NodeInfo struct {
 }
 
 type BlobDetail struct {
-	BlobID       string  `json:"BlobID"`
 	Status       string  `json:"Status"`
 	Commitment   string  `json:"Commitment"`
 	BlockNum     int     `json:"BlockNum"`
@@ -113,66 +114,6 @@ type Validator struct {
 	VotingPower           float64 `json:"voting_power"`
 }
 
-// Sample data for demonstration
-var blobDetails = []BlobDetail{
-	{"1", "Confirmed", "0x1234567890abcdef", 100, "2024-06-01T12:00:00Z", 0.01, "Validator1", 1024, "valid", struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	}{
-		X: "13258099556300711131786106409830610145994596628458885637226012245852998915913",
-		Y: "11868554521347503492532980178914472193409060128712507356093850651849176305797",
-	}, "0x1234567890abcdef", "https://example.com/image1.jpg"},
-	{"2", "Pending", "0xabcdef1234567891", 101, "2024-06-02T12:00:00Z", 0.02, "Validator2", 2048, "valid", struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	}{
-		X: "0987654321098765432109876543210987654321098765432109876543210987654321",
-		Y: "1234567890123456789012345678901234567890123456789012345678901234567890",
-	}, "0xabcdef1234567890", "https://example.com/image2.jpg"},
-	{"3", "Confirmed", "0x1234567891abcdef", 102, "2024-06-01T12:00:00Z", 0.01, "Validator1", 1024, "valid", struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	}{
-		X: "13258099556300711131786106409830610145994596628458885637226012245852998915913",
-		Y: "11868554521347503492532980178914472193409060128712507356093850651849176305797",
-	}, "0x1234567890abcdef", "https://example.com/image1.jpg"},
-	{"4", "Pending", "0xabcdef1234567892", 103, "2024-06-02T12:00:00Z", 0.02, "Validator3", 2048, "valid", struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	}{
-		X: "0987654321098765432109876543210987654321098765432109876543210987654321",
-		Y: "1234567890123456789012345678901234567890123456789012345678901234567890",
-	}, "0xabcdef1234567890", "https://example.com/image2.jpg"},
-	{"5", "Confirmed", "0x1234567892abcdef", 104, "2024-06-01T12:00:00Z", 0.01, "Validator2", 1024, "valid", struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	}{
-		X: "13258099556300711131786106409830610145994596628458885637226012245852998915913",
-		Y: "11868554521347503492532980178914472193409060128712507356093850651849176305797",
-	}, "0x1234567890abcdef", "https://example.com/image1.jpg"},
-	{"6", "Pending", "0xabcdef1234567893", 105, "2024-06-02T12:00:00Z", 0.02, "Validator1", 2048, "valid", struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	}{
-		X: "0987654321098765432109876543210987654321098765432109876543210987654321",
-		Y: "1234567890123456789012345678901234567890123456789012345678901234567890",
-	}, "0xabcdef1234567890", "https://example.com/image2.jpg"},
-	{"7", "Confirmed", "0x1234567893abcdef", 106, "2024-06-01T12:00:00Z", 0.01, "Validator1", 1024, "valid", struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	}{
-		X: "13258099556300711131786106409830610145994596628458885637226012245852998915913",
-		Y: "11868554521347503492532980178914472193409060128712507356093850651849176305797",
-	}, "0x1234567890abcdef", "https://example.com/image1.jpg"},
-	{"8", "Pending", "0xabcdef1234567894", 107, "2024-06-02T12:00:00Z", 0.02, "Validator2", 2048, "valid", struct {
-		X string `json:"x"`
-		Y string `json:"y"`
-	}{
-		X: "0987654321098765432109876543210987654321098765432109876543210987654321",
-		Y: "1234567890123456789012345678901234567890123456789012345678901234567890",
-	}, "0xabcdef1234567890", "https://example.com/image2.jpg"},
-}
-
 var nodes = []NodeInfo{
 	{"Node 1", "0xdjshfdcnvnk324fvf7v78vb89bu98vbv8b", "btc", "Broadcast"},
 	{"Node 2", "0xdjshfdcnvnk324fvf7v78vb89bu98vbv8b", "btc", "Storage"},
@@ -195,8 +136,7 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 			log.Error("can not find DA", "err", gormdb.Error)
 		}
 
-		btcBlobs := make([]Blob, 0)
-		ethBlobs := make([]Blob, 0)
+		blobs := make([]Blob, 0)
 		for _, da := range das {
 			blob := Blob{
 				Sender:          da.Sender,
@@ -213,19 +153,14 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 				BlockNum:        da.BlockNum,
 				ReceiveAt:       da.ReceiveAt,
 			}
-			btcBlobs = append(btcBlobs, blob)
-			ethBlobs = append(ethBlobs, blob)
+			blobs = append(blobs, blob)
 		}
 
 		response := map[string]interface{}{
 			"result": []ChainBlobs{
 				{
 					Chain: "btc",
-					Blobs: btcBlobs,
-				},
-				{
-					Chain: "eth",
-					Blobs: ethBlobs,
+					Blobs: blobs,
 				},
 			},
 		}
@@ -284,8 +219,8 @@ func CreateBlobHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// SearchHandler handles the GET /api/search endpoint with query parameters
-func SearchHandler(w http.ResponseWriter, r *http.Request) {
+// SearchHandler handles the GET /api/search-blob endpoint with query parameters
+func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		query := r.URL.Query().Get("q")
 		category := r.URL.Query().Get("category")
@@ -353,8 +288,8 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// BtcBlobsHandler handles the GET /api/btc-blobs endpoint with pagination and filtering
-func BtcBlobsHandler(w http.ResponseWriter, r *http.Request) {
+// FilterBlobHandler handles the GET /api/filter-blob endpoint with pagination and filtering
+func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		chain := r.URL.Query().Get("chain")
 		if chain != "btc" {
@@ -440,95 +375,10 @@ func BtcBlobsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// EthBlobsHandler handles the GET /api/btc-blobs endpoint with pagination and filtering
-func EthBlobsHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		chain := r.URL.Query().Get("chain")
-		if chain != "eth" {
-			http.Error(w, "Invalid or missing chain parameter", http.StatusBadRequest)
-			return
-		}
-
-		pageStr := r.URL.Query().Get("page")
-		page, err := strconv.Atoi(pageStr)
-		if err != nil || page < 1 {
-			http.Error(w, "Invalid page parameter", http.StatusBadRequest)
-			return
-		}
-
-		if chain == "" || pageStr == "" {
-			http.Error(w, "Missing chain or pageStr parameter", http.StatusBadRequest)
-			return
-		}
-
-		filter := r.URL.Query().Get("filter")
-
-		// Filter blobs based on the provided filter parameter
-		var filteredBlobs []Blob
-		var gormdb *gorm.DB
-		var das []db.DA
-		gormdb = stateSqlDB.
-			Where("commitment LIKE ?", "%"+filter+"%").
-			Or("sender LIKE ?", "%"+filter+"%").
-			Or("tx_hash LIKE ?", "%"+filter+"%").
-			Find(&das)
-		if gormdb.Error != nil {
-			log.Error("can not find DA", "err", gormdb.Error)
-		}
-
-		for _, da := range das {
-			blob := Blob{
-				Sender:          da.Sender,
-				Index:           da.Index,
-				Length:          da.Length,
-				TxHash:          da.TxHash,
-				Commitment:      da.Commitment,
-				CommitmentHash:  da.CommitmentHash,
-				Data:            da.Data,
-				DAsKey:          da.DAsKey,
-				SignData:        da.SignData,
-				ParentStateHash: da.ParentStateHash,
-				StateHash:       da.StateHash,
-				BlockNum:        da.BlockNum,
-				ReceiveAt:       da.ReceiveAt,
-			}
-			filteredBlobs = append(filteredBlobs, blob)
-		}
-
-		// Pagination
-		const perPage = 10
-		total := len(filteredBlobs)
-		start := (page - 1) * perPage
-		end := start + perPage
-		if start > total {
-			start = total
-		}
-		if end > total {
-			end = total
-		}
-		paginatedBlobs := filteredBlobs[start:end]
-
-		// Response
-		response := PageBlobs{
-			Data: paginatedBlobs,
-			Pagination: Pagination{
-				Total:   total,
-				Page:    page,
-				PerPage: perPage,
-			},
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
-	} else {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-	}
-}
-
 func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		blobID := r.URL.Query().Get("blobID")
+		txHash := r.URL.Query().Get("tx_hash")
+		commitmentHash := r.URL.Query().Get("commitment_hash")
 		chain := r.URL.Query().Get("chain")
 
 		if chain != "btc" && chain != "eth" {
@@ -537,17 +387,42 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		var foundBlob *BlobDetail
-		for _, blob := range blobDetails {
-			if blob.BlobID == blobID {
-				foundBlob = &blob
-				break
-			}
+		if txHash == "" && commitmentHash == "" {
+			fmt.Println("parameter error")
+			http.Error(w, "Invalid chain parameter", http.StatusBadRequest)
+			return
 		}
 
-		if foundBlob == nil {
+		var gormdb *gorm.DB
+		var da db.DA
+
+		gormdb = stateSqlDB.
+			Where(db.DA{TxHash: txHash}).
+			Or(db.DA{CommitmentHash: commitmentHash}).
+			Limit(1).
+			Find(&da)
+
+		if gormdb.Error != nil {
+			log.Error("can not find DA", "err", gormdb.Error)
 			http.Error(w, "Blob not found", http.StatusNotFound)
 			return
+		}
+
+		commitment := common.Hex2Bytes(da.Commitment)
+		var digest kzg.Digest
+		digest.SetBytes(commitment)
+
+		foundBlob := BlobDetail{
+			//Status
+			//Commitment
+			//BlockNum
+			//Timestamp
+			//Fee
+			//Validator
+			//Size
+			//StorageState
+			//CommitmentXY
+
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -613,9 +488,8 @@ func (h *explorerServer) start() error {
 	router.HandleFunc("/info", InfoHandler).Methods("GET")
 	router.HandleFunc("/api/home-data", HomeDataHandler).Methods("GET")
 	router.HandleFunc("/api/create-blob", CreateBlobHandler).Methods("POST")
-	router.HandleFunc("/api/search", SearchHandler).Methods("GET")
-	router.HandleFunc("/api/btc-blobs", BtcBlobsHandler).Methods("GET")
-	router.HandleFunc("/api/eth-blobs", EthBlobsHandler).Methods("GET")
+	router.HandleFunc("/api/search-blob", SearchBlobHandler).Methods("GET")
+	router.HandleFunc("/api/filter-blob", FilterBlobHandler).Methods("GET")
 	router.HandleFunc("/api/blob-detail", BlobDetailHandler).Methods("GET")
 	router.HandleFunc("/api/nodes", NodesHandler).Methods("GET")
 	router.HandleFunc("/api/getValidator", GetValidatorHandler).Methods("GET")

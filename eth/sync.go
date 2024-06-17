@@ -220,13 +220,17 @@ func (cs *chainSyncer) doBitcoinSync() error {
 		log.Error("bitcoin sync fail", "err", err)
 		return err
 	}
-	log.Info("Sync", "transaction2Commitments", transaction2Commitments)
+
+	for tx, commitments := range transaction2Commitments {
+		for _, commitment := range commitments {
+			log.Info("Sync", "tx", tx, "commitment", common.Bytes2Hex(commitment))
+		}
+	}
 
 	daDatas := make([]*types.DA, 0)
 
 	for tx, commitments := range transaction2Commitments {
 		for _, commitment := range commitments {
-			log.Info("new commit get from memory pool", "tx", tx, "commitment", string(commitment))
 			//new commit get from memory pool
 			da, err := cs.handler.fileDataPool.GetDAByCommit(commitment)
 			if err != nil || da == nil {
@@ -268,14 +272,14 @@ func (cs *chainSyncer) doEthereumSync() error {
 		if err != nil {
 			return err
 		}
-		blockNum,err := db.GetMaxIDBlockNum(cs.db)
+		blockNum, err := db.GetMaxIDBlockNum(cs.db)
 		if err != nil {
-			log.Info("doEthereumSync----GetMaxIDBlockNum","err",err.Error())
+			log.Info("doEthereumSync----GetMaxIDBlockNum", "err", err.Error())
 		}
-		log.Info("doEthereumSync----GetMaxIDBlockNum","blockNum",blockNum)
+		log.Info("doEthereumSync----GetMaxIDBlockNum", "blockNum", blockNum)
 		if uint64(blockNum) >= num {
 			currentHeader = uint64(blockNum)
-		}else {
+		} else {
 			currentHeader = num
 		}
 	} else {
@@ -308,7 +312,7 @@ func (cs *chainSyncer) doEthereumSync() error {
 				case <-requireTime.C:
 					block, err := cs.ethClient.BlockByNumber(cs.ctx, new(big.Int).SetUint64(toBlockNum))
 					if err == nil {
-						blocks= append(blocks,block)
+						blocks = append(blocks, block)
 						requireTime.Reset(QuickReqTime)
 					} else {
 						cs.forced = false
@@ -457,7 +461,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			//new commit get from memory pool
 			da, err := cs.handler.fileDataPool.GetDAByCommit(commitment)
 			if err != nil {
-				log.Info("processBlocks-----","err",err.Error())
+				log.Info("processBlocks-----", "err", err.Error())
 			}
 			if err == nil && da != nil {
 				da.TxHash = common.HexToHash(txHash)
@@ -482,7 +486,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	}
 	if len(blocks) >= 1 {
 		cs.chain.SetCurrentBlock(blocks[length-1])
-	}else {
+	} else {
 		return nil
 	}
 	return nil
