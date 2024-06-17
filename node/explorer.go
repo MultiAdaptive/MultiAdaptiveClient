@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb/db"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/gorilla/mux"
@@ -85,7 +87,6 @@ type NodeInfo struct {
 }
 
 type BlobDetail struct {
-	BlobID       string  `json:"BlobID"`
 	Status       string  `json:"Status"`
 	Commitment   string  `json:"Commitment"`
 	BlockNum     int     `json:"BlockNum"`
@@ -377,7 +378,7 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		txHash := r.URL.Query().Get("tx_hash")
-		commitment := r.URL.Query().Get("commitment")
+		commitmentHash := r.URL.Query().Get("commitment_hash")
 		chain := r.URL.Query().Get("chain")
 
 		if chain != "btc" && chain != "eth" {
@@ -386,20 +387,18 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if txHash == "" && commitment == "" {
+		if txHash == "" && commitmentHash == "" {
 			fmt.Println("parameter error")
 			http.Error(w, "Invalid chain parameter", http.StatusBadRequest)
 			return
 		}
-
-		var foundBlob BlobDetail
 
 		var gormdb *gorm.DB
 		var da db.DA
 
 		gormdb = stateSqlDB.
 			Where(db.DA{TxHash: txHash}).
-			Or(db.DA{Commitment: commitment}).
+			Or(db.DA{CommitmentHash: commitmentHash}).
 			Limit(1).
 			Find(&da)
 
@@ -407,6 +406,23 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 			log.Error("can not find DA", "err", gormdb.Error)
 			http.Error(w, "Blob not found", http.StatusNotFound)
 			return
+		}
+
+		commitment := common.Hex2Bytes(da.Commitment)
+		var digest kzg.Digest
+		digest.SetBytes(commitment)
+
+		foundBlob := BlobDetail{
+			//Status
+			//Commitment
+			//BlockNum
+			//Timestamp
+			//Fee
+			//Validator
+			//Size
+			//StorageState
+			//CommitmentXY
+
 		}
 
 		w.Header().Set("Content-Type", "application/json")

@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/eth/scriptparser"
 	"github.com/ethereum/go-ethereum/eth/tool"
 	"github.com/ethereum/go-ethereum/log"
-	los "github.com/samber/lo"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -114,7 +113,7 @@ func (ws *WorkerService) RunSync(ctx context.Context) (map[string][][]byte, erro
 	}
 
 	beginBlockHeight := presentBlockHeight + 1
-	endBlockHeight := los.Min([]int64{presentBlockHeight + 6, currentBlockHeight})
+	endBlockHeight := currentBlockHeight
 
 	// 遍历获取block
 	blockHeightAndBlockMap, blockHeightAndBlockHeaderMap, err := ws.GetBlocks(ctx, beginBlockHeight, endBlockHeight)
