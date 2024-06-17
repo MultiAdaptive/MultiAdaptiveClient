@@ -3,7 +3,6 @@ package node
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb/db"
@@ -61,11 +60,6 @@ type Blob struct {
 	StateHash       string `json:"state_hash"`
 	BlockNum        int64  `json:"block_num"`
 	ReceiveAt       string `json:"receive_at"`
-}
-
-type ChainBlobs struct {
-	Chain string `json:"chain"`
-	Blobs []Blob `json:"blobs"`
 }
 
 type Pagination struct {
@@ -156,18 +150,9 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 			blobs = append(blobs, blob)
 		}
 
-		response := map[string]interface{}{
-			"result": []ChainBlobs{
-				{
-					Chain: "btc",
-					Blobs: blobs,
-				},
-			},
-		}
-
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(blobs)
 	} else {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
@@ -294,25 +279,18 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 // FilterBlobHandler handles the GET /api/filter-blob endpoint with pagination and filtering
 func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		chain := r.URL.Query().Get("chain")
-		if chain != "btc" {
-			http.Error(w, "Invalid or missing chain parameter", http.StatusBadRequest)
+		filter := r.URL.Query().Get("filter")
+		pageStr := r.URL.Query().Get("page")
+		if pageStr == "" {
+			http.Error(w, "Missing pageStr parameter", http.StatusBadRequest)
 			return
 		}
 
-		pageStr := r.URL.Query().Get("page")
 		page, err := strconv.Atoi(pageStr)
 		if err != nil || page < 1 {
 			http.Error(w, "Invalid page parameter", http.StatusBadRequest)
 			return
 		}
-
-		if chain == "" || pageStr == "" {
-			http.Error(w, "Missing chain or pageStr parameter", http.StatusBadRequest)
-			return
-		}
-
-		filter := r.URL.Query().Get("filter")
 
 		// Filter blobs based on the provided filter parameter
 		var filteredBlobs []Blob
@@ -382,17 +360,10 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		txHash := r.URL.Query().Get("tx_hash")
 		commitmentHash := r.URL.Query().Get("commitment_hash")
-		chain := r.URL.Query().Get("chain")
-
-		if chain != "btc" && chain != "eth" {
-			fmt.Println("parameter error")
-			http.Error(w, "Invalid chain parameter", http.StatusBadRequest)
-			return
-		}
 
 		if txHash == "" && commitmentHash == "" {
-			fmt.Println("parameter error")
-			http.Error(w, "Invalid chain parameter", http.StatusBadRequest)
+			log.Error("parameter error", "txHash", txHash, "commitmentHash", commitmentHash)
+			http.Error(w, "Invalid parameter", http.StatusBadRequest)
 			return
 		}
 
