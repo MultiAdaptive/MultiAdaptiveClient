@@ -678,6 +678,8 @@ func (t *lookup) Add(fd *types.DA) {
 	}else if fd.TxHash.Cmp(common.Hash{}) == 0 && !commitIsEmpty{
 		hash := common.BytesToHash(fd.Commitment.Marshal())
 		t.collector[hash] = fd
+	}else if fd.TxHash.Cmp(common.Hash{}) == 0 && commitIsEmpty{
+		return
 	}
 }
 

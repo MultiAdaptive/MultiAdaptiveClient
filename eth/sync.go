@@ -206,13 +206,15 @@ func (cs *chainSyncer) doSync() error {
 
 func (cs *chainSyncer) doBitcoinSync() error {
 	log.Info("doBitcoinSync-----")
+	if cs.forced == true {
+		return errors.New("chainSyncer is syncing")
+	}
 	magicNumber := cs.chain.Config().L1Conf.BitcoinMagicNumber
 	net := cs.chain.Config().L1Conf.BitcoinNet
 	startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
-
+	cs.forced = true
 	ctx := context.Background()
 	ws := NewWorkerService(cs.db, cs.btcClient, magicNumber, net, startNum)
-
 	transaction2Commitments, err := ws.RunSync(ctx)
 	if err != nil {
 		log.Error("bitcoin sync fail", "err", err)
@@ -249,6 +251,7 @@ func (cs *chainSyncer) doBitcoinSync() error {
 		_ = db.SaveBatchCommitment(cs.db, daDatas, parentHash)
 		cs.handler.fileDataPool.RemoveFileData(daDatas)
 	}
+	cs.forced = false
 
 	return nil
 }
