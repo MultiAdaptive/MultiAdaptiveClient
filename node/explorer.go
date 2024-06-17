@@ -218,8 +218,8 @@ func CreateBlobHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// SearchHandler handles the GET /api/search endpoint with query parameters
-func SearchHandler(w http.ResponseWriter, r *http.Request) {
+// SearchHandler handles the GET /api/search-blob endpoint with query parameters
+func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		query := r.URL.Query().Get("q")
 		category := r.URL.Query().Get("category")
@@ -287,8 +287,8 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// BtcBlobsHandler handles the GET /api/btc-blobs endpoint with pagination and filtering
-func BtcBlobsHandler(w http.ResponseWriter, r *http.Request) {
+// FilterBlobHandler handles the GET /api/filter-blob endpoint with pagination and filtering
+func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		chain := r.URL.Query().Get("chain")
 		if chain != "btc" {
@@ -313,92 +313,6 @@ func BtcBlobsHandler(w http.ResponseWriter, r *http.Request) {
 		// Filter blobs based on the provided filter parameter
 		var filteredBlobs []Blob
 
-		var gormdb *gorm.DB
-		var das []db.DA
-		gormdb = stateSqlDB.
-			Where("commitment LIKE ?", "%"+filter+"%").
-			Or("sender LIKE ?", "%"+filter+"%").
-			Or("tx_hash LIKE ?", "%"+filter+"%").
-			Find(&das)
-		if gormdb.Error != nil {
-			log.Error("can not find DA", "err", gormdb.Error)
-		}
-
-		for _, da := range das {
-			blob := Blob{
-				Sender:          da.Sender,
-				Index:           da.Index,
-				Length:          da.Length,
-				TxHash:          da.TxHash,
-				Commitment:      da.Commitment,
-				CommitmentHash:  da.CommitmentHash,
-				Data:            da.Data,
-				DAsKey:          da.DAsKey,
-				SignData:        da.SignData,
-				ParentStateHash: da.ParentStateHash,
-				StateHash:       da.StateHash,
-				BlockNum:        da.BlockNum,
-				ReceiveAt:       da.ReceiveAt,
-			}
-			filteredBlobs = append(filteredBlobs, blob)
-		}
-
-		// Pagination
-		const perPage = 10
-		total := len(filteredBlobs)
-		start := (page - 1) * perPage
-		end := start + perPage
-		if start > total {
-			start = total
-		}
-		if end > total {
-			end = total
-		}
-		paginatedBlobs := filteredBlobs[start:end]
-
-		// Response
-		response := PageBlobs{
-			Data: paginatedBlobs,
-			Pagination: Pagination{
-				Total:   total,
-				Page:    page,
-				PerPage: perPage,
-			},
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
-	} else {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-	}
-}
-
-// EthBlobsHandler handles the GET /api/btc-blobs endpoint with pagination and filtering
-func EthBlobsHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		chain := r.URL.Query().Get("chain")
-		if chain != "eth" {
-			http.Error(w, "Invalid or missing chain parameter", http.StatusBadRequest)
-			return
-		}
-
-		pageStr := r.URL.Query().Get("page")
-		page, err := strconv.Atoi(pageStr)
-		if err != nil || page < 1 {
-			http.Error(w, "Invalid page parameter", http.StatusBadRequest)
-			return
-		}
-
-		if chain == "" || pageStr == "" {
-			http.Error(w, "Missing chain or pageStr parameter", http.StatusBadRequest)
-			return
-		}
-
-		filter := r.URL.Query().Get("filter")
-
-		// Filter blobs based on the provided filter parameter
-		var filteredBlobs []Blob
 		var gormdb *gorm.DB
 		var das []db.DA
 		gormdb = stateSqlDB.
@@ -494,7 +408,7 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Blob not found", http.StatusNotFound)
 			return
 		}
-		
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(foundBlob)
@@ -558,9 +472,8 @@ func (h *explorerServer) start() error {
 	router.HandleFunc("/info", InfoHandler).Methods("GET")
 	router.HandleFunc("/api/home-data", HomeDataHandler).Methods("GET")
 	router.HandleFunc("/api/create-blob", CreateBlobHandler).Methods("POST")
-	router.HandleFunc("/api/search", SearchHandler).Methods("GET")
-	router.HandleFunc("/api/btc-blobs", BtcBlobsHandler).Methods("GET")
-	router.HandleFunc("/api/eth-blobs", EthBlobsHandler).Methods("GET")
+	router.HandleFunc("/api/search-blob", SearchBlobHandler).Methods("GET")
+	router.HandleFunc("/api/filter-blob", FilterBlobHandler).Methods("GET")
 	router.HandleFunc("/api/blob-detail", BlobDetailHandler).Methods("GET")
 	router.HandleFunc("/api/nodes", NodesHandler).Methods("GET")
 	router.HandleFunc("/api/getValidator", GetValidatorHandler).Methods("GET")
