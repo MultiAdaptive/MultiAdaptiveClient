@@ -130,7 +130,7 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		var gormdb *gorm.DB
 		var das []db.DA
-		gormdb = stateSqlDB.Find(&das)
+		gormdb = stateSqlDB.Order("receive_at desc").Limit(10).Find(&das)
 		if gormdb.Error != nil {
 			log.Error("can not find DA", "err", gormdb.Error)
 		}
@@ -457,8 +457,8 @@ func NodesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetValidatorHandler handles the GET /api/getValidator endpoint
-func GetValidatorHandler(w http.ResponseWriter, r *http.Request) {
+// ValidatorsHandler handles the GET /api/validators endpoint
+func ValidatorsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		if len(validators) == 0 {
 			http.Error(w, "No validators found", http.StatusNotFound)
@@ -492,7 +492,7 @@ func (h *explorerServer) start() error {
 	router.HandleFunc("/api/filter-blob", FilterBlobHandler).Methods("GET")
 	router.HandleFunc("/api/blob-detail", BlobDetailHandler).Methods("GET")
 	router.HandleFunc("/api/nodes", NodesHandler).Methods("GET")
-	router.HandleFunc("/api/getValidator", GetValidatorHandler).Methods("GET")
+	router.HandleFunc("/api/validators", ValidatorsHandler).Methods("GET")
 
 	// Initialize the server.
 	h.server = &http.Server{
