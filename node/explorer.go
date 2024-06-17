@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 // Database 实例
@@ -178,11 +179,14 @@ func CreateBlobHandler(w http.ResponseWriter, r *http.Request) {
 		var newBlob Blob
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
+			log.Error("read body fail", "err", err)
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
+
 		err = json.Unmarshal(body, &newBlob)
 		if err != nil {
+			log.Error("body to blob fail", "body", string(body), "err", err)
 			http.Error(w, "Invalid JSON format", http.StatusBadRequest)
 			return
 		}
@@ -230,23 +234,23 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		var gormdb *gorm.DB
 		var das []db.DA
-		var results []Blob
+		var blobs []Blob
 
-		switch category {
-		case "Sender":
+		switch strings.ToLower(category) {
+		case "sender":
 			gormdb = stateSqlDB.
 				Where(db.DA{Sender: query}).
 				Find(&das)
 
-		case "TxHash":
+		case "txhash":
 			gormdb = stateSqlDB.
 				Where(db.DA{TxHash: query}).
 				Find(&das)
-		case "Commitment":
+		case "commitmenthash":
 			gormdb = stateSqlDB.
-				Where(db.DA{Commitment: query}).
+				Where(db.DA{CommitmentHash: query}).
 				Find(&das)
-		case "BlockNum":
+		case "blocknum":
 			num, _ := strconv.Atoi(query)
 			gormdb = stateSqlDB.
 				Where(db.DA{BlockNum: int64(num)}).
@@ -276,12 +280,12 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 				BlockNum:        da.BlockNum,
 				ReceiveAt:       da.ReceiveAt,
 			}
-			results = append(results, blob)
+			blobs = append(blobs, blob)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(results)
+		json.NewEncoder(w).Encode(blobs)
 	} else {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
