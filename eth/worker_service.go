@@ -332,6 +332,12 @@ func (ws *WorkerService) SaveTransactions(ctx context.Context, blockHeightAndBlo
 				continue
 			}
 
+			fee, err := ws.GetTransactionFee(tx)
+			if err != nil {
+				log.Error("Error get transaction fee", "tx", tx, "err", err)
+				continue
+			}
+
 			transactionModels = append(transactionModels, baseModel.BaseTransaction{
 				MagicNumber:     ws.magicNumber,
 				Net:             ws.net,
@@ -348,6 +354,7 @@ func (ws *WorkerService) SaveTransactions(ctx context.Context, blockHeightAndBlo
 				Confirmations:   transactionVerbose.Confirmations,
 				TransactionTime: transactionVerbose.Time,
 				BlockTime:       transactionVerbose.Blocktime,
+				Fee:             fee,
 				CreateAt:        now,
 			})
 		}
@@ -461,4 +468,43 @@ func (ws *WorkerService) ParseTransaction(txHash *chainhash.Hash) ([]*scriptpars
 	}
 	log.Info("SOME INSCRIPTIONS", "txHash", txHash, "number", len(transactionInscriptions))
 	return transactionInscriptions, nil
+}
+
+func (ws *WorkerService) GetTransactionFee(txID string) (float64, error) {
+	// 将交易 ID 转换为 ShaHash
+	txHash, err := chainhash.NewHashFromStr(txID)
+	if err != nil {
+		return 0, errors.New("invalid transaction ID:" + err.Error())
+	}
+
+	// 获取原始交易
+	rawTx, err := ws.btcCli.GetRawTransactionVerbose(txHash)
+	if err != nil {
+		return 0, err
+	}
+
+	// 解析原始交易
+	var inputSum, outputSum float64
+
+	for _, vin := range rawTx.Vin {
+		vinTxHash, err := chainhash.NewHashFromStr(vin.Txid)
+		if err != nil {
+			return 0, err
+		}
+
+		vinTx, err := ws.btcCli.GetRawTransactionVerbose(vinTxHash)
+		if err != nil {
+			return 0, err
+		}
+
+		inputSum += vinTx.Vout[vin.Vout].Value
+	}
+
+	for _, vout := range rawTx.Vout {
+		outputSum += vout.Value
+	}
+
+	fee := inputSum - outputSum
+
+	return fee, nil
 }

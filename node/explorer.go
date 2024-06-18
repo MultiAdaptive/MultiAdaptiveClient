@@ -45,6 +45,15 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Server is alive!"))
 }
 
+type BlobBrief struct {
+	Commitment string   `json:"commitment"`
+	BlockNum   int64    `json:"block_num"`
+	ReceiveAt  string   `json:"receive_at"`
+	Length     int64    `json:"length"`
+	Validators []string `json:"validators"`
+	Fee        string   `json:"fee"`
+}
+
 // Blob represents the blob data structure
 type Blob struct {
 	Sender          string `json:"sender"`
@@ -125,27 +134,25 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		var gormdb *gorm.DB
 		var das []db.DA
-		gormdb = stateSqlDB.Order("receive_at desc").Limit(5).Find(&das)
+		gormdb = stateSqlDB.
+			Model(&db.DA{}).
+			Select("name", "age").
+			Order("receive_at desc").
+			Limit(5).
+			Find(&das)
 		if gormdb.Error != nil {
 			log.Error("can not find DA", "err", gormdb.Error)
 		}
 
-		blobs := make([]Blob, 0)
+		blobs := make([]BlobBrief, 0)
 		for _, da := range das {
-			blob := Blob{
-				Sender:          da.Sender,
-				Index:           da.Index,
-				Length:          da.Length,
-				TxHash:          da.TxHash,
-				Commitment:      da.Commitment,
-				CommitmentHash:  da.CommitmentHash,
-				Data:            da.Data,
-				DAsKey:          da.DAsKey,
-				SignData:        da.SignData,
-				ParentStateHash: da.ParentStateHash,
-				StateHash:       da.StateHash,
-				BlockNum:        da.BlockNum,
-				ReceiveAt:       da.ReceiveAt,
+			blob := BlobBrief{
+				Commitment: da.Commitment,
+				BlockNum:   da.BlockNum,
+				Length:     da.Length,
+				ReceiveAt:  da.ReceiveAt,
+				Validators: []string{},
+				Fee:        "0",
 			}
 			blobs = append(blobs, blob)
 		}
