@@ -306,7 +306,7 @@ func (ws *WorkerService) SaveTransactions(ctx context.Context, blockHeightAndBlo
 	now := tool.TimeStampNowSecond()
 
 	// 校验交易内容
-	for _, blockVerbose := range blockHeightAndBlockVerboseMap {
+	for blockHeight, blockVerbose := range blockHeightAndBlockVerboseMap {
 		for _, tx := range blockVerbose.Tx {
 			txid, err := chainhash.NewHashFromStr(tx)
 			if err != nil {
@@ -350,6 +350,7 @@ func (ws *WorkerService) SaveTransactions(ctx context.Context, blockHeightAndBlo
 				LockTime:        transactionVerbose.LockTime,
 				Vin:             vinDataBytes,
 				Vout:            voutDataBytes,
+				BlockHeight:     blockHeight,
 				BlockHash:       transactionVerbose.BlockHash,
 				Confirmations:   transactionVerbose.Confirmations,
 				TransactionTime: transactionVerbose.Time,

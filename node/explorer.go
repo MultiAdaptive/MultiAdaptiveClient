@@ -168,9 +168,11 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 		var das []db.DA
 		gormdb = stateSqlDB.
 			Model(&db.DA{}).
-			Order("receive_at desc").
+			Select("f_tx_hash, f_commitment, f_commitment_hash, f_block_num, f_length, f_receive_at").
+			Order("f_receive_at desc").
 			Limit(5).
 			Find(&das)
+
 		if gormdb.Error != nil {
 			log.Error("can not find DA", "err", gormdb.Error)
 		}
@@ -182,6 +184,7 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 		var baseTransactions []baseModel.BaseTransaction
 		gormdb = stateSqlDB.
 			Model(&baseModel.BaseTransaction{}).
+			Select("f_transaction_hash, f_fee").
 			Where("f_transaction_hash IN ?", txHashs).
 			Find(&baseTransactions)
 		if gormdb.Error != nil {
@@ -359,9 +362,9 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 		var gormdb *gorm.DB
 		var das []db.DA
 		gormdb = stateSqlDB.
-			Where("commitment LIKE ?", "%"+filter+"%").
-			Or("sender LIKE ?", "%"+filter+"%").
-			Or("tx_hash LIKE ?", "%"+filter+"%").
+			Where("f_commitment LIKE ?", "%"+filter+"%").
+			Or("f_sender LIKE ?", "%"+filter+"%").
+			Or("f_tx_hash LIKE ?", "%"+filter+"%").
 			Find(&das)
 		if gormdb.Error != nil {
 			log.Error("can not find DA", "err", gormdb.Error)
