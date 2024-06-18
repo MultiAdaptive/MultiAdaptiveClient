@@ -232,11 +232,11 @@ func (c *BoundContract) createDynamicTx(opts *TransactOpts, contract *common.Add
 	// Estimate TipCap
 	gasTipCap := opts.GasTipCap
 	if gasTipCap == nil {
-		tip, err := c.transactor.SuggestGasTipCap(ensureContext(opts.Context))
-		if err != nil {
-			return nil, err
-		}
-		gasTipCap = tip
+		//tip, err := c.transactor.SuggestGasTipCap(ensureContext(opts.Context))
+		//if err != nil {
+		//	return nil, err
+		//}
+		//gasTipCap = tip
 	}
 	// Estimate FeeCap
 	gasFeeCap := opts.GasFeeCap
@@ -287,11 +287,11 @@ func (c *BoundContract) createLegacyTx(opts *TransactOpts, contract *common.Addr
 	// Estimate GasPrice
 	gasPrice := opts.GasPrice
 	if gasPrice == nil {
-		price, err := c.transactor.SuggestGasPrice(ensureContext(opts.Context))
-		if err != nil {
-			return nil, err
-		}
-		gasPrice = price
+		//price, err := c.transactor.SuggestGasPrice(ensureContext(opts.Context))
+		//if err != nil {
+		//	return nil, err
+		//}
+		//gasPrice = price
 	}
 	// Estimate GasLimit
 	gasLimit := opts.GasLimit

@@ -138,7 +138,6 @@ func loadBaseConfig(ctx *cli.Context) gethConfig {
 			utils.Fatalf("%v", err)
 		}
 	}
-
 	// Apply flags.
 	utils.SetNodeConfig(ctx, &cfg.Node)
 	return cfg
@@ -180,6 +179,7 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 			log.Error("makeFullNode failed", "L1ScanUrlFlag value", utils.L1ScanUrlFlag.Value)
 		}
 		cfg.Eth.L1ScanUrl = url
+		stack.Explorer().SetAskUrl(url)
 	}
 
 	if ctx.IsSet(utils.L1ScanHostFlag.Name) {
