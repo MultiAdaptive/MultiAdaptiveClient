@@ -138,7 +138,7 @@ func (b *EthAPIBackend) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byt
 			log.Info("SendBTCDAByParams------SigWithSchnorr","err",err.Error())
 			return nil,err
 		}
-		da.SignData = sign
+		da.SignData = [][]byte{sign}
 		da.ReceiveAt = time.Now()
 		b.eth.fdPool.Add([]*types.DA{da},true,false)
 		return sign,nil

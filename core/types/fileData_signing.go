@@ -173,7 +173,7 @@ func (s EIP155FdSigner) Hash(fd *DA) common.Hash {
 	data := make([]byte,0)
 	chainId := transTo32Byte(uint64ToBigEndianHexBytes(s.chainId.Uint64()))
 	indexByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Index))
-	lengthByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Length))
+	lengthByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Length.Uint64()))
 	addrByte := transTo32Byte(fd.Sender.Bytes())
 	commitXByte := fd.Commitment.X.Bytes()
 	commitYByte := fd.Commitment.Y.Bytes()
@@ -253,7 +253,7 @@ func (fs FrontierFdSigner) SignatureValues(fd *DA, sig []byte) (r, s, v *big.Int
 func (fs FrontierFdSigner) Hash(fd *DA) common.Hash {
 	data := make([]byte,0)
 	indexByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Index))
-	lengthByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Length))
+	lengthByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Length.Uint64()))
 	addrByte := transTo32Byte(fd.Sender.Bytes())
 	commitXByte := fd.Commitment.X.Bytes()
 	commitYByte := fd.Commitment.Y.Bytes()

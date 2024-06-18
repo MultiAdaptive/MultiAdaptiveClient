@@ -206,8 +206,8 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 
 			blob := BlobBrief{
 				Commitment: da.Commitment,
-				BlockNum:   da.BlockNum,
-				Length:     da.Length,
+				BlockNum:   da.BlockNum.Int64(),
+				Length:     da.Length.Int64(),
 				ReceiveAt:  da.ReceiveAt,
 				Validators: []string{},
 				Fee:        cast.ToString(fee),
@@ -245,7 +245,7 @@ func CreateBlobHandler(w http.ResponseWriter, r *http.Request) {
 		da := db.DA{
 			Sender:          newBlob.Sender,
 			Index:           newBlob.Index,
-			Length:          newBlob.Length,
+			Length:          *new(big.Int).SetInt64(newBlob.Length),
 			TxHash:          newBlob.TxHash,
 			Commitment:      newBlob.Commitment,
 			CommitmentHash:  newBlob.CommitmentHash,
@@ -254,7 +254,7 @@ func CreateBlobHandler(w http.ResponseWriter, r *http.Request) {
 			SignData:        newBlob.SignData,
 			ParentStateHash: newBlob.ParentStateHash,
 			StateHash:       newBlob.StateHash,
-			BlockNum:        newBlob.BlockNum,
+			BlockNum:        *new(big.Int).SetInt64(newBlob.BlockNum),
 			ReceiveAt:       newBlob.ReceiveAt,
 		}
 
@@ -303,7 +303,7 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 		case "blocknum":
 			num, _ := strconv.Atoi(query)
 			gormdb = stateSqlDB.
-				Where(db.DA{BlockNum: int64(num)}).
+				Where(db.DA{BlockNum: *new(big.Int).SetInt64(int64(num))}).
 				Find(&das)
 		default:
 			http.Error(w, "Invalid category parameter", http.StatusBadRequest)
@@ -318,7 +318,7 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 			blob := Blob{
 				Sender:          da.Sender,
 				Index:           da.Index,
-				Length:          da.Length,
+				Length:          da.Length.Int64(),
 				TxHash:          da.TxHash,
 				Commitment:      da.Commitment,
 				CommitmentHash:  da.CommitmentHash,
@@ -327,7 +327,7 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 				SignData:        da.SignData,
 				ParentStateHash: da.ParentStateHash,
 				StateHash:       da.StateHash,
-				BlockNum:        da.BlockNum,
+				BlockNum:        da.BlockNum.Int64(),
 				ReceiveAt:       da.ReceiveAt,
 			}
 			blobs = append(blobs, blob)
@@ -375,7 +375,7 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 			blob := Blob{
 				Sender:          da.Sender,
 				Index:           da.Index,
-				Length:          da.Length,
+				Length:          da.Length.Int64(),
 				TxHash:          da.TxHash,
 				Commitment:      da.Commitment,
 				CommitmentHash:  da.CommitmentHash,
@@ -384,7 +384,7 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 				SignData:        da.SignData,
 				ParentStateHash: da.ParentStateHash,
 				StateHash:       da.StateHash,
-				BlockNum:        da.BlockNum,
+				BlockNum:        da.BlockNum.Int64(),
 				ReceiveAt:       da.ReceiveAt,
 			}
 			filteredBlobs = append(filteredBlobs, blob)
@@ -453,10 +453,10 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 
 		foundBlob := BlobDetail{
 			Commitment:   da.Commitment,
-			BlockNum:     da.BlockNum,
+			BlockNum:     da.BlockNum.Int64(),
 			Timestamp:    da.ReceiveAt,
 			Validator:    da.SignData,
-			Size:         da.Length,
+			Size:         da.Length.Int64(),
 			StorageState: da.StateHash,
 			CommitmentXY: CommitmentCoordinate{
 				X: digest.X.String(),

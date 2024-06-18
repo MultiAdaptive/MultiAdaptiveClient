@@ -564,7 +564,7 @@ func (fp *FilePool) journalFd(txHash common.Hash, fd *types.DA) {
 // This check is meant as an early check which only needs to be performed once,
 // and does not require the pool mutex to be held.
 func (fp *FilePool) validateFileDataSignature(fd *types.DA, local bool) error {
-	if fd.Length != uint64(len(fd.Data)) {
+	if fd.Length.Uint64() != uint64(len(fd.Data)) {
 		return errors.New("fileData data length not match legth")
 	}
 	if len(fd.SignData) == 0  {
