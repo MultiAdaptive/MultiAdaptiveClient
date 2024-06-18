@@ -334,7 +334,7 @@ func (ws *WorkerService) SaveTransactions(ctx context.Context, blockHeightAndBlo
 
 			fee, err := ws.GetTransactionFee(tx)
 			if err != nil {
-				log.Error("Error get transaction fee", "tx", tx, "err", err)
+				log.Debug("Error get transaction fee", "tx", tx, "err", err)
 			}
 
 			transactionModels = append(transactionModels, baseModel.BaseTransaction{
