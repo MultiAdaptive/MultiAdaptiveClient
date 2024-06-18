@@ -9,11 +9,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contract"
 	"github.com/ethereum/go-ethereum/crypto"
+	baseModel "github.com/ethereum/go-ethereum/eth/basemodel"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethdb/db"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/gorilla/mux"
+	los "github.com/samber/lo"
+	"github.com/spf13/cast"
 	"gorm.io/gorm"
 	"io"
 	"math/big"
@@ -26,7 +29,7 @@ import (
 var askUrl string
 var stateSqlDB *gorm.DB
 var privateKey *ecdsa.PrivateKey
-var l1Conf  *params.L1Config
+var l1Conf *params.L1Config
 var chainId uint64
 
 type explorerServer struct {
@@ -45,7 +48,7 @@ func newExplorerServer(log log.Logger, datadir string) *explorerServer {
 	return h
 }
 
-func (h *explorerServer) setPrivateKey(key *ecdsa.PrivateKey)  {
+func (h *explorerServer) setPrivateKey(key *ecdsa.PrivateKey) {
 	privateKey = key
 }
 
@@ -122,13 +125,13 @@ type NodeManagerNodeInfo struct {
 
 // Node represents the node data structure
 type NodeInfo struct {
-	Name        string  `json:"name"`
-	Url         string  `json:"url"`
-	NodeAddress string  `json:"node_address"`
+	Name         string `json:"name"`
+	Url          string `json:"url"`
+	NodeAddress  string `json:"node_address"`
 	StakedTokens uint64 `json:"staked_tokens"`
-	Chain       string  `json:"chain"`
-	Location    string  `json:"location"`
-	NodeType    string  `json:"node_type"`
+	Chain        string `json:"chain"`
+	Location     string `json:"location"`
+	NodeType     string `json:"node_type"`
 }
 
 type CommitmentCoordinate struct {
@@ -158,7 +161,6 @@ type Validator struct {
 	VotingPower           float64 `json:"voting_power"`
 }
 
-
 // HomeDataHandler handles the GET /api/home-data endpoint
 func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
@@ -166,7 +168,6 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 		var das []db.DA
 		gormdb = stateSqlDB.
 			Model(&db.DA{}).
-			Select("name", "age").
 			Order("receive_at desc").
 			Limit(5).
 			Find(&das)
@@ -174,15 +175,38 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 			log.Error("can not find DA", "err", gormdb.Error)
 		}
 
+		txHashs := los.Map(das, func(da db.DA, index int) string {
+			return da.TxHash
+		})
+
+		var baseTransactions []baseModel.BaseTransaction
+		gormdb = stateSqlDB.
+			Model(&baseModel.BaseTransaction{}).
+			Where("f_transaction_hash IN ?", txHashs).
+			Find(&baseTransactions)
+		if gormdb.Error != nil {
+			log.Error("can not find BaseTransaction", "txHashs", txHashs, "err", gormdb.Error)
+		}
+
 		blobs := make([]BlobBrief, 0)
 		for _, da := range das {
+
+			item, found := los.Find(baseTransactions, func(baseTransaction baseModel.BaseTransaction) bool {
+				return strings.ToLower(baseTransaction.TransactionHash) == strings.ToLower(da.TxHash)
+			})
+
+			fee := 0.0
+			if found {
+				fee = item.Fee
+			}
+
 			blob := BlobBrief{
 				Commitment: da.Commitment,
 				BlockNum:   da.BlockNum,
 				Length:     da.Length,
 				ReceiveAt:  da.ReceiveAt,
 				Validators: []string{},
-				Fee:        "0",
+				Fee:        cast.ToString(fee),
 			}
 			blobs = append(blobs, blob)
 		}
@@ -449,12 +473,12 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 func NodesHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		chain := r.URL.Query().Get("chain")
-		filteredNodes := make([]NodeInfo,0)
-		switch  {
+		filteredNodes := make([]NodeInfo, 0)
+		switch {
 		case chain == "btc" || chain == "bitcoin":
-			//
+			break
 		case chain == "eth" || chain == "ethereum":
-			client,err := ethclient.Dial(askUrl)
+			client, err := ethclient.Dial(askUrl)
 			if err != nil {
 				http.Error(w, "No Node Info found", http.StatusNotFound)
 				return
@@ -465,56 +489,56 @@ func NodesHandler(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "No Node Info found", http.StatusNotFound)
 				return
 			}
-			result := make([]contract.NodeManagerNodeInfo,0)
-			storResult := make([]contract.NodeManagerNodeInfo,0)
+			result := make([]contract.NodeManagerNodeInfo, 0)
+			storResult := make([]contract.NodeManagerNodeInfo, 0)
 			publicKey := privateKey.Public()
 			publicKeyECDSA, _ := publicKey.(*ecdsa.PublicKey)
 			// 创建一个签名交易的发送者
 			fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-			num,err := db.GetMaxIDBlockNum(stateSqlDB)
+			num, err := db.GetMaxIDBlockNum(stateSqlDB)
 			if err != nil {
 				http.Error(w, "No Node Info found", http.StatusNotFound)
 				return
 			}
 			ops := bind.CallOpts{
-				Pending: false,
-				From: fromAddress,
+				Pending:     false,
+				From:        fromAddress,
 				BlockNumber: new(big.Int).SetInt64(num),
-				Context: context.Background(),
+				Context:     context.Background(),
 			}
-			nodes,err := instance.GetBroadcastingNodes(&ops)
+			nodes, err := instance.GetBroadcastingNodes(&ops)
 			if err != nil {
 				http.Error(w, "No Node Info found", http.StatusNotFound)
 				return
 			}
-			result = append(result,nodes...)
+			result = append(result, nodes...)
 
-			strNodes,err := instance.GetstorageNodes(&ops)
-			storResult = append(storResult,strNodes...)
-			for _,node := range result {
+			strNodes, err := instance.GetstorageNodes(&ops)
+			storResult = append(storResult, strNodes...)
+			for _, node := range result {
 				filNode := NodeInfo{
-					Name: node.Name,
-					Url: node.Url,
-					NodeAddress: node.Addr.Hex(),
+					Name:         node.Name,
+					Url:          node.Url,
+					NodeAddress:  node.Addr.Hex(),
 					StakedTokens: node.StakedTokens.Uint64(),
-					Chain: "eth",
-					Location: node.Location,
-					NodeType: "BroadCast Node",
+					Chain:        "eth",
+					Location:     node.Location,
+					NodeType:     "BroadCast Node",
 				}
-				filteredNodes = append(filteredNodes,filNode)
+				filteredNodes = append(filteredNodes, filNode)
 			}
 
-			for _,node := range storResult {
+			for _, node := range storResult {
 				filNode := NodeInfo{
-					Name: node.Name,
-					Url: node.Url,
-					NodeAddress: node.Addr.Hex(),
+					Name:         node.Name,
+					Url:          node.Url,
+					NodeAddress:  node.Addr.Hex(),
 					StakedTokens: node.StakedTokens.Uint64(),
-					Chain: "eth",
-					Location: node.Location,
-					NodeType: "Storage Node",
+					Chain:        "eth",
+					Location:     node.Location,
+					NodeType:     "Storage Node",
 				}
-				filteredNodes = append(filteredNodes,filNode)
+				filteredNodes = append(filteredNodes, filNode)
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
