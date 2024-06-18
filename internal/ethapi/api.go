@@ -629,19 +629,24 @@ type RPCDA struct {
 	Index      hexutil.Uint64 `json:"index"`
 	Commitment hexutil.Bytes  `json:"commitment"`
 	Data       hexutil.Bytes  `json:"data"`
-	Sign       hexutil.Bytes  `json:"sign"`
+	SignHash   []common.Hash `json:"sign"`
 	TxHash     common.Hash    `json:"txhash"`
 }
 
 func NewRPCDA(fd *types.DA) *RPCDA {
-	coomitData := fd.Commitment.Marshal()
+	comitData := fd.Commitment.Marshal()
+	signHash := make([]common.Hash, len(fd.SignData))
+	for _,sign := range fd.SignData{
+		hash := common.BytesToHash(sign)
+		signHash = append(signHash,hash)
+	}
 	result := &RPCDA{
 		Sender:     fd.Sender,
 		Length:     hexutil.Uint64(fd.Length),
 		Index:      hexutil.Uint64(fd.Index),
-		Commitment: hexutil.Bytes(coomitData),
+		Commitment: hexutil.Bytes(comitData),
 		Data:       hexutil.Bytes(fd.Data),
-		Sign:       hexutil.Bytes(fd.SignData),
+		SignHash:   signHash,
 		TxHash:     fd.TxHash,
 	}
 	return result

@@ -150,7 +150,7 @@ func (s EIP155FdSigner) Equal(s2 FdSigner) bool {
 }
 
 func (s EIP155FdSigner) Sender(fd *DA) (common.Address, error) {
-	R, S, V := sliteSignature(fd.SignData)
+	R, S, V := sliteSignature(fd.SignData[0])
 	// V = new(big.Int).Sub(V, s.chainIdMul)
 	// V.Sub(V, big8)
 	return recoverPlain(s.Hash(fd), R, S, V, true)
@@ -236,7 +236,7 @@ func (s FrontierFdSigner) Equal(s2 FdSigner) bool {
 }
 
 func (fs FrontierFdSigner) Sender(fd *DA) (common.Address, error) {
-	r, s, v := sliteSignature(fd.SignData)
+	r, s, v := sliteSignature(fd.SignData[0])
 	v = v.Mul(v,new(big.Int).SetUint64(27))
 	return recoverPlain(fs.Hash(fd), r, s, v, false)
 }

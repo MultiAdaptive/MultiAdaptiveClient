@@ -22,6 +22,7 @@ import (
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/contract"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/tool"
@@ -409,7 +410,11 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 						txData := tx.Data()
 						if len(txData) != 0 {
 							commitment := slice(txData)
-							commitCache.Set(tx.Hash().String(), commitment)
+							commitCache.Set(tx.Hash().String(),db.CommitDetail{
+								Commit:  commitment,
+								BlockNum: bc.NumberU64(),
+								TxHash: tx.Hash(),
+							} )
 						}
 					}
 				}
@@ -450,21 +455,37 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	if err != nil {
 		log.Error("AddBatchLogs--", "err", err.Error())
 	}
-
 	db.Commit(db.Tx)
+	contractAddr := common.HexToAddress(cs.chain.Config().L1Conf.CommitmentManager)
+	instance, _ := contract.NewCommitmentManager(contractAddr,cs.ethClient)
+
+	for _,logDetail := range logs{
+		daDetail,err := instance.ParseSendDACommitment(*logDetail)
+		if err != nil {
+			log.Error("ParseSendDACommitment--", "err", err.Error())
+		}
+		detailFinal,ok := commitCache.Get(logDetail.TxHash.Hex())
+		if ok {
+			detailFinal.Nonce = daDetail.Nonce.Uint64()
+			detailFinal.SigData = daDetail.Signatures
+		}
+		commitCache.Set(logDetail.TxHash.Hex(),detailFinal)
+	}
 
 	finalKeys := commitCache.Keys()
 	daDatas := make([]*types.DA, 0)
 	for _, txHash := range finalKeys {
-		commitment, flag := commitCache.Get(txHash)
+		daDetail, flag := commitCache.Get(txHash)
 		if flag {
 			//new commit get from memory pool
-			da, err := cs.handler.fileDataPool.GetDAByCommit(commitment)
+			da, err := cs.handler.fileDataPool.GetDAByCommit(daDetail.Commit)
 			if err != nil {
 				log.Info("processBlocks-----", "err", err.Error())
 			}
 			if err == nil && da != nil {
 				da.TxHash = common.HexToHash(txHash)
+				da.Nonce = daDetail.Nonce
+				da.SignData = daDetail.SigData
 				da.ReceiveAt = time.Now()
 				cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
 				daDatas = append(daDatas, da)

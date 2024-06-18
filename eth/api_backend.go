@@ -108,7 +108,9 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 		return nil, err
 	}else {
 		signData,err := b.eth.singer.Sign(fd)
-		fd.SignData = signData
+		addr := b.eth.singer.Sender(fd)
+		fd.SignData = [][]byte{signData}
+		fd.SignerAddr = []common.Address{addr}
 		fd.ReceiveAt = time.Now()
 		b.eth.fdPool.Add([]*types.DA{fd},true,false)
 		return signData,err

@@ -83,6 +83,7 @@ type Blob struct {
 	Data            string `json:"data"`
 	DAsKey          string `json:"das_key"`
 	SignData        string `json:"sign_data"`
+	Validator       []string `json:"validator"`
 	ParentStateHash string `json:"parent_state_hash"`
 	StateHash       string `json:"state_hash"`
 	BlockNum        int64  `json:"block_num"`
@@ -161,7 +162,9 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		blobs := make([]Blob, 0)
+
 		for _, da := range das {
+			//vds := make([]string,0)
 			blob := Blob{
 				Sender:          da.Sender,
 				Index:           da.Index,
@@ -172,6 +175,7 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 				Data:            da.Data,
 				DAsKey:          da.DAsKey,
 				SignData:        da.SignData,
+				//Validator:                    ,
 				ParentStateHash: da.ParentStateHash,
 				StateHash:       da.StateHash,
 				BlockNum:        da.BlockNum,

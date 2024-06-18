@@ -26,11 +26,13 @@ type NameSpace struct {
 type DA struct {
 	NameSpace
 	Sender     common.Address  	                  `json:"Sender"` //文件发送者
+	Nonce      uint64                               `json:"Nonce"` //全局
 	Index      uint64						`json:"Index"`//文件发送者类nonce 相同的index认为是重复交易
 	Length     uint64						`json:"Length"`//长度
 	Data       []byte						`json:"Data"`//上传的的文件
 	Commitment kzg.Digest                           `json:"Commitment"`
-	SignData   []byte                               `json:"SignData"`
+	SignData   [][]byte                              `json:"SignData"`
+	SignerAddr []common.Address                      `json:"SignerAddr"`
 	DasKey     [32]byte                              `json:"DasKey"`
 	TxHash     common.Hash                           `json:"TxHash"`
 	ReceiveAt  time.Time                            `json:"ReceiveAt"`
@@ -77,12 +79,12 @@ func (f *DA) WithSignature(signer FdSigner, sign []byte) (*DA, error) {
 	newSign = append(newSign, r.Bytes()...)
 	newSign = append(newSign, s.Bytes()...)
 	newSign = append(newSign, v.Bytes()...)
-	f.SignData = newSign
+	f.SignData = [][]byte{newSign}
 	return f, nil
 }
 
 func (f *DA) RawSignatureValues() (r, s, v *big.Int) {
-	sign := f.SignData
+	sign := f.SignData[0]
 	return decodeSignature(sign)
 }
 

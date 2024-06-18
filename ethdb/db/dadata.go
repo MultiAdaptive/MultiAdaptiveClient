@@ -26,7 +26,8 @@ type DA struct {
 	CommitmentHash  string
 	Data            string
 	DAsKey          string
-	SignData        string
+	SignData        []string
+	SignAddr        []string
 	ParentStateHash string //parent Commit Data Hash
 	StateHash       string //latest commit Data hash
 	BlockNum        int64
@@ -41,6 +42,16 @@ func AddCommitment(tx *gorm.DB, da *types.DA, parentHash common.Hash) error {
 	dataCollect = append(dataCollect, da.Sender.Bytes()...)
 	dataCollect = append(dataCollect, currentParentHash.Bytes()...)
 	stateHash := common.BytesToHash(dataCollect)
+
+	sigDatStr := make([]string, len(da.SignData))
+	for i,data :=range da.SignData {
+		sigDatStr[i] = common.Bytes2Hex(data)
+	}
+	addrStr := make([]string,len(da.SignerAddr))
+	for i,addr := range da.SignerAddr{
+		addrStr[i] = addr.Hex()
+	}
+
 	wd := DA{
 		Sender:          da.Sender.Hex(),
 		Index:           int64(da.Index),
@@ -48,7 +59,8 @@ func AddCommitment(tx *gorm.DB, da *types.DA, parentHash common.Hash) error {
 		TxHash:          da.TxHash.Hex(),
 		Commitment:      common.Bytes2Hex(da.Commitment.Marshal()),
 		Data:            common.Bytes2Hex(da.Data),
-		SignData:        common.Bytes2Hex(da.SignData),
+		SignData:        sigDatStr,
+		SignAddr:        addrStr,
 		ParentStateHash: currentParentHash.Hex(),
 		StateHash:       stateHash.Hex(),
 		ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
@@ -69,8 +81,16 @@ func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) e
 		dataCollect = append(dataCollect, da.Sender.Bytes()...)
 		dataCollect = append(dataCollect, currentParentHash.Bytes()...)
 		stateHash := common.BytesToHash(dataCollect)
-
 		commitData := da.Commitment.Marshal()
+		sigDatStr := make([]string, len(da.SignData))
+		for i,data :=range da.SignData {
+			sigDatStr[i] = common.Bytes2Hex(data)
+		}
+		addrStr := make([]string,len(da.SignerAddr))
+		for i,addr := range da.SignerAddr{
+			addrStr[i] = addr.Hex()
+		}
+
 		wda := DA{
 			Sender:          da.Sender.Hex(),
 			TxHash:          da.TxHash.String(),
@@ -79,7 +99,8 @@ func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) e
 			Data:            common.Bytes2Hex(da.Data),
 			Commitment:      common.Bytes2Hex(commitData),
 			CommitmentHash:  common.BytesToHash(commitData).Hex(),
-			SignData:        common.Bytes2Hex(da.SignData),
+			SignData:        sigDatStr,
+			SignAddr:        addrStr,
 			ParentStateHash: currentParentHash.String(),
 			StateHash:       stateHash.Hex(),
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
@@ -107,6 +128,14 @@ func AddBatchCommitment(tx *gorm.DB, das []*types.DA, parentHash common.Hash) er
 		dataCollect = append(dataCollect, currentParentHash.Bytes()...)
 		stateHash := common.BytesToHash(dataCollect)
 		commitData := da.Commitment.Marshal()
+		sigDatStr := make([]string, len(da.SignData))
+		for i,data :=range da.SignData {
+			sigDatStr[i] = common.Bytes2Hex(data)
+		}
+		addrStr := make([]string,len(da.SignerAddr))
+		for i,addr := range da.SignerAddr{
+			addrStr[i] = addr.Hex()
+		}
 		wda := DA{
 			Sender:          da.Sender.Hex(),
 			TxHash:          da.TxHash.String(),
@@ -115,7 +144,8 @@ func AddBatchCommitment(tx *gorm.DB, das []*types.DA, parentHash common.Hash) er
 			Data:            common.Bytes2Hex(da.Data),
 			Commitment:      common.Bytes2Hex(commitData),
 			CommitmentHash:  common.BytesToHash(commitData).Hex(),
-			SignData:        common.Bytes2Hex(da.SignData),
+			SignData:        sigDatStr,
+			SignAddr:        addrStr,
 			ParentStateHash: currentParentHash.String(),
 			StateHash:       stateHash.Hex(),
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
@@ -169,13 +199,24 @@ func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 		log.Debug("Error parsing time", "err", err)
 		return nil, err
 	}
+	signData := make([][]byte, len(da.SignData))
+	for i,sg := range da.SignData{
+		signData[i] = common.Hex2Bytes(sg)
+	}
+
+	signAdd := make([]common.Address,len(da.SignAddr))
+	for i,add := range da.SignAddr{
+		signAdd[i] = common.HexToAddress(add)
+	}
+
 	return &types.DA{
 		Sender:     common.HexToAddress(da.Sender),
 		Index:      uint64(da.Index),
 		Length:     uint64(da.Length),
 		Commitment: digest,
 		Data:       common.Hex2Bytes(da.Data),
-		SignData:   common.Hex2Bytes(da.SignData),
+		SignData:   signData,
+		SignerAddr: signAdd,
 		TxHash:     common.HexToHash(da.TxHash),
 		ReceiveAt:  parsedTime,
 	}, nil
@@ -215,13 +256,23 @@ func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
 		log.Debug("Error parsing time", "err", err)
 		return nil, err
 	}
+	signData := make([][]byte, len(da.SignData))
+	for i,sg := range da.SignData{
+		signData[i] = common.Hex2Bytes(sg)
+	}
+
+	signAdd := make([]common.Address,len(da.SignAddr))
+	for i,add := range da.SignAddr{
+		signAdd[i] = common.HexToAddress(add)
+	}
 	return &types.DA{
 		Sender:     common.HexToAddress(da.Sender),
 		Index:      uint64(da.Index),
 		Length:     uint64(da.Length),
 		Commitment: digest,
 		Data:       common.Hex2Bytes(da.Data),
-		SignData:   common.Hex2Bytes(da.SignData),
+		SignData:   signData,
+		SignerAddr: signAdd,
 		TxHash:     common.HexToHash(da.TxHash),
 		ReceiveAt:  parsedTime,
 	}, nil
@@ -262,13 +313,23 @@ func GetCommitmentByTxHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 		log.Debug("Error parsing time", "err", err)
 		return nil, err
 	}
+	signData := make([][]byte, len(da.SignData))
+	for i,sg := range da.SignData{
+		signData[i] = common.Hex2Bytes(sg)
+	}
+
+	signAdd := make([]common.Address,len(da.SignAddr))
+	for i,add := range da.SignAddr{
+		signAdd[i] = common.HexToAddress(add)
+	}
 	return &types.DA{
 		Sender:     common.HexToAddress(da.Sender),
 		Index:      uint64(da.Index),
 		Length:     uint64(da.Length),
 		Commitment: digest,
 		Data:       common.Hex2Bytes(da.Data),
-		SignData:   common.Hex2Bytes(da.SignData),
+		SignData:   signData,
+		SignerAddr: signAdd,
 		TxHash:     common.HexToHash(da.TxHash),
 		ReceiveAt:  parsedTime,
 	}, nil
