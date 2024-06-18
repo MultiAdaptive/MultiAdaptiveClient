@@ -2,21 +2,32 @@ package node
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"encoding/json"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/contract"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethdb/db"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 	"io"
+	"math/big"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
 // Database 实例
+var askUrl string
 var stateSqlDB *gorm.DB
+var privateKey *ecdsa.PrivateKey
+var l1Conf  *params.L1Config
+var chainId uint64
 
 type explorerServer struct {
 	log     log.Logger
@@ -32,6 +43,22 @@ func newExplorerServer(log log.Logger, datadir string) *explorerServer {
 		datadir: datadir,
 	}
 	return h
+}
+
+func (h *explorerServer) setPrivateKey(key *ecdsa.PrivateKey)  {
+	privateKey = key
+}
+
+func (h *explorerServer) SetAskUrl(url string) {
+	askUrl = url
+}
+
+func (h *explorerServer) SetL1Conf(conf *params.L1Config) {
+	l1Conf = conf
+}
+
+func (h *explorerServer) SetChainId(chainID uint64) {
+	chainId = chainID
 }
 
 func (h *explorerServer) setListenAddr(host string, port int) error {
@@ -82,12 +109,26 @@ type PageBlobs struct {
 	Pagination Pagination `json:"pagination"`
 }
 
+/**
+type NodeManagerNodeInfo struct {
+	Url             string
+	Name            string
+	StakedTokens    *big.Int
+	Location        string
+	MaxStorageSpace *big.Int
+	Addr            common.Address
+}
+**/
+
 // Node represents the node data structure
 type NodeInfo struct {
-	NodeString  string `json:"node_string"`
-	NodeAddress string `json:"node_address"`
-	Chain       string `json:"chain"`
-	NodeType    string `json:"node_type"`
+	Name        string  `json:"name"`
+	Url         string  `json:"url"`
+	NodeAddress string  `json:"node_address"`
+	StakedTokens uint64 `json:"staked_tokens"`
+	Chain       string  `json:"chain"`
+	Location    string  `json:"location"`
+	NodeType    string  `json:"node_type"`
 }
 
 type CommitmentCoordinate struct {
@@ -117,17 +158,6 @@ type Validator struct {
 	VotingPower           float64 `json:"voting_power"`
 }
 
-var nodes = []NodeInfo{
-	{"Node 1", "0xdjshfdcnvnk324fvf7v78vb89bu98vbv8b", "btc", "Broadcast"},
-	{"Node 2", "0xdjshfdcnvnk324fvf7v78vb89bu98vbv8b", "btc", "Storage"},
-	{"Node 3", "0xdjshfdcnvnk324fvf7v78vb89bu98vbv11", "eth", "Storage"},
-	{"Node 4", "0x123sdsfdcnvnk324fvf7v78v89buvbv812", "eth", "Broadcast"},
-}
-
-var validators = []Validator{
-	{"Validator1", "0x1234567890abcdef1234567890abcdef", "Active", 1000, 800, 0.1, 50},
-	{"Validator2", "0xabcdef1234567890abcdef1234567890", "Inactive", 500, 300, 0.2, 20},
-}
 
 // HomeDataHandler handles the GET /api/home-data endpoint
 func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
@@ -419,37 +449,77 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 func NodesHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		chain := r.URL.Query().Get("chain")
+		filteredNodes := make([]NodeInfo,0)
+		switch  {
+		case chain == "btc" || chain == "bitcoin":
+			//
+		case chain == "eth" || chain == "ethereum":
+			client,err := ethclient.Dial(askUrl)
+			if err != nil {
+				http.Error(w, "No Node Info found", http.StatusNotFound)
+				return
+			}
+			contractAddress := common.HexToAddress(l1Conf.NodeManagerProxy)
+			instance, err := contract.NewNodeManager(contractAddress, client)
+			if err != nil {
+				http.Error(w, "No Node Info found", http.StatusNotFound)
+				return
+			}
+			result := make([]contract.NodeManagerNodeInfo,0)
+			storResult := make([]contract.NodeManagerNodeInfo,0)
+			publicKey := privateKey.Public()
+			publicKeyECDSA, _ := publicKey.(*ecdsa.PublicKey)
+			// 创建一个签名交易的发送者
+			fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+			num,err := db.GetMaxIDBlockNum(stateSqlDB)
+			if err != nil {
+				http.Error(w, "No Node Info found", http.StatusNotFound)
+				return
+			}
+			ops := bind.CallOpts{
+				Pending: false,
+				From: fromAddress,
+				BlockNumber: new(big.Int).SetInt64(num),
+				Context: context.Background(),
+			}
+			nodes,err := instance.GetBroadcastingNodes(&ops)
+			if err != nil {
+				http.Error(w, "No Node Info found", http.StatusNotFound)
+				return
+			}
+			result = append(result,nodes...)
 
-		var filteredNodes []NodeInfo
-		if chain == "" {
-			filteredNodes = nodes
-		} else {
-			for _, node := range nodes {
-				if node.Chain == chain {
-					filteredNodes = append(filteredNodes, node)
+			strNodes,err := instance.GetstorageNodes(&ops)
+			storResult = append(storResult,strNodes...)
+			for _,node := range result {
+				filNode := NodeInfo{
+					Name: node.Name,
+					Url: node.Url,
+					NodeAddress: node.Addr.Hex(),
+					StakedTokens: node.StakedTokens.Uint64(),
+					Chain: "eth",
+					Location: node.Location,
+					NodeType: "BroadCast Node",
 				}
+				filteredNodes = append(filteredNodes,filNode)
+			}
+
+			for _,node := range storResult {
+				filNode := NodeInfo{
+					Name: node.Name,
+					Url: node.Url,
+					NodeAddress: node.Addr.Hex(),
+					StakedTokens: node.StakedTokens.Uint64(),
+					Chain: "eth",
+					Location: node.Location,
+					NodeType: "Storage Node",
+				}
+				filteredNodes = append(filteredNodes,filNode)
 			}
 		}
-
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(filteredNodes)
-	} else {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-	}
-}
-
-// ValidatorsHandler handles the GET /api/validators endpoint
-func ValidatorsHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		if len(validators) == 0 {
-			http.Error(w, "No validators found", http.StatusNotFound)
-			return
-		}
-		validator := validators // Assuming a single validator for simplicity
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(validator)
 	} else {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
@@ -474,7 +544,7 @@ func (h *explorerServer) start() error {
 	router.HandleFunc("/api/filter-blob", FilterBlobHandler).Methods("GET")
 	router.HandleFunc("/api/blob-detail", BlobDetailHandler).Methods("GET")
 	router.HandleFunc("/api/nodes", NodesHandler).Methods("GET")
-	router.HandleFunc("/api/validators", ValidatorsHandler).Methods("GET")
+	//router.HandleFunc("/api/validators", ValidatorsHandler).Methods("GET")
 
 	// Initialize the server.
 	h.server = &http.Server{

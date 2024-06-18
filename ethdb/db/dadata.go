@@ -17,6 +17,7 @@ const layout = "2006-01-02T15:04:05Z07:00"
 // 创建commitment表格模型
 type DA struct {
 	gorm.Model
+	Nonce           int64
 	Sender          string
 	Index           int64
 	Length          int64

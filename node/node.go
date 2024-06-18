@@ -155,6 +155,7 @@ func New(conf *Config) (*Node, error) {
 	node.wsAuth = newHTTPServer(node.log, rpc.DefaultHTTPTimeouts)
 	node.ipc = newIPCServer(node.log, conf.IPCEndpoint())
 	node.explorer = newExplorerServer(node.log, conf.DataDir)
+	node.explorer.setPrivateKey(node.config.NodeKey())
 
 	return node, nil
 }
@@ -200,6 +201,10 @@ func (n *Node) Start() error {
 		n.doClose(nil)
 	}
 	return err
+}
+
+func (n *Node) Explorer() *explorerServer {
+	return n.explorer
 }
 
 // Close stops the Node and releases resources acquired in

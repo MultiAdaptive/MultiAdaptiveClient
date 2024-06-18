@@ -196,9 +196,12 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		return nil, err
 	}
 	eth.sqlDb = stateSqlDB
+
 	if chainConfig := eth.blockchain.Config(); chainConfig.L1Conf != nil { // config.Genesis.Config.ChainID cannot be used because it's based on CLI flags only, thus default to mainnet L1
 		config.NetworkId = chainConfig.ChainID.Uint64() // optimism defaults eth network ID to chain ID
 		eth.networkID = config.NetworkId
+		stack.Explorer().SetL1Conf(chainConfig.L1Conf)
+		stack.Explorer().SetChainId(config.NetworkId)
 	}
 	log.Info("Initialising Ethereum protocol", "network", config.NetworkId, "dbversion", dbVer)
 
