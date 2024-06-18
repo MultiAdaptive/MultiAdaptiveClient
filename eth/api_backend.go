@@ -102,7 +102,8 @@ func (b *EthAPIBackend) GetTd(ctx context.Context) *big.Int {
 func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte) ([]byte,error) {
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
-	fd := types.NewDA(sender, index, length, digest, data, dasKey, proof, claimedValue)
+	lengthBig := new(big.Int).SetUint64(length)
+	fd := types.NewDA(sender, index, *lengthBig, digest, data, dasKey, proof, claimedValue)
 	flag,err := b.eth.singer.VerifyEth(fd)
 	if err != nil || flag == false {
 		return nil, err
