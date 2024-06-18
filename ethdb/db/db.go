@@ -65,7 +65,7 @@ func CleanUpDB(db *gorm.DB, num uint64) error {
 	db.Where("block_num > ?", num).Delete(&receipt)
 
 	var da DA
-	db.Where("block_num > ?", num).Delete(&da)
+	db.Where("f_block_num > ?", num).Delete(&da)
 
 	return nil
 }
