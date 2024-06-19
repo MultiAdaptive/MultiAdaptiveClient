@@ -16,12 +16,12 @@ type BaseTransaction struct {
 	LockTime        uint32  `gorm:"column:f_locktime;not null;comment:交易锁定时间" json:"locktime"`                                                             //交易锁定时间
 	Vin             []byte  `gorm:"column:f_vin;not null;comment:交易输入" json:"vin"`                                                                         //交易输入
 	Vout            []byte  `gorm:"column:f_vout;not null;comment:交易输出" json:"vout"`                                                                       //交易输出
-	BlockHeight     int64   `gorm:"column:f_block_height;not null;comment:区块高度;index:idx_transaction_block_height" json:"block_height"`                    // 区块高度
-	BlockHash       string  `gorm:"column:f_block_hash;not null;comment:区块哈希;index:idx_transaction_block_hash" json:"block_hash"`                          //区块哈希
+	BlockHeight     int64   `gorm:"column:f_block_height;not null;default:0;comment:区块高度;index:idx_transaction_block_height" json:"block_height"`          // 区块高度
+	BlockHash       string  `gorm:"column:f_block_hash;not null;default:'';comment:区块哈希;index:idx_transaction_block_hash" json:"block_hash"`               //区块哈希
 	Confirmations   uint64  `gorm:"column:f_confirmations;not null;comment:确认区块数" json:"confirmations"`                                                    //确认区块数
 	TransactionTime int64   `gorm:"column:f_transaction_time;not null;comment:交易时间" json:"transaction_time"`                                               //交易时间
 	BlockTime       int64   `gorm:"column:f_block_time;not null;comment:区块时间" json:"block_time"`                                                           //区块时间
-	Fee             float64 `gorm:"column:f_fee;not null;comment:交易费用" json:"fee"`                                                                         //交易费用
+	Fee             float64 `gorm:"column:f_fee;not null;default:0;comment:交易费用" json:"fee"`                                                               //交易费用
 	CreateAt        int64   `gorm:"column:f_create_at;not null;comment:创建时间" json:"create_at"`                                                             // 创建时间
 }
 
