@@ -76,6 +76,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type BlobBrief struct {
+	BlobID     int64    `json:"blob_id"`
 	Commitment string   `json:"commitment"`
 	BlockNum   int64    `json:"block_num"`
 	ReceiveAt  string   `json:"receive_at"`
@@ -86,20 +87,20 @@ type BlobBrief struct {
 
 // Blob represents the blob data structure
 type Blob struct {
-	Sender          string `json:"sender"`
-	Index           int64  `json:"index"`
-	Length          int64  `json:"length"`
-	TxHash          string `json:"tx_hash"`
-	Commitment      string `json:"commitment"`
-	CommitmentHash  string `json:"commitment_hash"`
-	Data            string `json:"data"`
-	DAsKey          string `json:"das_key"`
-	SignData        string `json:"sign_data"`
+	Sender          string   `json:"sender"`
+	Index           int64    `json:"index"`
+	Length          int64    `json:"length"`
+	TxHash          string   `json:"tx_hash"`
+	Commitment      string   `json:"commitment"`
+	CommitmentHash  string   `json:"commitment_hash"`
+	Data            string   `json:"data"`
+	DAsKey          string   `json:"das_key"`
+	SignData        string   `json:"sign_data"`
 	Validator       []string `json:"validator"`
-	ParentStateHash string `json:"parent_state_hash"`
-	StateHash       string `json:"state_hash"`
-	BlockNum        int64  `json:"block_num"`
-	ReceiveAt       string `json:"receive_at"`
+	ParentStateHash string   `json:"parent_state_hash"`
+	StateHash       string   `json:"state_hash"`
+	BlockNum        int64    `json:"block_num"`
+	ReceiveAt       string   `json:"receive_at"`
 }
 
 type Pagination struct {
@@ -169,7 +170,7 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 		var das []db.DA
 		gormdb = stateSqlDB.
 			Model(&db.DA{}).
-			Select("f_tx_hash, f_commitment, f_commitment_hash, f_block_num, f_length, f_receive_at").
+			Select("f_nonce, f_tx_hash, f_commitment, f_commitment_hash, f_block_num, f_length, f_sign_address, f_receive_at").
 			Order("f_receive_at desc").
 			Limit(5).
 			Find(&das)
@@ -205,11 +206,12 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			blob := BlobBrief{
+				BlobID:     da.Nonce,
 				Commitment: da.Commitment,
 				BlockNum:   da.BlockNum,
-				Length:     int64(da.Length),
+				Length:     da.Length,
 				ReceiveAt:  da.ReceiveAt,
-				Validators: []string{},
+				Validators: strings.Split(da.SignAddr, SEPARATOR_COMMA),
 				Fee:        cast.ToString(fee),
 			}
 			blobs = append(blobs, blob)
