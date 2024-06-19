@@ -333,7 +333,10 @@ func (cs *chainSyncer) doEthereumSync() error {
 	} else {
 		log.Info("chainSyncer---start---", "currentHeader", currentHeader)
 		//当前数据库有数据需要检查是否回滚
-		latestBlock, _ := db.GetBlockByNum(cs.db, currentHeader)
+		latestBlock, err := db.GetBlockByNum(cs.db, currentHeader)
+		if err != nil {
+			return err
+		}
 		flag, org := cs.checkReorg(latestBlock)
 		switch flag {
 		case true:
