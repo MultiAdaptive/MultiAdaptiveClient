@@ -8,6 +8,7 @@ package types
 import (
 	"crypto/ecdsa"
 	"encoding/binary"
+	"github.com/ethereum/go-ethereum/log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -156,6 +157,10 @@ func (s EIP155FdSigner) Sender(fd *DA) ([]common.Address, []error) {
 		R, S, V := sliteSignature(signData)
 		addr,err := recoverPlain(s.Hash(fd), R, S, V, true)
 		errors[i] = err
+		if err != nil {
+			log.Info("Sender-----","err",err.Error())
+		}
+		log.Info("Sender-----","sign",common.Bytes2Hex(signData),"addr",addr.Hex())
 		recoverAddr[i] = addr
 	}
 	return recoverAddr,errors
