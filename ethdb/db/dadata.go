@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"gorm.io/gorm"
-	"math/big"
 	"strings"
 	"time"
 )
@@ -24,7 +23,7 @@ type DA struct {
     Nonce           int64  `gorm:"column:f_nonce;not null;comment:发送号" json:"nonce"`                                                             // 发送号
     Sender          string `gorm:"column:f_sender;not null;comment:发送者;index:idx_das_sender" json:"sender"`                                      // 发送者
     Index           int64  `gorm:"column:f_index;not null;comment:序号;index:idx_das_index" json:"index"`                                          // 序号
-    Length          uint64  `gorm:"column:f_length;not null;comment:长度" json:"length"`                                                            // 长度
+    Length          int64  `gorm:"column:f_length;not null;comment:长度" json:"length"`                                                            // 长度
     TxHash          string `gorm:"column:f_tx_hash;not null;comment:交易哈希;uniqueIndex:uniq_das_tx_hash" json:"tx_hash"`                           // 交易哈希
     Commitment      string `gorm:"column:f_commitment;not null;comment:承诺;index:idx_das_commitment" json:"commitment"`                           // 承诺
     CommitmentHash  string `gorm:"column:f_commitment_hash;not null;comment:承诺哈希;index:idx_das_commitment_hash" json:"commitment_hash"`          // 承诺哈希
@@ -34,7 +33,7 @@ type DA struct {
     SignAddr        string `gorm:"column:f_sign_address;not null;comment:签名地址" json:"sign_addr"`
     ParentStateHash string `gorm:"column:f_parent_state_hash;not null;comment:父提交数据哈希;index:idx_das_parent_state_hash" json:"parent_state_hash"` // 父提交数据哈希
     StateHash       string `gorm:"column:f_state_hash;not null;comment:最新数据哈希;index:idx_das_state_hash" json:"state_hash"`                       // 最新数据哈希
-    BlockNum        big.Int  `gorm:"column:f_block_num;not null;comment:区块号;index:idx_das_block_num" json:"block_num"`                             // 区块号
+    BlockNum        int64  `gorm:"column:f_block_num;not null;comment:区块号;index:idx_das_block_num" json:"block_num"`                             // 区块号
     ReceiveAt       string `gorm:"column:f_receive_at;not null;comment:接收时间" json:"receive_at"`                                                  // 接收时间
     CreateAt        int64  `gorm:"column:f_create_at;not null;comment:创建时间" json:"create_at"`                                                    // 创建时间
 }
@@ -64,9 +63,9 @@ func AddCommitment(tx *gorm.DB, da *types.DA, parentHash common.Hash) error {
 		Sender:          da.Sender.Hex(),
 		Nonce:           int64(da.Nonce),
 		Index:           int64(da.Index),
-		Length:          da.Length,
+		Length:          int64(da.Length),
 		TxHash:          da.TxHash.Hex(),
-		BlockNum:        da.BlockNum,
+		BlockNum:        int64(da.BlockNum),
 		Commitment:      common.Bytes2Hex(da.Commitment.Marshal()),
 		Data:            common.Bytes2Hex(da.Data),
 		SignData:        result,
@@ -111,8 +110,8 @@ func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) e
 			Nonce:           int64(da.Nonce),
 			TxHash:          da.TxHash.String(),
 			Index:           int64(da.Index),
-			Length:          da.Length,
-			BlockNum:        da.BlockNum,
+			Length:         int64(da.Length),
+			BlockNum:        int64(da.BlockNum),
 			Data:            common.Bytes2Hex(da.Data),
 			Commitment:      common.Bytes2Hex(commitData),
 			CommitmentHash:  common.BytesToHash(commitData).Hex(),
@@ -160,13 +159,13 @@ func AddBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) er
 			Nonce:           int64(da.Nonce),
 			TxHash:          da.TxHash.String(),
 			Index:           int64(da.Index),
-			Length:          da.Length,
+			Length:          int64(da.Length),
 			Data:            common.Bytes2Hex(da.Data),
 			Commitment:      common.Bytes2Hex(commitData),
 			CommitmentHash:  common.BytesToHash(commitData).Hex(),
 			SignData:        result,
 			SignAddr:        addrRes,
-			BlockNum:        da.BlockNum,
+			BlockNum:        int64(da.BlockNum),
 			ParentStateHash: currentParentHash.String(),
 			StateHash:       stateHash.Hex(),
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
@@ -234,13 +233,13 @@ func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 		Sender:     common.HexToAddress(da.Sender),
 		Nonce:      uint64(da.Nonce),
 		Index:      uint64(da.Index),
-		Length:     da.Length,
+		Length:     uint64(da.Length),
 		Commitment: digest,
 		Data:       common.Hex2Bytes(da.Data),
 		SignData:   signData,
 		SignerAddr: signAdd,
 		TxHash:     common.HexToHash(da.TxHash),
-		BlockNum:   da.BlockNum,
+		BlockNum:   uint64(da.BlockNum),
 		ReceiveAt:  parsedTime,
 	}, nil
 }
@@ -292,12 +291,12 @@ func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
 		Sender:     common.HexToAddress(da.Sender),
 		Nonce:      uint64(da.Nonce),
 		Index:      uint64(da.Index),
-		Length:     da.Length,
+		Length:     uint64(da.Length),
 		Commitment: digest,
 		Data:       common.Hex2Bytes(da.Data),
 		SignData:   signData,
 		SignerAddr: signAdd,
-		BlockNum:   da.BlockNum,
+		BlockNum:   uint64(da.BlockNum),
 		TxHash:     common.HexToHash(da.TxHash),
 		ReceiveAt:  parsedTime,
 	}, nil
@@ -351,10 +350,10 @@ func GetCommitmentByTxHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 		Sender:     common.HexToAddress(da.Sender),
 		Nonce:      uint64(da.Nonce),
 		Index:      uint64(da.Index),
-		Length:     da.Length,
+		Length:     uint64(da.Length),
 		Commitment: digest,
 		Data:       common.Hex2Bytes(da.Data),
-		BlockNum:   da.BlockNum,
+		BlockNum:   uint64(da.BlockNum),
 		SignData:   signData,
 		SignerAddr: signAdd,
 		TxHash:     common.HexToHash(da.TxHash),

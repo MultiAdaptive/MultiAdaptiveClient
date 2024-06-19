@@ -206,7 +206,7 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 
 			blob := BlobBrief{
 				Commitment: da.Commitment,
-				BlockNum:   da.BlockNum.Int64(),
+				BlockNum:   da.BlockNum,
 				Length:     int64(da.Length),
 				ReceiveAt:  da.ReceiveAt,
 				Validators: []string{},
@@ -245,7 +245,7 @@ func CreateBlobHandler(w http.ResponseWriter, r *http.Request) {
 		da := db.DA{
 			Sender:          newBlob.Sender,
 			Index:           newBlob.Index,
-			Length:          uint64(newBlob.Length),
+			Length:          int64(newBlob.Length),
 			TxHash:          newBlob.TxHash,
 			Commitment:      newBlob.Commitment,
 			CommitmentHash:  newBlob.CommitmentHash,
@@ -254,7 +254,7 @@ func CreateBlobHandler(w http.ResponseWriter, r *http.Request) {
 			SignData:        newBlob.SignData,
 			ParentStateHash: newBlob.ParentStateHash,
 			StateHash:       newBlob.StateHash,
-			BlockNum:        *new(big.Int).SetInt64(newBlob.BlockNum),
+			BlockNum:        newBlob.BlockNum,
 			ReceiveAt:       newBlob.ReceiveAt,
 		}
 
@@ -303,7 +303,7 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 		case "blocknum":
 			num, _ := strconv.Atoi(query)
 			gormdb = stateSqlDB.
-				Where(db.DA{BlockNum: *new(big.Int).SetInt64(int64(num))}).
+				Where(db.DA{BlockNum: int64(num)}).
 				Find(&das)
 		default:
 			http.Error(w, "Invalid category parameter", http.StatusBadRequest)
@@ -327,7 +327,7 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 				SignData:        da.SignData,
 				ParentStateHash: da.ParentStateHash,
 				StateHash:       da.StateHash,
-				BlockNum:        da.BlockNum.Int64(),
+				BlockNum:        da.BlockNum,
 				ReceiveAt:       da.ReceiveAt,
 			}
 			blobs = append(blobs, blob)
@@ -384,7 +384,7 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 				SignData:        da.SignData,
 				ParentStateHash: da.ParentStateHash,
 				StateHash:       da.StateHash,
-				BlockNum:        da.BlockNum.Int64(),
+				BlockNum:        da.BlockNum,
 				ReceiveAt:       da.ReceiveAt,
 			}
 			filteredBlobs = append(filteredBlobs, blob)
@@ -453,7 +453,7 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 
 		foundBlob := BlobDetail{
 			Commitment:   da.Commitment,
-			BlockNum:     da.BlockNum.Int64(),
+			BlockNum:     da.BlockNum,
 			Timestamp:    da.ReceiveAt,
 			Validator:    da.SignData,
 			Size:         int64(da.Length),
