@@ -8,6 +8,7 @@ type CommitDetail struct {
 	Commit   []byte
 	TxHash   common.Hash
 	SigData  [][]byte
+	SignAddress []common.Address
 }
 
 // OrderedMap 代表有序的 Map 结构

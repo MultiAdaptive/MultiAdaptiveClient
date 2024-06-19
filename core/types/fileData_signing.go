@@ -92,10 +92,10 @@ func SignFd(fd *DA, s FdSigner, prv *ecdsa.PrivateKey) (*DA, error) {
 // elliptic curve and an error if it failed deriving or upon an incorrect
 // signature.
 //
-func FdSender(signer FdSigner, fd *DA) (common.Address, error) {
+func FdSender(signer FdSigner, fd *DA) ([]common.Address, []error) {
 	addr,err := signer.Sender(fd)
 	if err != nil {
-		return common.Address{}, err
+		return []common.Address{}, err
 	}
 	return addr, nil
 }
@@ -108,7 +108,7 @@ func FdSender(signer FdSigner, fd *DA) (common.Address, error) {
 // new protocol rules.
 type FdSigner interface {
 	// Sender returns the sender address of the fileData.
-	Sender(fd *DA) (common.Address, error)
+	Sender(fd *DA) ([]common.Address, []error)
 
 	// SignatureValues returns the raw R, S, V values corresponding to the
 	// given signature.
@@ -149,11 +149,16 @@ func (s EIP155FdSigner) Equal(s2 FdSigner) bool {
 	return ok && eip155.chainId.Cmp(s.chainId) == 0
 }
 
-func (s EIP155FdSigner) Sender(fd *DA) (common.Address, error) {
-	R, S, V := sliteSignature(fd.SignData[0])
-	// V = new(big.Int).Sub(V, s.chainIdMul)
-	// V.Sub(V, big8)
-	return recoverPlain(s.Hash(fd), R, S, V, true)
+func (s EIP155FdSigner) Sender(fd *DA) ([]common.Address, []error) {
+	recoverAddr := make([]common.Address,len(fd.SignData))
+	errors := make([]error,len(fd.SignData))
+	for i,signData := range fd.SignData{
+		R, S, V := sliteSignature(signData)
+		addr,err := recoverPlain(s.Hash(fd), R, S, V, true)
+		errors[i] = err
+		recoverAddr[i] = addr
+	}
+	return recoverAddr,errors
 }
 
 // SignatureValues returns signature values. This signature
@@ -215,10 +220,17 @@ func (hs HomesteadFdSigner) SignatureValues(fd *DA, sig []byte) (r, s, v *big.In
 	return hs.FrontierFdSigner.SignatureValues(fd, sig)
 }
 
-func (hs HomesteadFdSigner) Sender(fd *DA) (common.Address, error) {
-	r, s ,v := fd.RawSignatureValues()
-	v.Sub(v,new(big.Int).SetUint64(27))
-	return recoverPlain(hs.Hash(fd), r, s, v, true)
+func (hs HomesteadFdSigner) Sender(fd *DA) ([]common.Address, []error) {
+	recoverAddr := make([]common.Address,len(fd.SignData))
+	errors := make([]error,len(fd.SignData))
+	for i,_ := range fd.SignData{
+		r, s ,v := fd.RawSignatureValues(uint64(i))
+		v.Sub(v,new(big.Int).SetUint64(27))
+		addr,err := recoverPlain(hs.Hash(fd), r, s, v, true)
+		errors[i] = err
+		recoverAddr[i] = addr
+	}
+	return recoverAddr,errors
 }
 
 
@@ -235,10 +247,17 @@ func (s FrontierFdSigner) Equal(s2 FdSigner) bool {
 	return ok
 }
 
-func (fs FrontierFdSigner) Sender(fd *DA) (common.Address, error) {
-	r, s, v := sliteSignature(fd.SignData[0])
-	v = v.Mul(v,new(big.Int).SetUint64(27))
-	return recoverPlain(fs.Hash(fd), r, s, v, false)
+func (fs FrontierFdSigner) Sender(fd *DA) ([]common.Address, []error) {
+	recoverAddr := make([]common.Address,len(fd.SignData))
+	errors := make([]error,len(fd.SignData))
+	for i,signData := range fd.SignData{
+		r, s, v := sliteSignature(signData)
+		v = v.Mul(v,new(big.Int).SetUint64(27))
+		addr,err := recoverPlain(fs.Hash(fd), r, s, v, false)
+		errors[i] = err
+		recoverAddr[i] = addr
+	}
+	return recoverAddr,errors
 }
 
 // SignatureValues returns signature values. This signature

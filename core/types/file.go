@@ -84,8 +84,8 @@ func (f *DA) WithSignature(signer FdSigner, sign []byte) (*DA, error) {
 	return f, nil
 }
 
-func (f *DA) RawSignatureValues() (r, s, v *big.Int) {
-	sign := f.SignData[0]
+func (f *DA) RawSignatureValues(index uint64) (r, s, v *big.Int) {
+	sign := f.SignData[index]
 	return decodeSignature(sign)
 }
 

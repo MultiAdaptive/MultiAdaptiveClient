@@ -468,6 +468,8 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		if ok {
 			detailFinal.Nonce = daDetail.Nonce.Uint64()
 			detailFinal.SigData = daDetail.Signatures
+			addrList,_ := cs.handler.fileDataPool.GetSender(daDetail.Signatures)
+			detailFinal.SignAddress = addrList
 		}
 		commitCache.Set(logDetail.TxHash.Hex(),detailFinal)
 	}
@@ -486,6 +488,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 				da.TxHash = common.HexToHash(txHash)
 				da.Nonce = daDetail.Nonce
 				da.SignData = daDetail.SigData
+				da.SignerAddr = daDetail.SignAddress
 				da.ReceiveAt = time.Now()
 				cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
 				daDatas = append(daDatas, da)

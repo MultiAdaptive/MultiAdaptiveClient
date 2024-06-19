@@ -72,6 +72,8 @@ type fileDataPool interface {
 
 	SendNewFileDataEvent(fileData []*types.DA)
 
+	GetSender(signData [][]byte) ([]common.Address,[]error)
+
 	RemoveFileData(das []*types.DA)
 
 	// Add should add the given transactions to the pool.

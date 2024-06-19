@@ -1,11 +1,9 @@
 package filedatapool
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
-	kzgSDK "github.com/domicon-labs/kzg-sdk"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -16,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"gorm.io/gorm"
 	"os"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -290,6 +287,13 @@ func (fp *FilePool) Has(hash common.Hash) bool{
 	return fd != nil
 }
 
+func (fp *FilePool) GetSender(signData [][]byte) ([]common.Address,[]error) {
+	da := new(types.DA)
+	da.SignData = signData
+	recoverAddr,err := types.FdSender(fp.signer,da)
+	return recoverAddr,err
+}
+
 func (fp *FilePool) GetDAByCommit(commit []byte) (*types.DA,error){
 	fp.mu.RLock()
 	defer fp.mu.RUnlock()
@@ -557,43 +561,6 @@ func (fp *FilePool) journalFd(txHash common.Hash, fd *types.DA) {
 	if err := fp.journal.insert(fd); err != nil {
 		log.Warn("Failed to journal local fileData", "err", err)
 	}
-}
-
-// validateFileDataSignature checks whether a fileData is valid according to the consensus
-// rules, but does not check state-dependent validation such as sufficient balance.
-// This check is meant as an early check which only needs to be performed once,
-// and does not require the pool mutex to be held.
-func (fp *FilePool) validateFileDataSignature(fd *types.DA, local bool) error {
-	if fd.Length.Uint64() != uint64(len(fd.Data)) {
-		return errors.New("fileData data length not match legth")
-	}
-	if len(fd.SignData) == 0  {
-		return errors.New("fileData signature is empty")
-	}
-	recoverAddr,err := types.FdSender(fp.signer,fd)
-	if err != nil || bytes.Equal(recoverAddr.Bytes(),fd.Sender.Bytes()) {
-		log.Info("validateFileDataSignature----","recover",recoverAddr.Hex(),"sender",fd.Sender.Hex())
-		return errors.New("signature is invalid")
-	}
-	
-	currentPath, _ := os.Getwd()
-	path := strings.Split(currentPath,"/build")[0] + "/srs"
-	domiconSDK,err := kzgSDK.InitDomiconSdk(dSrsSize,path)
-	if err != nil {
-		return err
-	}
-
-	digst,err := domiconSDK.GenerateDataCommit(fd.Data)
-	if err != nil {
-		return errors.New("GenerateDataCommit failed")
-	}
-	x := digst.X.Marshal()
-	y := digst.Y.Marshal()
-
-	if (bytes.Compare(x,fd.Commitment.X.Marshal()) == 0) && (bytes.Compare(y,fd.Commitment.Y.Marshal()) == 0){
-		return nil
-	}
-	return errors.New("commit is not match with da")
 }
 
 // Close terminates the fileData pool.
