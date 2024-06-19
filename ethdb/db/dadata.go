@@ -24,7 +24,7 @@ type DA struct {
     Nonce           int64  `gorm:"column:f_nonce;not null;comment:发送号" json:"nonce"`                                                             // 发送号
     Sender          string `gorm:"column:f_sender;not null;comment:发送者;index:idx_das_sender" json:"sender"`                                      // 发送者
     Index           int64  `gorm:"column:f_index;not null;comment:序号;index:idx_das_index" json:"index"`                                          // 序号
-    Length          big.Int  `gorm:"column:f_length;not null;comment:长度" json:"length"`                                                            // 长度
+    Length          uint64  `gorm:"column:f_length;not null;comment:长度" json:"length"`                                                            // 长度
     TxHash          string `gorm:"column:f_tx_hash;not null;comment:交易哈希;uniqueIndex:uniq_das_tx_hash" json:"tx_hash"`                           // 交易哈希
     Commitment      string `gorm:"column:f_commitment;not null;comment:承诺;index:idx_das_commitment" json:"commitment"`                           // 承诺
     CommitmentHash  string `gorm:"column:f_commitment_hash;not null;comment:承诺哈希;index:idx_das_commitment_hash" json:"commitment_hash"`          // 承诺哈希

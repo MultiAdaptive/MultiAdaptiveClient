@@ -207,7 +207,7 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 			blob := BlobBrief{
 				Commitment: da.Commitment,
 				BlockNum:   da.BlockNum.Int64(),
-				Length:     da.Length.Int64(),
+				Length:     int64(da.Length),
 				ReceiveAt:  da.ReceiveAt,
 				Validators: []string{},
 				Fee:        cast.ToString(fee),
@@ -245,7 +245,7 @@ func CreateBlobHandler(w http.ResponseWriter, r *http.Request) {
 		da := db.DA{
 			Sender:          newBlob.Sender,
 			Index:           newBlob.Index,
-			Length:          *new(big.Int).SetInt64(newBlob.Length),
+			Length:          uint64(newBlob.Length),
 			TxHash:          newBlob.TxHash,
 			Commitment:      newBlob.Commitment,
 			CommitmentHash:  newBlob.CommitmentHash,
@@ -318,7 +318,7 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 			blob := Blob{
 				Sender:          da.Sender,
 				Index:           da.Index,
-				Length:          da.Length.Int64(),
+				Length:          int64(da.Length),
 				TxHash:          da.TxHash,
 				Commitment:      da.Commitment,
 				CommitmentHash:  da.CommitmentHash,
@@ -375,7 +375,7 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 			blob := Blob{
 				Sender:          da.Sender,
 				Index:           da.Index,
-				Length:          da.Length.Int64(),
+				Length:          int64(da.Length),
 				TxHash:          da.TxHash,
 				Commitment:      da.Commitment,
 				CommitmentHash:  da.CommitmentHash,
@@ -456,7 +456,7 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 			BlockNum:     da.BlockNum.Int64(),
 			Timestamp:    da.ReceiveAt,
 			Validator:    da.SignData,
-			Size:         da.Length.Int64(),
+			Size:         int64(da.Length),
 			StorageState: da.StateHash,
 			CommitmentXY: CommitmentCoordinate{
 				X: digest.X.String(),

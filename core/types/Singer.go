@@ -41,7 +41,7 @@ func (s *SingerTool) Sender(da *DA) ([]common.Address,[]error) {
 }
 
 func (s *SingerTool) VerifyEth(da *DA) (bool,error) {
-	if da.Length.Uint64() != uint64(len(da.Data)) {
+	if da.Length != uint64(len(da.Data)) {
 		return false,errors.New("da data length is not match")
 	}
 	currentPath, _ := os.Getwd()

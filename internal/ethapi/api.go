@@ -642,7 +642,7 @@ func NewRPCDA(fd *types.DA) *RPCDA {
 	}
 	result := &RPCDA{
 		Sender:     fd.Sender,
-		Length:     hexutil.Uint64(fd.Length.Uint64()),
+		Length:     hexutil.Uint64(fd.Length),
 		Index:      hexutil.Uint64(fd.Index),
 		Commitment: hexutil.Bytes(comitData),
 		Data:       hexutil.Bytes(fd.Data),
