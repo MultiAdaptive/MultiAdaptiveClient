@@ -413,7 +413,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 						txData := tx.Data()
 						if len(txData) != 0 {
 							commitment := slice(txData)
-							commitCache.Set(tx.Hash().String(),db.CommitDetail{
+							commitCache.Set(tx.Hash().String(),&db.CommitDetail{
 								Commit:  commitment,
 								BlockNum: bc.NumberU64(),
 								TxHash: tx.Hash(),
@@ -468,7 +468,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			log.Error("ParseSendDACommitment--", "err", err.Error())
 		}
 		detailFinal,ok := commitCache.Get(logDetail.TxHash.Hex())
-		if ok {
+		if ok&&err==nil {
 			detailFinal.Nonce = daDetail.Nonce.Uint64()
 			detailFinal.SigData = daDetail.Signatures
 			detailFinal.BlockNum = logDetail.BlockNumber

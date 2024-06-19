@@ -95,10 +95,7 @@ func SignFd(fd *DA, s FdSigner, prv *ecdsa.PrivateKey) (*DA, error) {
 //
 func FdSender(signer FdSigner, fd *DA) ([]common.Address, []error) {
 	addr,err := signer.Sender(fd)
-	if err != nil {
-		return []common.Address{}, err
-	}
-	return addr, nil
+	return addr, err
 }
 
 // FdSigner encapsulates fileData signature handling. The name of this type is slightly
@@ -160,7 +157,6 @@ func (s EIP155FdSigner) Sender(fd *DA) ([]common.Address, []error) {
 		if err != nil {
 			log.Info("Sender-----","err",err.Error())
 		}
-		log.Info("Sender-----","sign",common.Bytes2Hex(signData),"addr",addr.Hex())
 		recoverAddr[i] = addr
 	}
 	return recoverAddr,errors

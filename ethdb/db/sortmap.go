@@ -14,19 +14,19 @@ type CommitDetail struct {
 // OrderedMap 代表有序的 Map 结构
 type OrderedMap struct {
 	keys   []string
-	values map[string]CommitDetail
+	values map[string]*CommitDetail
 }
 
 // NewOrderedMap 创建一个新的有序 Map
 func NewOrderedMap() *OrderedMap {
 	return &OrderedMap{
 		keys:   make([]string, 0),
-		values: make(map[string]CommitDetail),
+		values: make(map[string]*CommitDetail),
 	}
 }
 
 // Set 设置键值对
-func (om *OrderedMap) Set(key string, cbn CommitDetail) {
+func (om *OrderedMap) Set(key string, cbn *CommitDetail) {
 	_, exists := om.values[key]
 	if !exists {
 		om.keys = append(om.keys, key)
@@ -35,7 +35,7 @@ func (om *OrderedMap) Set(key string, cbn CommitDetail) {
 }
 
 // Get 获取键对应的值
-func (om *OrderedMap) Get(key string) (CommitDetail, bool) {
+func (om *OrderedMap) Get(key string) (*CommitDetail, bool) {
 	value, exists := om.values[key]
 	return value, exists
 }
@@ -46,8 +46,8 @@ func (om *OrderedMap) Keys() []string {
 }
 
 // Values 返回值的切片
-func (om *OrderedMap) Values() []CommitDetail{
-	values := make([]CommitDetail, len(om.keys))
+func (om *OrderedMap) Values() []*CommitDetail{
+	values := make([]*CommitDetail, len(om.keys))
 	for i, key := range om.keys {
 		values[i] = om.values[key]
 	}
