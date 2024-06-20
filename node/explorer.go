@@ -78,6 +78,8 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 type BlobBrief struct {
 	BlobID     int64    `json:"blob_id"`
 	Commitment string   `json:"commitment"`
+	CommitmentHash string `json:"commitment_hash"`
+	TxHash     string    `json:"tx_hash"`
 	BlockNum   int64    `json:"block_num"`
 	ReceiveAt  string   `json:"receive_at"`
 	Length     int64    `json:"length"`
@@ -143,6 +145,7 @@ type CommitmentCoordinate struct {
 
 type BlobDetail struct {
 	Commitment   string               `json:"Commitment"`
+	TxHash       string                `json:"TxHash"`
 	BlockNum     int64                `json:"BlockNum"`
 	Timestamp    string               `json:"Timestamp"`
 	Validator    string               `json:"Validator"`
@@ -208,6 +211,8 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 			blob := BlobBrief{
 				BlobID:     da.Nonce,
 				Commitment: da.Commitment,
+				CommitmentHash: da.CommitmentHash,
+				TxHash:     da.TxHash,
 				BlockNum:   da.BlockNum,
 				Length:     da.Length,
 				ReceiveAt:  da.ReceiveAt,
@@ -455,6 +460,7 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 
 		foundBlob := BlobDetail{
 			Commitment:   da.Commitment,
+			TxHash:          da.TxHash,
 			BlockNum:     da.BlockNum,
 			Timestamp:    da.ReceiveAt,
 			Validator:    da.SignData,
