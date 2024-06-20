@@ -399,6 +399,7 @@ func (_CommitmentManager *CommitmentManagerSession) GetNameSpaceCommitment(_name
 	return _CommitmentManager.Contract.GetNameSpaceCommitment(&_CommitmentManager.CallOpts, _nameSpaceId, _index)
 }
 
+
 // GetNameSpaceCommitment is a free data retrieval call binding the contract method 0xcfa38f21.
 //
 // Solidity: function getNameSpaceCommitment(uint256 _nameSpaceId, uint256 _index) view returns((uint256,uint256))

@@ -417,6 +417,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 								Commit:  commitment,
 								BlockNum: bc.NumberU64(),
 								TxHash: tx.Hash(),
+								Time:  time.Unix(0, int64(bc.Time())),
 							} )
 						}
 					}
@@ -496,6 +497,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			if err == nil && da != nil {
 				da.TxHash = common.HexToHash(txHash)
 				da.Nonce = daDetail.Nonce
+				da.ReceiveAt = daDetail.Time
 				da.SignData = daDetail.SigData
 				da.BlockNum = daDetail.BlockNum
 				da.SignerAddr = daDetail.SignAddress
