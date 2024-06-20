@@ -1,31 +1,41 @@
 package db
 
+import "github.com/ethereum/go-ethereum/common"
+
+type CommitDetail struct {
+	Nonce    uint64
+	BlockNum uint64
+	Commit   []byte
+	TxHash   common.Hash
+	SigData  [][]byte
+	SignAddress []common.Address
+}
 
 // OrderedMap 代表有序的 Map 结构
 type OrderedMap struct {
 	keys   []string
-	values map[string][]byte
+	values map[string]*CommitDetail
 }
 
 // NewOrderedMap 创建一个新的有序 Map
 func NewOrderedMap() *OrderedMap {
 	return &OrderedMap{
 		keys:   make([]string, 0),
-		values: make(map[string][]byte),
+		values: make(map[string]*CommitDetail),
 	}
 }
 
 // Set 设置键值对
-func (om *OrderedMap) Set(key string, value []byte) {
+func (om *OrderedMap) Set(key string, cbn *CommitDetail) {
 	_, exists := om.values[key]
 	if !exists {
 		om.keys = append(om.keys, key)
 	}
-	om.values[key] = value
+	om.values[key] = cbn
 }
 
 // Get 获取键对应的值
-func (om *OrderedMap) Get(key string) ([]byte, bool) {
+func (om *OrderedMap) Get(key string) (*CommitDetail, bool) {
 	value, exists := om.values[key]
 	return value, exists
 }
@@ -36,8 +46,8 @@ func (om *OrderedMap) Keys() []string {
 }
 
 // Values 返回值的切片
-func (om *OrderedMap) Values() [][]byte {
-	values := make([][]byte, len(om.keys))
+func (om *OrderedMap) Values() []*CommitDetail{
+	values := make([]*CommitDetail, len(om.keys))
 	for i, key := range om.keys {
 		values[i] = om.values[key]
 	}

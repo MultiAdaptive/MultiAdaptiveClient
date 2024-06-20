@@ -102,13 +102,16 @@ func (b *EthAPIBackend) GetTd(ctx context.Context) *big.Int {
 func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte) ([]byte,error) {
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
+	//lengthBig := new(big.Int).SetUint64(length)
 	fd := types.NewDA(sender, index, length, digest, data, dasKey, proof, claimedValue)
 	flag,err := b.eth.singer.VerifyEth(fd)
 	if err != nil || flag == false {
 		return nil, err
 	}else {
 		signData,err := b.eth.singer.Sign(fd)
-		fd.SignData = signData
+		fd.SignData = [][]byte{signData}
+		addr,_ := b.eth.singer.Sender(fd)
+		fd.SignerAddr = addr
 		fd.ReceiveAt = time.Now()
 		b.eth.fdPool.Add([]*types.DA{fd},true,false)
 		return signData,err
@@ -135,7 +138,7 @@ func (b *EthAPIBackend) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byt
 			log.Info("SendBTCDAByParams------SigWithSchnorr","err",err.Error())
 			return nil,err
 		}
-		da.SignData = sign
+		da.SignData = [][]byte{sign}
 		da.ReceiveAt = time.Now()
 		b.eth.fdPool.Add([]*types.DA{da},true,false)
 		return sign,nil

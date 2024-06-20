@@ -34,10 +34,10 @@ func (s *SingerTool) Sign(da *DA) ([]byte,error) {
 	return newSig,err
 }
 
-func (s *SingerTool) Sender(da *DA) common.Address {
+func (s *SingerTool) Sender(da *DA) ([]common.Address,[]error) {
 	singer := NewEIP155FdSigner(s.config.ChainID)
-	addr,_ := singer.Sender(da)
-	return addr
+	addr,err := singer.Sender(da)
+	return addr,err
 }
 
 func (s *SingerTool) VerifyEth(da *DA) (bool,error) {

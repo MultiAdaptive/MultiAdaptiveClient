@@ -26,19 +26,22 @@ type NameSpace struct {
 type DA struct {
 	NameSpace
 	Sender     common.Address  	                  `json:"Sender"` //文件发送者
+	Nonce      uint64                               `json:"Nonce"` //
 	Index      uint64						`json:"Index"`//文件发送者类nonce 相同的index认为是重复交易
-	Length     uint64						`json:"Length"`//长度
+	Length     uint64					      `json:"Length"`//长度
 	Data       []byte						`json:"Data"`//上传的的文件
 	Commitment kzg.Digest                           `json:"Commitment"`
-	SignData   []byte                               `json:"SignData"`
+	SignData   [][]byte                              `json:"SignData"`
+	SignerAddr []common.Address                      `json:"SignerAddr"`
 	DasKey     [32]byte                              `json:"DasKey"`
 	TxHash     common.Hash                           `json:"TxHash"`
+	BlockNum   uint64                                `json:"BlockNum"`
 	ReceiveAt  time.Time                            `json:"ReceiveAt"`
 	Proof      []byte                                `json:"Proof"`
 	ClaimedValue []byte                              `json:"ClaimedValue"`
 }
 
-func NewDA(sender common.Address,index,length uint64,commitment kzg.Digest, data []byte, dasKey [32]byte,proof []byte,claimedValue []byte) *DA {
+func NewDA(sender common.Address,index ,length uint64,commitment kzg.Digest, data []byte, dasKey [32]byte,proof []byte,claimedValue []byte) *DA {
 	return &DA{
 		Sender:     sender,
 		Index:      index,
@@ -77,12 +80,12 @@ func (f *DA) WithSignature(signer FdSigner, sign []byte) (*DA, error) {
 	newSign = append(newSign, r.Bytes()...)
 	newSign = append(newSign, s.Bytes()...)
 	newSign = append(newSign, v.Bytes()...)
-	f.SignData = newSign
+	f.SignData = [][]byte{newSign}
 	return f, nil
 }
 
-func (f *DA) RawSignatureValues() (r, s, v *big.Int) {
-	sign := f.SignData
+func (f *DA) RawSignatureValues(index uint64) (r, s, v *big.Int) {
+	sign := f.SignData[index]
 	return decodeSignature(sign)
 }
 

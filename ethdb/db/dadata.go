@@ -9,24 +9,28 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"gorm.io/gorm"
+	"strings"
 	"time"
 )
 
 const TableNameDA = "t_das"
 
+const JoinString = ","
+
 // 创建commitment表格模型
 type DA struct {
-	ID              int32  `gorm:"column:f_id;primaryKey;autoIncrement:true;comment:ID" json:"id"`                                               // ID
-	Nonce           int64  `gorm:"column:f_nonce;not null;comment:发送号" json:"nonce"`                                                             // 发送号
-	Sender          string `gorm:"column:f_sender;not null;comment:发送者;index:idx_das_sender" json:"sender"`                                      // 发送者
-	Index           int64  `gorm:"column:f_index;not null;comment:序号;index:idx_das_index" json:"index"`                                          // 序号
-	Length          int64  `gorm:"column:f_length;not null;comment:长度" json:"length"`                                                            // 长度
-	TxHash          string `gorm:"column:f_tx_hash;not null;comment:交易哈希;uniqueIndex:uniq_das_tx_hash" json:"tx_hash"`                           // 交易哈希
-	Commitment      string `gorm:"column:f_commitment;not null;comment:承诺;index:idx_das_commitment" json:"commitment"`                           // 承诺
-	CommitmentHash  string `gorm:"column:f_commitment_hash;not null;comment:承诺哈希;index:idx_das_commitment_hash" json:"commitment_hash"`          // 承诺哈希
-	Data            string `gorm:"column:f_data;not null;comment:数据;index:idx_das_data" json:"data"`                                             // 数据
-	DAsKey          string `gorm:"column:f_d_as_key;not null;comment:钥" json:"d_as_key"`                                                         // 钥
-	SignData        string `gorm:"column:f_sign_data;not null;comment:签名数据" json:"sign_data"`                                                    // 签名数据
+	ID              int32  `gorm:"column:f_id;primaryKey;autoIncrement:true;comment:ID" json:"id"`                                      // ID
+	Nonce           int64  `gorm:"column:f_nonce;not null;comment:发送号" json:"nonce"`                                                    // 发送号
+	Sender          string `gorm:"column:f_sender;not null;comment:发送者;index:idx_das_sender" json:"sender"`                             // 发送者
+	Index           int64  `gorm:"column:f_index;not null;comment:序号;index:idx_das_index" json:"index"`                                 // 序号
+	Length          int64  `gorm:"column:f_length;not null;comment:长度" json:"length"`                                                   // 长度
+	TxHash          string `gorm:"column:f_tx_hash;not null;comment:交易哈希;uniqueIndex:uniq_das_tx_hash" json:"tx_hash"`                  // 交易哈希
+	Commitment      string `gorm:"column:f_commitment;not null;comment:承诺;index:idx_das_commitment" json:"commitment"`                  // 承诺
+	CommitmentHash  string `gorm:"column:f_commitment_hash;not null;comment:承诺哈希;index:idx_das_commitment_hash" json:"commitment_hash"` // 承诺哈希
+	Data            string `gorm:"column:f_data;not null;comment:数据;index:idx_das_data" json:"data"`                                    // 数据
+	DAsKey          string `gorm:"column:f_d_as_key;not null;comment:钥" json:"d_as_key"`                                                // 钥
+	SignData        string `gorm:"column:f_sign_data;not null;comment:签名数据" json:"sign_data"`                                           // 签名数据
+	SignAddr        string `gorm:"column:f_sign_address;not null;comment:签名地址" json:"sign_addr"`
 	ParentStateHash string `gorm:"column:f_parent_state_hash;not null;comment:父提交数据哈希;index:idx_das_parent_state_hash" json:"parent_state_hash"` // 父提交数据哈希
 	StateHash       string `gorm:"column:f_state_hash;not null;comment:最新数据哈希;index:idx_das_state_hash" json:"state_hash"`                       // 最新数据哈希
 	BlockNum        int64  `gorm:"column:f_block_num;not null;comment:区块号;index:idx_das_block_num" json:"block_num"`                             // 区块号
@@ -50,17 +54,29 @@ func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) e
 		dataCollect = append(dataCollect, da.Sender.Bytes()...)
 		dataCollect = append(dataCollect, currentParentHash.Bytes()...)
 		stateHash := common.BytesToHash(dataCollect)
-
 		commitData := da.Commitment.Marshal()
+		sigDatStr := make([]string, len(da.SignData))
+		for i, data := range da.SignData {
+			sigDatStr[i] = common.Bytes2Hex(data)
+		}
+		result := strings.Join(sigDatStr, JoinString)
+		addrStr := make([]string, len(da.SignerAddr))
+		for i, addr := range da.SignerAddr {
+			addrStr[i] = addr.Hex()
+		}
+		addrRes := strings.Join(addrStr, JoinString)
 		wda := DA{
 			Sender:          da.Sender.Hex(),
+			Nonce:           int64(da.Nonce),
 			TxHash:          da.TxHash.String(),
 			Index:           int64(da.Index),
 			Length:          int64(da.Length),
+			BlockNum:        int64(da.BlockNum),
 			Data:            common.Bytes2Hex(da.Data),
 			Commitment:      common.Bytes2Hex(commitData),
 			CommitmentHash:  common.BytesToHash(commitData).Hex(),
-			SignData:        common.Bytes2Hex(da.SignData),
+			SignData:        result,
+			SignAddr:        addrRes,
 			ParentStateHash: currentParentHash.String(),
 			StateHash:       stateHash.Hex(),
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
@@ -77,7 +93,7 @@ func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) e
 	return nil
 }
 
-func AddBatchCommitment(tx *gorm.DB, das []*types.DA, parentHash common.Hash) error {
+func AddBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) error {
 	currentParentHash := parentHash
 	dataCollect := make([]byte, 0)
 	// 遍历每个区块，依次插入数据库
@@ -88,25 +104,37 @@ func AddBatchCommitment(tx *gorm.DB, das []*types.DA, parentHash common.Hash) er
 		dataCollect = append(dataCollect, currentParentHash.Bytes()...)
 		stateHash := common.BytesToHash(dataCollect)
 		commitData := da.Commitment.Marshal()
+		sigDatStr := make([]string, len(da.SignData))
+		for i, data := range da.SignData {
+			sigDatStr[i] = common.Bytes2Hex(data)
+		}
+		result := strings.Join(sigDatStr, JoinString)
+		addrStr := make([]string, len(da.SignerAddr))
+		for i, addr := range da.SignerAddr {
+			addrStr[i] = addr.Hex()
+		}
+		addrRes := strings.Join(addrStr, JoinString)
 		wda := DA{
 			Sender:          da.Sender.Hex(),
+			Nonce:           int64(da.Nonce),
 			TxHash:          da.TxHash.String(),
 			Index:           int64(da.Index),
 			Length:          int64(da.Length),
 			Data:            common.Bytes2Hex(da.Data),
 			Commitment:      common.Bytes2Hex(commitData),
 			CommitmentHash:  common.BytesToHash(commitData).Hex(),
-			SignData:        common.Bytes2Hex(da.SignData),
+			SignData:        result,
+			SignAddr:        addrRes,
+			BlockNum:        int64(da.BlockNum),
 			ParentStateHash: currentParentHash.String(),
 			StateHash:       stateHash.Hex(),
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
 		}
-		log.Info("AddBatchCommitment----", "CommitmentHash", wda.CommitmentHash, "TxHash", wda.TxHash)
-		result := tx.Create(&wda)
-		if result.Error != nil {
+		resul := db.Create(&wda)
+		if resul.Error != nil {
 			// 插入失败，回滚事务并返回错误
-			tx.Rollback()
-			return result.Error
+			db.Rollback()
+			return resul.Error
 		}
 		currentParentHash = stateHash
 	}
@@ -150,14 +178,27 @@ func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 		log.Debug("Error parsing time", "err", err)
 		return nil, err
 	}
+	signData := make([][]byte, len(da.SignData))
+	for i, sg := range strings.Split(da.SignData, JoinString) {
+		signData[i] = common.Hex2Bytes(sg)
+	}
+
+	signAdd := make([]common.Address, len(da.SignAddr))
+	for i, add := range strings.Split(da.SignAddr, JoinString) {
+		signAdd[i] = common.HexToAddress(add)
+	}
+
 	return &types.DA{
 		Sender:     common.HexToAddress(da.Sender),
+		Nonce:      uint64(da.Nonce),
 		Index:      uint64(da.Index),
 		Length:     uint64(da.Length),
 		Commitment: digest,
 		Data:       common.Hex2Bytes(da.Data),
-		SignData:   common.Hex2Bytes(da.SignData),
+		SignData:   signData,
+		SignerAddr: signAdd,
 		TxHash:     common.HexToHash(da.TxHash),
+		BlockNum:   uint64(da.BlockNum),
 		ReceiveAt:  parsedTime,
 	}, nil
 }
@@ -196,13 +237,25 @@ func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
 		log.Debug("Error parsing time", "err", err)
 		return nil, err
 	}
+	signData := make([][]byte, len(da.SignData))
+	for i, sg := range strings.Split(da.SignData, JoinString) {
+		signData[i] = common.Hex2Bytes(sg)
+	}
+
+	signAdd := make([]common.Address, len(da.SignAddr))
+	for i, add := range strings.Split(da.SignAddr, JoinString) {
+		signAdd[i] = common.HexToAddress(add)
+	}
 	return &types.DA{
 		Sender:     common.HexToAddress(da.Sender),
+		Nonce:      uint64(da.Nonce),
 		Index:      uint64(da.Index),
 		Length:     uint64(da.Length),
 		Commitment: digest,
 		Data:       common.Hex2Bytes(da.Data),
-		SignData:   common.Hex2Bytes(da.SignData),
+		SignData:   signData,
+		SignerAddr: signAdd,
+		BlockNum:   uint64(da.BlockNum),
 		TxHash:     common.HexToHash(da.TxHash),
 		ReceiveAt:  parsedTime,
 	}, nil
@@ -243,13 +296,25 @@ func GetCommitmentByTxHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 		log.Debug("Error parsing time", "err", err)
 		return nil, err
 	}
+	signData := make([][]byte, len(da.SignData))
+	for i, sg := range strings.Split(da.SignData, JoinString) {
+		signData[i] = common.Hex2Bytes(sg)
+	}
+
+	signAdd := make([]common.Address, len(da.SignAddr))
+	for i, add := range strings.Split(da.SignAddr, JoinString) {
+		signAdd[i] = common.HexToAddress(add)
+	}
 	return &types.DA{
 		Sender:     common.HexToAddress(da.Sender),
+		Nonce:      uint64(da.Nonce),
 		Index:      uint64(da.Index),
 		Length:     uint64(da.Length),
 		Commitment: digest,
 		Data:       common.Hex2Bytes(da.Data),
-		SignData:   common.Hex2Bytes(da.SignData),
+		BlockNum:   uint64(da.BlockNum),
+		SignData:   signData,
+		SignerAddr: signAdd,
 		TxHash:     common.HexToHash(da.TxHash),
 		ReceiveAt:  parsedTime,
 	}, nil
