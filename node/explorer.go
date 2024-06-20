@@ -76,15 +76,15 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type BlobBrief struct {
-	BlobID     int64    `json:"blob_id"`
-	Commitment string   `json:"commitment"`
-	CommitmentHash string `json:"commitment_hash"`
-	TxHash     string    `json:"tx_hash"`
-	BlockNum   int64    `json:"block_num"`
-	ReceiveAt  string   `json:"receive_at"`
-	Length     int64    `json:"length"`
-	Validators []string `json:"validators"`
-	Fee        string   `json:"fee"`
+	BlobID         int64    `json:"blob_id"`
+	Commitment     string   `json:"commitment"`
+	CommitmentHash string   `json:"commitment_hash"`
+	TxHash         string   `json:"tx_hash"`
+	BlockNum       int64    `json:"block_num"`
+	ReceiveAt      string   `json:"receive_at"`
+	Length         int64    `json:"length"`
+	Validators     []string `json:"validators"`
+	Fee            string   `json:"fee"`
 }
 
 // Blob represents the blob data structure
@@ -145,7 +145,7 @@ type CommitmentCoordinate struct {
 
 type BlobDetail struct {
 	Commitment   string               `json:"Commitment"`
-	TxHash       string                `json:"TxHash"`
+	TxHash       string               `json:"TxHash"`
 	BlockNum     int64                `json:"BlockNum"`
 	Timestamp    string               `json:"Timestamp"`
 	Validator    string               `json:"Validator"`
@@ -209,15 +209,15 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			blob := BlobBrief{
-				BlobID:     da.Nonce,
-				Commitment: da.Commitment,
+				BlobID:         da.Nonce,
+				Commitment:     da.Commitment,
 				CommitmentHash: da.CommitmentHash,
-				TxHash:     da.TxHash,
-				BlockNum:   da.BlockNum,
-				Length:     da.Length,
-				ReceiveAt:  da.ReceiveAt,
-				Validators: strings.Split(da.SignAddr, SEPARATOR_COMMA),
-				Fee:        cast.ToString(fee),
+				TxHash:         da.TxHash,
+				BlockNum:       da.BlockNum,
+				Length:         da.Length,
+				ReceiveAt:      da.ReceiveAt,
+				Validators:     strings.Split(da.SignAddr, SEPARATOR_COMMA),
+				Fee:            cast.ToString(fee),
 			}
 			blobs = append(blobs, blob)
 		}
@@ -460,7 +460,7 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 
 		foundBlob := BlobDetail{
 			Commitment:   da.Commitment,
-			TxHash:          da.TxHash,
+			TxHash:       da.TxHash,
 			BlockNum:     da.BlockNum,
 			Timestamp:    da.ReceiveAt,
 			Validator:    da.SignData,
@@ -580,7 +580,6 @@ func (h *explorerServer) start() error {
 	router.HandleFunc("/api/filter-blob", FilterBlobHandler).Methods("GET")
 	router.HandleFunc("/api/blob-detail", BlobDetailHandler).Methods("GET")
 	router.HandleFunc("/api/nodes", NodesHandler).Methods("GET")
-	//router.HandleFunc("/api/validators", ValidatorsHandler).Methods("GET")
 
 	// Initialize the server.
 	h.server = &http.Server{
