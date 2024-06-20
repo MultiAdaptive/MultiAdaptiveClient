@@ -89,7 +89,6 @@ func GetMaxIDBlockNum(db *gorm.DB) (int64, error) {
 	return block.BlockNum, nil
 }
 
-
 func GetBlockByNum(db *gorm.DB, blockNum uint64) (*types.Block, error) {
 	var gormdb *gorm.DB
 

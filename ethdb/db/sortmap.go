@@ -1,6 +1,9 @@
 package db
 
-import "github.com/ethereum/go-ethereum/common"
+import (
+	"github.com/ethereum/go-ethereum/common"
+	"time"
+)
 
 type CommitDetail struct {
 	Nonce    uint64
@@ -9,6 +12,7 @@ type CommitDetail struct {
 	TxHash   common.Hash
 	SigData  [][]byte
 	SignAddress []common.Address
+	Time     time.Time
 }
 
 // OrderedMap 代表有序的 Map 结构
