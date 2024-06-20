@@ -144,15 +144,19 @@ type CommitmentCoordinate struct {
 }
 
 type BlobDetail struct {
-	Commitment   string               `json:"Commitment"`
-	TxHash       string               `json:"TxHash"`
-	BlockNum     int64                `json:"BlockNum"`
-	Timestamp    string               `json:"Timestamp"`
-	Validator    string               `json:"Validator"`
-	Size         int64                `json:"Size,omitempty"`
-	StorageState string               `json:"StorageState,omitempty"`
-	CommitmentXY CommitmentCoordinate `json:"Commitment_xy,omitempty"`
-	Data         string               `json:"Data,omitempty"`
+	BlobID         int64                `json:"blob_id"`
+	Commitment     string               `json:"Commitment"`
+	CommitmentHash string               `json:"commitment_hash"`
+	TxHash         string               `json:"TxHash"`
+	BlockNum       int64                `json:"BlockNum"`
+	Timestamp      string               `json:"Timestamp"`
+	Size           int64                `json:"Size,omitempty"`
+	StorageState   string               `json:"StorageState,omitempty"`
+	CommitmentXY   CommitmentCoordinate `json:"Commitment_xy,omitempty"`
+	Data           string               `json:"Data,omitempty"`
+	Validators     []string             `json:"validators"`
+	Fee            string               `json:"fee"`
+	Proof          string               `json:"proof"`
 }
 
 // Validator represents the validator data structure
@@ -382,7 +386,7 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 			blob := Blob{
 				Sender:          da.Sender,
 				Index:           da.Index,
-				Length:          int64(da.Length),
+				Length:          da.Length,
 				TxHash:          da.TxHash,
 				Commitment:      da.Commitment,
 				CommitmentHash:  da.CommitmentHash,
@@ -445,8 +449,7 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 		gormdb = stateSqlDB.
 			Where(db.DA{TxHash: txHash}).
 			Or(db.DA{CommitmentHash: commitmentHash}).
-			Limit(1).
-			Find(&da)
+			First(&da)
 
 		if gormdb.Error != nil {
 			log.Error("can not find DA", "err", gormdb.Error)
@@ -454,23 +457,39 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		var baseTransaction baseModel.BaseTransaction
+		gormdb = stateSqlDB.
+			Model(&baseModel.BaseTransaction{}).
+			Select("f_transaction_hash, f_fee").
+			Where(baseModel.BaseTransaction{TransactionHash: da.TxHash}).
+			First(&baseTransaction)
+		if gormdb.Error != nil {
+			log.Error("can not find BaseTransaction", "txHash", txHash, "err", gormdb.Error)
+		}
+
+		fee := baseTransaction.Fee
+
 		commitment := common.Hex2Bytes(da.Commitment)
 		var digest kzg.Digest
 		digest.SetBytes(commitment)
 
 		foundBlob := BlobDetail{
-			Commitment:   da.Commitment,
-			TxHash:       da.TxHash,
-			BlockNum:     da.BlockNum,
-			Timestamp:    da.ReceiveAt,
-			Validator:    da.SignData,
-			Size:         int64(da.Length),
-			StorageState: da.StateHash,
+			BlobID:         da.Nonce,
+			Commitment:     da.Commitment,
+			CommitmentHash: da.CommitmentHash,
+			TxHash:         da.TxHash,
+			BlockNum:       da.BlockNum,
+			Timestamp:      da.ReceiveAt,
+			Size:           da.Length,
+			StorageState:   da.StateHash,
 			CommitmentXY: CommitmentCoordinate{
 				X: digest.X.String(),
 				Y: digest.Y.String(),
 			},
-			Data: da.Data,
+			Data:       da.Data,
+			Validators: strings.Split(da.SignAddr, SEPARATOR_COMMA),
+			Fee:        cast.ToString(fee),
+			Proof:      "",
 		}
 
 		w.Header().Set("Content-Type", "application/json")
