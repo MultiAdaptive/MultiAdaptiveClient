@@ -254,6 +254,7 @@ func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 }
 
 func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
+	log.Info("GetDAByCommitmentHash------")
 	var gormdb *gorm.DB
 	var count int64
 	gormdb = db.Model(&DA{}).Count(&count)
@@ -313,6 +314,8 @@ func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
 }
 
 func GetCommitmentByTxHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
+
+	log.Info("GetCommitmentByTxHash------")
 	var gormdb *gorm.DB
 
 	var count int64

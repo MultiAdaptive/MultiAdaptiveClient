@@ -515,29 +515,31 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			}
 		}
 	}
+	
+	if len(daDatas) > 0 {
+		parentHashData, err := db.GetMaxIDDAStateHash(cs.db)
+		if err != nil {
+			parentHashData = ""
+		}
+		parentHash := common.HexToHash(parentHashData)
+		storageAddr := common.HexToAddress(cs.chain.Config().L1Conf.StorageManagement)
+		storageIns, _ := contract.NewStorageManager(storageAddr,cs.ethClient)
+		for _,da := range daDatas{
+			if da.NameSpaceID.Uint64() != 0 && cs.nodeType == "s" {
+				opts := &bind.CallOpts{
+					Pending: false,
+					Context: context.Background(),
+				}
 
-	parentHashData, err := db.GetMaxIDDAStateHash(cs.db)
-	if err != nil {
-		parentHashData = ""
-	}
-	parentHash := common.HexToHash(parentHashData)
-	storageAddr := common.HexToAddress(cs.chain.Config().L1Conf.StorageManagement)
-	storageIns, _ := contract.NewStorageManager(storageAddr,cs.ethClient)
-	for _,da := range daDatas{
-		if da.NameSpaceID.Uint64() != 0 && cs.nodeType == "s" {
-			opts := &bind.CallOpts{
-				Pending: false,
-				Context: context.Background(),
+				ns,_ := storageIns.NAMESPACE(opts,da.NameSpaceID)
+				flag :=  addressIncluded(ns.Addr,cs.address)
+				if flag {
+					db.SaveDACommit(cs.db,da,true,parentHash)
+				}
+			}else if (da.NameSpaceID.Uint64() == 0 && cs.nodeType == "b") {
+				currentHash,_ := db.SaveDACommit(cs.db,da,true,parentHash)
+				parentHash = currentHash
 			}
-
-			ns,_ := storageIns.NAMESPACE(opts,da.NameSpaceID)
-			flag :=  addressIncluded(ns.Addr,cs.address)
-			if flag {
-				db.SaveDACommit(cs.db,da,true,parentHash)
-			}
-		}else if (da.NameSpaceID.Uint64() == 0 && cs.nodeType == "b") {
-			currentHash,_ := db.SaveDACommit(cs.db,da,true,parentHash)
-			parentHash = currentHash
 		}
 	}
 
