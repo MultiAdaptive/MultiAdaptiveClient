@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"gorm.io/gorm"
+	"math/big"
 	"strings"
 	"time"
 )
@@ -20,7 +21,6 @@ const JoinString = ","
 // 创建commitment表格模型
 type DA struct {
 	ID              int32  `gorm:"column:f_id;primaryKey;autoIncrement:true;comment:ID" json:"id"`                                      // ID
-	//NameSpaceID     int64  `gorm:"column:f_name_space_id;not null;comment:命名空间" json:"name_space_id"`
 	Nonce           int64  `gorm:"column:f_nonce;not null;comment:发送号" json:"nonce"`                                                    // 发送号
 	Sender          string `gorm:"column:f_sender;not null;comment:发送者;index:idx_das_sender" json:"sender"`                             // 发送者
 	Index           int64  `gorm:"column:f_index;not null;comment:序号;index:idx_das_index" json:"index"`                                 // 序号
@@ -37,10 +37,55 @@ type DA struct {
 	BlockNum        int64  `gorm:"column:f_block_num;not null;comment:区块号;index:idx_das_block_num" json:"block_num"`                             // 区块号
 	ReceiveAt       string `gorm:"column:f_receive_at;not null;comment:接收时间" json:"receive_at"`                                                  // 接收时间
 	CreateAt        int64  `gorm:"column:f_create_at;not null;comment:创建时间" json:"create_at"`                                                    // 创建时间
+	NameSpaceID     int64  `gorm:"column:f_name_space_id;not null;comment:命名空间" json:"name_space_id"`
 }
 
 func (*DA) TableName() string {
 	return TableNameDA
+}
+
+func SaveDACommit(db *gorm.DB,da *types.DA,shouldSave bool,parentHash common.Hash) (common.Hash,error)  {
+	if shouldSave {
+		currentParentHash := parentHash
+		dataCollect := make([]byte, 0)
+		dataCollect = append(dataCollect, da.Commitment.X.Marshal()...)
+		dataCollect = append(dataCollect, da.Commitment.Y.Marshal()...)
+		dataCollect = append(dataCollect, da.Sender.Bytes()...)
+		dataCollect = append(dataCollect, currentParentHash.Bytes()...)
+		stateHash := common.BytesToHash(dataCollect)
+
+		sigDatStr := make([]string, len(da.SignData))
+		for i,data :=range da.SignData {
+			sigDatStr[i] = common.Bytes2Hex(data)
+		}
+		result := strings.Join(sigDatStr,JoinString)
+
+		addrStr := make([]string,len(da.SignerAddr))
+		for i,addr := range da.SignerAddr{
+			addrStr[i] = addr.Hex()
+		}
+		addrRes := strings.Join(addrStr,JoinString)
+
+		wd := DA{
+			Sender:          da.Sender.Hex(),
+			Nonce:           int64(da.Nonce),
+			Index:           int64(da.Index),
+			Length:          int64(da.Length),
+			TxHash:          da.TxHash.Hex(),
+			BlockNum:        int64(da.BlockNum),
+			Commitment:      common.Bytes2Hex(da.Commitment.Marshal()),
+			Data:            common.Bytes2Hex(da.Data),
+			SignData:        result,
+			SignAddr:        addrRes,
+			ParentStateHash: currentParentHash.Hex(),
+			StateHash:       stateHash.Hex(),
+			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
+			NameSpaceID:     da.NameSpaceID.Int64(),
+		}
+		res := db.Create(&wd)
+		return stateHash,res.Error
+	}
+	return common.Hash{},nil
 }
 
 func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) error {
@@ -81,6 +126,7 @@ func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) e
 			ParentStateHash: currentParentHash.String(),
 			StateHash:       stateHash.Hex(),
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
+			//NameSpaceID:     da.NameSpaceID.Int64(),
 		}
 		wdas = append(wdas, wda)
 		currentParentHash = stateHash
@@ -104,6 +150,7 @@ func AddBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) er
 		dataCollect = append(dataCollect, da.Sender.Bytes()...)
 		dataCollect = append(dataCollect, currentParentHash.Bytes()...)
 		stateHash := common.BytesToHash(dataCollect)
+
 		commitData := da.Commitment.Marshal()
 		sigDatStr := make([]string, len(da.SignData))
 		for i, data := range da.SignData {
@@ -130,6 +177,7 @@ func AddBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) er
 			ParentStateHash: currentParentHash.String(),
 			StateHash:       stateHash.Hex(),
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
+			NameSpaceID:     da.NameSpaceID.Int64(),
 		}
 		resul := db.Create(&wda)
 		if resul.Error != nil {
@@ -201,6 +249,7 @@ func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 		TxHash:     common.HexToHash(da.TxHash),
 		BlockNum:   uint64(da.BlockNum),
 		ReceiveAt:  parsedTime,
+		NameSpaceID: new(big.Int).SetInt64(da.NameSpaceID),
 	}, nil
 }
 
@@ -259,6 +308,7 @@ func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
 		BlockNum:   uint64(da.BlockNum),
 		TxHash:     common.HexToHash(da.TxHash),
 		ReceiveAt:  parsedTime,
+		NameSpaceID: new(big.Int).SetInt64(da.NameSpaceID),
 	}, nil
 }
 
@@ -318,6 +368,7 @@ func GetCommitmentByTxHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 		SignerAddr: signAdd,
 		TxHash:     common.HexToHash(da.TxHash),
 		ReceiveAt:  parsedTime,
+		NameSpaceID: new(big.Int).SetInt64(da.NameSpaceID),
 	}, nil
 }
 

@@ -214,7 +214,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		return nil, err
 	}
 	eth.fdPool = fileDataPool
-
+	var localAddress common.Address
 	if config.ChainName == "ethereum" || config.ChainName == "eth" {
 		keyStores, err := ioutil.ReadDir(stack.KeyStoreDir())
 		if err != nil {
@@ -236,6 +236,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 			log.Error("New----failed", "DecryptKey  err", err.Error())
 		}
 		eth.singer = types.NewSingerTool(eth.blockchain.Config(), key.PrivateKey)
+		localAddress = key.Address
 	}
 
 	// Permit the downloader to use the trie cache allowance during fast sync
@@ -251,6 +252,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		L1ScanHost:     eth.config.L1ScanHost,
 		L1ScanUser:     eth.config.L1ScanUser,
 		L1ScanPassword: eth.config.L1ScanPassword,
+		Address:        localAddress,
 		NodeType:       eth.config.NodeType,
 		ChainName:      eth.config.ChainName,
 		BloomCache:     uint64(cacheLimit),

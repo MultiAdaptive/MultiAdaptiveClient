@@ -197,7 +197,7 @@ type BlockChain struct {
 	stateCache    state.Database                   // State database to reuse between imports (contains state cache)
 	sqlDb          *gorm.DB
 	genesisBlock  *types.Block
-	triedb            *trie.Database
+	triedb         *trie.Database
 	chainmu *syncx.ClosableMutex
 	wg            sync.WaitGroup //
 	quit          chan struct{}  // shutdown signal, closed in Stop.

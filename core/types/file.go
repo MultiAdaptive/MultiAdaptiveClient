@@ -10,6 +10,7 @@ import (
 )
 
 type NameSpace struct {
+	ID          uint64
 	Creater     common.Address
 	StorageList []common.Address
 }
@@ -24,7 +25,6 @@ type NameSpace struct {
 // order
 
 type DA struct {
-	NameSpace
 	Sender     common.Address  	                  `json:"Sender"` //文件发送者
 	Nonce      uint64                               `json:"Nonce"` //
 	Index      uint64						`json:"Index"`//文件发送者类nonce 相同的index认为是重复交易
@@ -39,6 +39,8 @@ type DA struct {
 	ReceiveAt  time.Time                            `json:"ReceiveAt"`
 	Proof      []byte                                `json:"Proof"`
 	ClaimedValue []byte                              `json:"ClaimedValue"`
+	NameSpaceID *big.Int                              `json:"NameSpaceID"`
+	Root        common.Hash                              `json:"Root"`
 }
 
 func NewDA(sender common.Address,index ,length uint64,commitment kzg.Digest, data []byte, dasKey [32]byte,proof []byte,claimedValue []byte) *DA {

@@ -460,7 +460,7 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 
 		foundBlob := BlobDetail{
 			Commitment:   da.Commitment,
-			TxHash:          da.TxHash,
+			TxHash:        da.TxHash,
 			BlockNum:     da.BlockNum,
 			Timestamp:    da.ReceiveAt,
 			Validator:    da.SignData,
@@ -495,7 +495,7 @@ func NodesHandler(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "No Node Info found", http.StatusNotFound)
 				return
 			}
-			contractAddress := common.HexToAddress(l1Conf.NodeManagerProxy)
+			contractAddress := common.HexToAddress(l1Conf.NodeManager)
 			instance, err := contract.NewNodeManager(contractAddress, client)
 			if err != nil {
 				http.Error(w, "No Node Info found", http.StatusNotFound)
@@ -507,24 +507,20 @@ func NodesHandler(w http.ResponseWriter, r *http.Request) {
 			publicKeyECDSA, _ := publicKey.(*ecdsa.PublicKey)
 			// 创建一个签名交易的发送者
 			fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-			num, err := db.GetMaxIDBlockNum(stateSqlDB)
-			if err != nil {
-				http.Error(w, "No Node Info found", http.StatusNotFound)
-				return
-			}
+			num,_ := client.BlockNumber(context.Background())
 			ops := bind.CallOpts{
 				Pending:     false,
 				From:        fromAddress,
-				BlockNumber: new(big.Int).SetInt64(num),
+				BlockNumber: new(big.Int).SetUint64(num),
 				Context:     context.Background(),
 			}
 			nodes, err := instance.GetBroadcastingNodes(&ops)
 			if err != nil {
+				log.Info("GetBroadcastingNodes-----","err",err.Error())
 				http.Error(w, "No Node Info found", http.StatusNotFound)
 				return
 			}
 			result = append(result, nodes...)
-
 			strNodes, err := instance.GetstorageNodes(&ops)
 			storResult = append(storResult, strNodes...)
 			for _, node := range result {

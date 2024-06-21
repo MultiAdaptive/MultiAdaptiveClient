@@ -21,6 +21,7 @@ import (
 	"errors"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contract"
 	"github.com/ethereum/go-ethereum/core"
@@ -53,6 +54,7 @@ type chainSyncer struct {
 	handler   *handler
 	db        *gorm.DB
 	nodeType  string
+	address   common.Address
 	chainName string
 	chain     *core.BlockChain
 	cancel    context.CancelFunc
@@ -66,6 +68,7 @@ func newChainSync(
 	host string,
 	user string,
 	password string,
+	address common.Address,
 	handler *handler,
 	chain *core.BlockChain,
 	nodeType string,
@@ -74,7 +77,7 @@ func newChainSync(
 
 	switch strings.ToLower(chainName) {
 	case "ethereum", "eth":
-		return newEthereumChainSync(ctx, sqlDb, url, handler, chain, nodeType, chainName)
+		return newEthereumChainSync(ctx, sqlDb, url, handler, chain, address ,nodeType, chainName)
 	case "bitcoin", "btc":
 		return newBitcoinChainSync(ctx, sqlDb, host, user, password, handler, chain, nodeType, chainName)
 	default:
@@ -88,6 +91,7 @@ func newEthereumChainSync(
 	url string,
 	handler *handler,
 	chain *core.BlockChain,
+	address common.Address,
 	nodeType string,
 	chainName string) *chainSyncer {
 	log.Info("newEthereumChainSync", "url", url)
@@ -105,6 +109,7 @@ func newEthereumChainSync(
 		ethClient: ethClient,
 		db:        sqlDb,
 		nodeType:  nodeType,
+		address:   address,
 		chainName: chainName,
 		chain:     chain,
 		cancel:    cancel,
@@ -257,7 +262,6 @@ func (cs *chainSyncer) doBitcoinSync() error {
 		cs.handler.fileDataPool.RemoveFileData(daDatas)
 	}
 	cs.forced = false
-
 	return nil
 }
 
@@ -470,7 +474,9 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		}
 		detailFinal,ok := commitCache.Get(logDetail.TxHash.Hex())
 		if ok&&err==nil {
+			detailFinal.NameSpaceId = daDetail.NameSpaceId
 			detailFinal.Nonce = daDetail.Nonce.Uint64()
+			detailFinal.Root = daDetail.Root
 			detailFinal.SigData = daDetail.Signatures
 			detailFinal.BlockNum = logDetail.BlockNumber
 			addrList,err := cs.handler.fileDataPool.GetSender(daDetail.Signatures)
@@ -495,12 +501,14 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 				log.Info("processBlocks-----", "err", err.Error())
 			}
 			if err == nil && da != nil {
+				da.NameSpaceID = daDetail.NameSpaceId
 				da.TxHash = common.HexToHash(txHash)
 				da.Nonce = daDetail.Nonce
 				da.ReceiveAt = daDetail.Time
 				da.SignData = daDetail.SigData
 				da.BlockNum = daDetail.BlockNum
 				da.SignerAddr = daDetail.SignAddress
+				da.Root = daDetail.Root
 				da.ReceiveAt = time.Now()
 				cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
 				daDatas = append(daDatas, da)
@@ -508,18 +516,36 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		}
 	}
 
-	if len(daDatas) != 0 {
-		parentHashData, err := db.GetMaxIDDAStateHash(cs.db)
-		if err != nil {
-			parentHashData = ""
+	parentHashData, err := db.GetMaxIDDAStateHash(cs.db)
+	if err != nil {
+		parentHashData = ""
+	}
+	parentHash := common.HexToHash(parentHashData)
+	storageAddr := common.HexToAddress(cs.chain.Config().L1Conf.StorageManagement)
+	storageIns, _ := contract.NewStorageManager(storageAddr,cs.ethClient)
+	for _,da := range daDatas{
+		if da.NameSpaceID.Uint64() != 0 && cs.nodeType == "s" {
+			opts := &bind.CallOpts{
+				Pending: false,
+				Context: context.Background(),
+			}
+
+			ns,_ := storageIns.NAMESPACE(opts,da.NameSpaceID)
+			flag :=  addressIncluded(ns.Addr,cs.address)
+			if flag {
+				db.SaveDACommit(cs.db,da,true,parentHash)
+			}
+		}else if (da.NameSpaceID.Uint64() == 0 && cs.nodeType == "b") {
+			currentHash,_ := db.SaveDACommit(cs.db,da,true,parentHash)
+			parentHash = currentHash
 		}
-		parentHash := common.HexToHash(parentHashData)
-		db.Begin(cs.db)
-		db.AddBatchCommitment(db.Tx, daDatas, parentHash)
-		db.Commit(db.Tx)
+	}
+
+	if len(daDatas) != 0 {
 		cs.handler.fileDataPool.SendNewFileDataEvent(daDatas)
 		cs.handler.fileDataPool.RemoveFileData(daDatas)
 	}
+
 	if len(blocks) >= 1 {
 		cs.chain.SetCurrentBlock(blocks[length-1])
 	} else {
@@ -527,6 +553,16 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	}
 	return nil
 }
+
+func addressIncluded(list []common.Address,targe common.Address) bool {
+	for _,addr  := range list{
+		if addr == targe {
+			return true
+		}
+	}
+	return false
+}
+
 
 func slice(data []byte) []byte {
 	digst := new(kzg.Digest)

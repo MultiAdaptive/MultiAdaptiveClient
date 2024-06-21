@@ -106,6 +106,7 @@ type handlerConfig struct {
 	L1ScanUser     string              //l1 scan user
 	L1ScanPassword string              //l1 scan password
 	NodeType       string              //local node type
+	Address        common.Address
 	ChainName      string              //l1 chain name
 	NoTxGossip     bool                // Disable P2P transaction gossip
 }
@@ -203,6 +204,7 @@ func newHandler(config *handlerConfig) (*handler, error) {
 		config.L1ScanHost,
 		config.L1ScanUser,
 		config.L1ScanPassword,
+		config.Address,
 		h,
 		h.chain,
 		config.NodeType,

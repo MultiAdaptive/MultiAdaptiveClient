@@ -2,6 +2,7 @@ package db
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	"math/big"
 	"time"
 )
 
@@ -11,8 +12,10 @@ type CommitDetail struct {
 	Commit   []byte
 	TxHash   common.Hash
 	SigData  [][]byte
+	NameSpaceId *big.Int
 	SignAddress []common.Address
 	Time     time.Time
+	Root     common.Hash
 }
 
 // OrderedMap 代表有序的 Map 结构
