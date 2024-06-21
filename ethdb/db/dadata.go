@@ -44,7 +44,7 @@ func (*DA) TableName() string {
 	return TableNameDA
 }
 
-func SaveDACommit(db *gorm.DB,da *types.DA,shouldSave bool,parentHash common.Hash) (common.Hash,error)  {
+func SaveDACommit(db *gorm.DB, da *types.DA, shouldSave bool, parentHash common.Hash) (common.Hash, error) {
 	if shouldSave {
 		currentParentHash := parentHash
 		dataCollect := make([]byte, 0)
@@ -55,16 +55,16 @@ func SaveDACommit(db *gorm.DB,da *types.DA,shouldSave bool,parentHash common.Has
 		stateHash := common.BytesToHash(dataCollect)
 
 		sigDatStr := make([]string, len(da.SignData))
-		for i,data :=range da.SignData {
+		for i, data := range da.SignData {
 			sigDatStr[i] = common.Bytes2Hex(data)
 		}
-		result := strings.Join(sigDatStr,JoinString)
+		result := strings.Join(sigDatStr, JoinString)
 
-		addrStr := make([]string,len(da.SignerAddr))
-		for i,addr := range da.SignerAddr{
+		addrStr := make([]string, len(da.SignerAddr))
+		for i, addr := range da.SignerAddr {
 			addrStr[i] = addr.Hex()
 		}
-		addrRes := strings.Join(addrStr,JoinString)
+		addrRes := strings.Join(addrStr, JoinString)
 
 		wd := DA{
 			Sender:          da.Sender.Hex(),
@@ -83,9 +83,9 @@ func SaveDACommit(db *gorm.DB,da *types.DA,shouldSave bool,parentHash common.Has
 			NameSpaceID:     da.NameSpaceID.Int64(),
 		}
 		res := db.Create(&wd)
-		return stateHash,res.Error
+		return stateHash, res.Error
 	}
-	return common.Hash{},nil
+	return common.Hash{}, nil
 }
 
 func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) error {
@@ -238,17 +238,17 @@ func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 	}
 
 	return &types.DA{
-		Sender:     common.HexToAddress(da.Sender),
-		Nonce:      uint64(da.Nonce),
-		Index:      uint64(da.Index),
-		Length:     uint64(da.Length),
-		Commitment: digest,
-		Data:       common.Hex2Bytes(da.Data),
-		SignData:   signData,
-		SignerAddr: signAdd,
-		TxHash:     common.HexToHash(da.TxHash),
-		BlockNum:   uint64(da.BlockNum),
-		ReceiveAt:  parsedTime,
+		Sender:      common.HexToAddress(da.Sender),
+		Nonce:       uint64(da.Nonce),
+		Index:       uint64(da.Index),
+		Length:      uint64(da.Length),
+		Commitment:  digest,
+		Data:        common.Hex2Bytes(da.Data),
+		SignData:    signData,
+		SignerAddr:  signAdd,
+		TxHash:      common.HexToHash(da.TxHash),
+		BlockNum:    uint64(da.BlockNum),
+		ReceiveAt:   parsedTime,
 		NameSpaceID: new(big.Int).SetInt64(da.NameSpaceID),
 	}, nil
 }
@@ -297,17 +297,17 @@ func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
 		signAdd[i] = common.HexToAddress(add)
 	}
 	return &types.DA{
-		Sender:     common.HexToAddress(da.Sender),
-		Nonce:      uint64(da.Nonce),
-		Index:      uint64(da.Index),
-		Length:     uint64(da.Length),
-		Commitment: digest,
-		Data:       common.Hex2Bytes(da.Data),
-		SignData:   signData,
-		SignerAddr: signAdd,
-		BlockNum:   uint64(da.BlockNum),
-		TxHash:     common.HexToHash(da.TxHash),
-		ReceiveAt:  parsedTime,
+		Sender:      common.HexToAddress(da.Sender),
+		Nonce:       uint64(da.Nonce),
+		Index:       uint64(da.Index),
+		Length:      uint64(da.Length),
+		Commitment:  digest,
+		Data:        common.Hex2Bytes(da.Data),
+		SignData:    signData,
+		SignerAddr:  signAdd,
+		BlockNum:    uint64(da.BlockNum),
+		TxHash:      common.HexToHash(da.TxHash),
+		ReceiveAt:   parsedTime,
 		NameSpaceID: new(big.Int).SetInt64(da.NameSpaceID),
 	}, nil
 }
@@ -357,17 +357,17 @@ func GetCommitmentByTxHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 		signAdd[i] = common.HexToAddress(add)
 	}
 	return &types.DA{
-		Sender:     common.HexToAddress(da.Sender),
-		Nonce:      uint64(da.Nonce),
-		Index:      uint64(da.Index),
-		Length:     uint64(da.Length),
-		Commitment: digest,
-		Data:       common.Hex2Bytes(da.Data),
-		BlockNum:   uint64(da.BlockNum),
-		SignData:   signData,
-		SignerAddr: signAdd,
-		TxHash:     common.HexToHash(da.TxHash),
-		ReceiveAt:  parsedTime,
+		Sender:      common.HexToAddress(da.Sender),
+		Nonce:       uint64(da.Nonce),
+		Index:       uint64(da.Index),
+		Length:      uint64(da.Length),
+		Commitment:  digest,
+		Data:        common.Hex2Bytes(da.Data),
+		BlockNum:    uint64(da.BlockNum),
+		SignData:    signData,
+		SignerAddr:  signAdd,
+		TxHash:      common.HexToHash(da.TxHash),
+		ReceiveAt:   parsedTime,
 		NameSpaceID: new(big.Int).SetInt64(da.NameSpaceID),
 	}, nil
 }
@@ -375,7 +375,7 @@ func GetCommitmentByTxHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 // 获取ID最大的DA记录
 func GetMaxIDDAStateHash(db *gorm.DB) (string, error) {
 	var da DA
-	if err := db.Order("id DESC").First(&da).Error; err != nil {
+	if err := db.Order("f_id DESC").First(&da).Error; err != nil {
 		return "", err
 	}
 	return da.StateHash, nil
