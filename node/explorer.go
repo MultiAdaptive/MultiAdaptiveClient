@@ -103,6 +103,8 @@ type Blob struct {
 	StateHash       string   `json:"state_hash"`
 	BlockNum        int64    `json:"block_num"`
 	ReceiveAt       string   `json:"receive_at"`
+	Fee             string   `json:"fee"`
+	Validators      []string `json:"validators"`
 }
 
 type Pagination struct {
@@ -115,17 +117,6 @@ type PageBlobs struct {
 	Data       []Blob     `json:"data"`
 	Pagination Pagination `json:"pagination"`
 }
-
-/**
-type NodeManagerNodeInfo struct {
-	Url             string
-	Name            string
-	StakedTokens    *big.Int
-	Location        string
-	MaxStorageSpace *big.Int
-	Addr            common.Address
-}
-**/
 
 // Node represents the node data structure
 type NodeInfo struct {
@@ -326,8 +317,31 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 			log.Error("can not find DA", "query", query, "category", category, "err", gormdb.Error)
 		}
 
+		txHashs := los.Map(das, func(da db.DA, index int) string {
+			return da.TxHash
+		})
+
+		var baseTransactions []baseModel.BaseTransaction
+		gormdb = stateSqlDB.
+			Model(&baseModel.BaseTransaction{}).
+			Select("f_transaction_hash, f_fee").
+			Where("f_transaction_hash IN ?", txHashs).
+			Find(&baseTransactions)
+		if gormdb.Error != nil {
+			log.Error("can not find BaseTransaction", "txHashs", txHashs, "err", gormdb.Error)
+		}
+
 		for _, da := range das {
 			dataLimit := los.Min([]int{cast.ToInt(dataSize), len(da.Data)})
+
+			item, found := los.Find(baseTransactions, func(baseTransaction baseModel.BaseTransaction) bool {
+				return strings.ToLower(baseTransaction.TransactionHash) == strings.ToLower(da.TxHash)
+			})
+
+			fee := 0.0
+			if found {
+				fee = item.Fee
+			}
 
 			blob := Blob{
 				Sender:          da.Sender,
@@ -343,6 +357,8 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 				StateHash:       da.StateHash,
 				BlockNum:        da.BlockNum,
 				ReceiveAt:       da.ReceiveAt,
+				Validators:      strings.Split(da.SignAddr, SEPARATOR_COMMA),
+				Fee:             cast.ToString(fee),
 			}
 			blobs = append(blobs, blob)
 		}
@@ -392,8 +408,31 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 			log.Error("can not find DA", "err", gormdb.Error)
 		}
 
+		txHashs := los.Map(das, func(da db.DA, index int) string {
+			return da.TxHash
+		})
+
+		var baseTransactions []baseModel.BaseTransaction
+		gormdb = stateSqlDB.
+			Model(&baseModel.BaseTransaction{}).
+			Select("f_transaction_hash, f_fee").
+			Where("f_transaction_hash IN ?", txHashs).
+			Find(&baseTransactions)
+		if gormdb.Error != nil {
+			log.Error("can not find BaseTransaction", "txHashs", txHashs, "err", gormdb.Error)
+		}
+
 		for _, da := range das {
 			dataLimit := los.Min([]int{cast.ToInt(dataSize), len(da.Data)})
+
+			item, found := los.Find(baseTransactions, func(baseTransaction baseModel.BaseTransaction) bool {
+				return strings.ToLower(baseTransaction.TransactionHash) == strings.ToLower(da.TxHash)
+			})
+
+			fee := 0.0
+			if found {
+				fee = item.Fee
+			}
 
 			blob := Blob{
 				Sender:          da.Sender,
@@ -409,6 +448,8 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 				StateHash:       da.StateHash,
 				BlockNum:        da.BlockNum,
 				ReceiveAt:       da.ReceiveAt,
+				Validators:      strings.Split(da.SignAddr, SEPARATOR_COMMA),
+				Fee:             cast.ToString(fee),
 			}
 			filteredBlobs = append(filteredBlobs, blob)
 		}
