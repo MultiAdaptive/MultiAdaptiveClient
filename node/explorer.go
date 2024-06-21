@@ -256,7 +256,7 @@ func CreateBlobHandler(w http.ResponseWriter, r *http.Request) {
 		da := db.DA{
 			Sender:          newBlob.Sender,
 			Index:           newBlob.Index,
-			Length:          int64(newBlob.Length),
+			Length:          newBlob.Length,
 			TxHash:          newBlob.TxHash,
 			Commitment:      newBlob.Commitment,
 			CommitmentHash:  newBlob.CommitmentHash,
@@ -288,6 +288,7 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		query := r.URL.Query().Get("q")
 		category := r.URL.Query().Get("category")
+		dataSize := r.URL.Query().Get("data_size")
 
 		if query == "" {
 			http.Error(w, "Missing query or category parameter", http.StatusBadRequest)
@@ -326,14 +327,16 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, da := range das {
+			dataLimit := los.Min([]int{cast.ToInt(dataSize), len(da.Data)})
+
 			blob := Blob{
 				Sender:          da.Sender,
 				Index:           da.Index,
-				Length:          int64(da.Length),
+				Length:          da.Length,
 				TxHash:          da.TxHash,
 				Commitment:      da.Commitment,
 				CommitmentHash:  da.CommitmentHash,
-				Data:            da.Data,
+				Data:            da.Data[0:dataLimit],
 				DAsKey:          da.DAsKey,
 				SignData:        da.SignData,
 				ParentStateHash: da.ParentStateHash,
@@ -357,6 +360,8 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		filter := r.URL.Query().Get("filter")
 		pageStr := r.URL.Query().Get("page")
+		dataSize := r.URL.Query().Get("data_size")
+
 		if pageStr == "" {
 			http.Error(w, "Missing pageStr parameter", http.StatusBadRequest)
 			return
@@ -373,16 +378,23 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 
 		var gormdb *gorm.DB
 		var das []db.DA
-		gormdb = stateSqlDB.
-			Where("f_commitment LIKE ?", "%"+filter+"%").
-			Or("f_sender LIKE ?", "%"+filter+"%").
-			Or("f_tx_hash LIKE ?", "%"+filter+"%").
-			Find(&das)
+
+		if len(filter) == 0 {
+			gormdb = stateSqlDB.Find(&das)
+		} else {
+			gormdb = stateSqlDB.
+				Where("f_commitment LIKE ?", "%"+filter+"%").
+				Or("f_sender LIKE ?", "%"+filter+"%").
+				Or("f_tx_hash LIKE ?", "%"+filter+"%").
+				Find(&das)
+		}
 		if gormdb.Error != nil {
 			log.Error("can not find DA", "err", gormdb.Error)
 		}
 
 		for _, da := range das {
+			dataLimit := los.Min([]int{cast.ToInt(dataSize), len(da.Data)})
+
 			blob := Blob{
 				Sender:          da.Sender,
 				Index:           da.Index,
@@ -390,7 +402,7 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 				TxHash:          da.TxHash,
 				Commitment:      da.Commitment,
 				CommitmentHash:  da.CommitmentHash,
-				Data:            da.Data,
+				Data:            da.Data[0:dataLimit],
 				DAsKey:          da.DAsKey,
 				SignData:        da.SignData,
 				ParentStateHash: da.ParentStateHash,
@@ -436,6 +448,7 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		txHash := r.URL.Query().Get("tx_hash")
 		commitmentHash := r.URL.Query().Get("commitment_hash")
+		dataSize := r.URL.Query().Get("data_size")
 
 		if txHash == "" && commitmentHash == "" {
 			log.Error("parameter error", "txHash", txHash, "commitmentHash", commitmentHash)
@@ -473,6 +486,8 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 		var digest kzg.Digest
 		digest.SetBytes(commitment)
 
+		dataLimit := los.Min([]int{cast.ToInt(dataSize), len(da.Data)})
+
 		foundBlob := BlobDetail{
 			BlobID:         da.Nonce,
 			Commitment:     da.Commitment,
@@ -486,7 +501,7 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 				X: digest.X.String(),
 				Y: digest.Y.String(),
 			},
-			Data:       da.Data,
+			Data:       da.Data[0:dataLimit],
 			Validators: strings.Split(da.SignAddr, SEPARATOR_COMMA),
 			Fee:        cast.ToString(fee),
 			Proof:      "",
