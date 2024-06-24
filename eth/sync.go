@@ -522,7 +522,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			parentHashData = ""
 		}
 		parentHash := common.HexToHash(parentHashData)
-		storageAddr := common.HexToAddress(cs.chain.Config().L1Conf.StorageManagement)
+		storageAddr := common.HexToAddress(cs.chain.Config().L1Conf.StorageManagementProxy)
 		storageIns, _ := contract.NewStorageManager(storageAddr,cs.ethClient)
 		for _,da := range daDatas{
 			if da.NameSpaceID.Uint64() != 0 && cs.nodeType == "s" {
