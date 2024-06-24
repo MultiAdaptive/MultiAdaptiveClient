@@ -524,10 +524,15 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		parentHash := common.HexToHash(parentHashData)
 		storageAddr := common.HexToAddress(cs.chain.Config().L1Conf.StorageManagementProxy)
 		storageIns, _ := contract.NewStorageManager(storageAddr,cs.ethClient)
+		num := cs.chain.CurrentBlock()
 		for _,da := range daDatas{
+			log.Info("processBlocks------存数据----1","commit Hash",common.BytesToHash(da.Commitment.Marshal()).Hex(),"num",num.Number.Uint64())
+
 			if da.NameSpaceID.Uint64() != 0 && cs.nodeType == "s" {
 				opts := &bind.CallOpts{
 					Pending: false,
+					From: cs.address,
+					BlockNumber: num.Number,
 					Context: context.Background(),
 				}
 
