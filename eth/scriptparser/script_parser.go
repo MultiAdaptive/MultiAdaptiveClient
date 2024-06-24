@@ -2,6 +2,10 @@ package scriptparser
 
 import (
 	"encoding/hex"
+	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcec/v2/schnorr"
+	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/ethereum/go-ethereum/log"
@@ -14,6 +18,7 @@ const (
 )
 
 type TransactionInscription struct {
+	Validator   *ValidatorContent
 	Inscription *InscriptionContent
 	TxInIndex   uint32
 	TxInOffset  uint64
@@ -26,7 +31,11 @@ type InscriptionContent struct {
 	IsUnrecognizedEvenField bool
 }
 
-func ParseInscriptionsFromTransaction(msgTx *wire.MsgTx) []*TransactionInscription {
+type ValidatorContent struct {
+	ValidatorAddresses []string
+}
+
+func ParseInscriptionsFromTransaction(msgTx *wire.MsgTx, net *chaincfg.Params) []*TransactionInscription {
 	var inscriptionsFromTx []*TransactionInscription
 	txHash := msgTx.TxHash().String()
 
@@ -56,6 +65,15 @@ func ParseInscriptionsFromTransaction(msgTx *wire.MsgTx) []*TransactionInscripti
 			witnessScript = input.Witness[len(input.Witness)-2]
 		}
 
+		if !needParse(witnessScript) {
+			continue
+		}
+
+		validator := ParseValidator(witnessScript, net)
+		if len(validator.ValidatorAddresses) == 0 {
+			continue
+		}
+
 		// Parse script and get ordinals content
 		inscriptions := ParseInscriptions(witnessScript)
 		if len(inscriptions) == 0 {
@@ -64,6 +82,7 @@ func ParseInscriptionsFromTransaction(msgTx *wire.MsgTx) []*TransactionInscripti
 		for i, v := range inscriptions {
 			txInOffset, inscription := i, v
 			inscriptionsFromTx = append(inscriptionsFromTx, &TransactionInscription{
+				Validator:   validator,
 				Inscription: inscription,
 				TxInIndex:   uint32(index),
 				TxInOffset:  uint64(txInOffset),
@@ -73,10 +92,39 @@ func ParseInscriptionsFromTransaction(msgTx *wire.MsgTx) []*TransactionInscripti
 	return inscriptionsFromTx
 }
 
+func needParse(witnessScript []byte) bool {
+	flag := false
+	tokenizer := txscript.MakeScriptTokenizer(0, witnessScript)
+	for tokenizer.Next() {
+		if tokenizer.OpcodePosition() == 8 {
+			if hex.EncodeToString(tokenizer.Data()) == ProtocolID {
+				flag = true
+				break
+			}
+		}
+	}
+
+	return flag
+}
+
+func ParseValidator(witnessScript []byte, net *chaincfg.Params) *ValidatorContent {
+	var validators ValidatorContent
+
+	tokenizer := txscript.MakeScriptTokenizer(0, witnessScript)
+	for tokenizer.Next() {
+		if tokenizer.OpcodePosition() == 0 || tokenizer.OpcodePosition() == 2 {
+			pubkey, _ := schnorr.ParsePubKey(tokenizer.Data())
+			address, _ := convertPubKey2Address(pubkey, net)
+			log.Info("Data: ", address)
+			validators.ValidatorAddresses = append(validators.ValidatorAddresses, address)
+		}
+	}
+
+	return &validators
+}
+
 func ParseInscriptions(witnessScript []byte) []*InscriptionContent {
-	var (
-		inscriptions []*InscriptionContent
-	)
+	var inscriptions []*InscriptionContent
 
 	// Parse inscription content from witness script
 	tokenizer := txscript.MakeScriptTokenizer(0, witnessScript)
@@ -184,4 +232,21 @@ func parseOneInscription(tokenizer *txscript.ScriptTokenizer) *InscriptionConten
 		IsUnrecognizedEvenField: isUnrecognizedEvenField,
 	}
 	return inscription
+}
+
+func convertPubKey2Address(pubKey *btcec.PublicKey, net *chaincfg.Params) (string, error) {
+	// 将公钥转换为压缩格式的字节数组
+	pubKeyBytes := pubKey.SerializeCompressed()
+
+	// 将公钥字节数组转换为比特币地址
+	address, err := btcutil.NewAddressPubKey(pubKeyBytes, net)
+	if err != nil {
+		log.Error("%v", err.Error())
+		return "", err
+	}
+
+	// 输出比特币地址
+	log.Info("Bitcoin Address:", address.EncodeAddress())
+
+	return address.EncodeAddress(), nil
 }

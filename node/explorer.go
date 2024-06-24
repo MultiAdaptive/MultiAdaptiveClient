@@ -530,7 +530,6 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 		dataLimit := los.Min([]int{cast.ToInt(dataSize), len(da.Data)})
 
 		foundBlob := BlobDetail{
-
 			BlobID:         da.Nonce,
 			Commitment:     da.Commitment,
 			CommitmentHash: da.CommitmentHash,
@@ -583,7 +582,7 @@ func NodesHandler(w http.ResponseWriter, r *http.Request) {
 			publicKeyECDSA, _ := publicKey.(*ecdsa.PublicKey)
 			// 创建一个签名交易的发送者
 			fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-			num,_ := client.BlockNumber(context.Background())
+			num, _ := client.BlockNumber(context.Background())
 			ops := bind.CallOpts{
 				Pending:     false,
 				From:        fromAddress,
@@ -592,7 +591,7 @@ func NodesHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			nodes, err := instance.GetBroadcastingNodes(&ops)
 			if err != nil {
-				log.Info("GetBroadcastingNodes-----","err",err.Error())
+				log.Info("GetBroadcastingNodes-----", "err", err.Error())
 				http.Error(w, "No Node Info found", http.StatusNotFound)
 				return
 			}

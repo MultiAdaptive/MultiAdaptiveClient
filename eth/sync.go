@@ -19,6 +19,7 @@ package eth
 import (
 	"context"
 	"errors"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -77,7 +78,7 @@ func newChainSync(
 
 	switch strings.ToLower(chainName) {
 	case "ethereum", "eth":
-		return newEthereumChainSync(ctx, sqlDb, url, handler, chain, address ,nodeType, chainName)
+		return newEthereumChainSync(ctx, sqlDb, url, handler, chain, address, nodeType, chainName)
 	case "bitcoin", "btc":
 		return newBitcoinChainSync(ctx, sqlDb, host, user, password, handler, chain, nodeType, chainName)
 	default:
@@ -220,28 +221,46 @@ func (cs *chainSyncer) doBitcoinSync() error {
 	startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
 	cs.forced = true
 	ctx := context.Background()
-	ws := NewWorkerService(cs.db, cs.btcClient, magicNumber, net, startNum)
-	transaction2Commitments, err := ws.RunSync(ctx)
+
+	var netParams *chaincfg.Params
+	switch strings.ToLower(net) {
+	case "regtest":
+		netParams = &chaincfg.RegressionNetParams
+	case "mainnet":
+		netParams = &chaincfg.MainNetParams
+	case "simnet":
+		netParams = &chaincfg.SimNetParams
+	case "testnet3":
+		netParams = &chaincfg.TestNet3Params
+	default:
+		log.Error("err config bitcoinNet. should be regtest or mainnet or simnet or testnet3")
+		netParams = nil
+	}
+
+	if netParams == nil {
+		return errors.New("err config bitcoinNet")
+	}
+
+	ws := NewWorkerService(cs.db, cs.btcClient, magicNumber, netParams, startNum)
+	transaction2TransactionBriefs, err := ws.RunSync(ctx)
 	if err != nil {
 		log.Error("bitcoin sync fail", "err", err)
 		return err
 	}
 
-	for tx, commitments := range transaction2Commitments {
-		for _, commitment := range commitments {
-			log.Info("Sync", "tx", tx, "commitment", common.Bytes2Hex(commitment))
-		}
-	}
-
 	daDatas := make([]*types.DA, 0)
 
-	for tx, commitments := range transaction2Commitments {
-		for _, commitment := range commitments {
+	for tx, transactionBriefs := range transaction2TransactionBriefs {
+		for _, transactionBrief := range transactionBriefs {
 			//new commit get from memory pool
+			commitment := transactionBrief.Commitment
 			da, err := cs.handler.fileDataPool.GetDAByCommit(commitment)
 			if err != nil || da == nil {
 				continue
 			}
+			//da.SignerAddr= transactionBrief.Addresses
+			da.BlockNum = uint64(transactionBrief.BlockNum)
+			//da.SignData=transactionBrief.Signatures
 			da.TxHash = common.HexToHash(tx)
 			da.ReceiveAt = time.Now()
 			cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
@@ -417,12 +436,12 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 						txData := tx.Data()
 						if len(txData) != 0 {
 							commitment := slice(txData)
-							commitCache.Set(tx.Hash().String(),&db.CommitDetail{
-								Commit:  commitment,
+							commitCache.Set(tx.Hash().String(), &db.CommitDetail{
+								Commit:   commitment,
 								BlockNum: bc.NumberU64(),
-								TxHash: tx.Hash(),
-								Time:  time.Unix(0, int64(bc.Time())),
-							} )
+								TxHash:   tx.Hash(),
+								Time:     time.Unix(0, int64(bc.Time())),
+							})
 						}
 					}
 				}
@@ -465,29 +484,29 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	}
 	db.Commit(db.Tx)
 	contractAddr := common.HexToAddress(cs.chain.Config().L1Conf.CommitmentManager)
-	instance, _ := contract.NewCommitmentManager(contractAddr,cs.ethClient)
+	instance, _ := contract.NewCommitmentManager(contractAddr, cs.ethClient)
 
-	for _,logDetail := range logs{
-		daDetail,err := instance.ParseSendDACommitment(*logDetail)
+	for _, logDetail := range logs {
+		daDetail, err := instance.ParseSendDACommitment(*logDetail)
 		if err != nil {
 			log.Error("ParseSendDACommitment--", "err", err.Error())
 		}
-		detailFinal,ok := commitCache.Get(logDetail.TxHash.Hex())
-		if ok&&err==nil {
+		detailFinal, ok := commitCache.Get(logDetail.TxHash.Hex())
+		if ok && err == nil {
 			detailFinal.NameSpaceId = daDetail.NameSpaceId
 			detailFinal.Nonce = daDetail.Nonce.Uint64()
 			detailFinal.Root = daDetail.Root
 			detailFinal.SigData = daDetail.Signatures
 			detailFinal.BlockNum = logDetail.BlockNumber
-			addrList,err := cs.handler.fileDataPool.GetSender(daDetail.Signatures)
-			for _,errDetail := range err {
+			addrList, err := cs.handler.fileDataPool.GetSender(daDetail.Signatures)
+			for _, errDetail := range err {
 				if errDetail != nil {
-					log.Info("GetSender----","err",errDetail.Error())
+					log.Info("GetSender----", "err", errDetail.Error())
 				}
 			}
 			detailFinal.SignAddress = addrList
 		}
-		commitCache.Set(logDetail.TxHash.Hex(),detailFinal)
+		commitCache.Set(logDetail.TxHash.Hex(), detailFinal)
 	}
 
 	finalKeys := commitCache.Keys()
@@ -522,21 +541,21 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	}
 	parentHash := common.HexToHash(parentHashData)
 	storageAddr := common.HexToAddress(cs.chain.Config().L1Conf.StorageManagement)
-	storageIns, _ := contract.NewStorageManager(storageAddr,cs.ethClient)
-	for _,da := range daDatas{
+	storageIns, _ := contract.NewStorageManager(storageAddr, cs.ethClient)
+	for _, da := range daDatas {
 		if da.NameSpaceID.Uint64() != 0 && cs.nodeType == "s" {
 			opts := &bind.CallOpts{
 				Pending: false,
 				Context: context.Background(),
 			}
 
-			ns,_ := storageIns.NAMESPACE(opts,da.NameSpaceID)
-			flag :=  addressIncluded(ns.Addr,cs.address)
+			ns, _ := storageIns.NAMESPACE(opts, da.NameSpaceID)
+			flag := addressIncluded(ns.Addr, cs.address)
 			if flag {
-				db.SaveDACommit(cs.db,da,true,parentHash)
+				db.SaveDACommit(cs.db, da, true, parentHash)
 			}
-		}else if (da.NameSpaceID.Uint64() == 0 && cs.nodeType == "b") {
-			currentHash,_ := db.SaveDACommit(cs.db,da,true,parentHash)
+		} else if da.NameSpaceID.Uint64() == 0 && cs.nodeType == "b" {
+			currentHash, _ := db.SaveDACommit(cs.db, da, true, parentHash)
 			parentHash = currentHash
 		}
 	}
@@ -554,15 +573,14 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	return nil
 }
 
-func addressIncluded(list []common.Address,targe common.Address) bool {
-	for _,addr  := range list{
+func addressIncluded(list []common.Address, targe common.Address) bool {
+	for _, addr := range list {
 		if addr == targe {
 			return true
 		}
 	}
 	return false
 }
-
 
 func slice(data []byte) []byte {
 	digst := new(kzg.Digest)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/btcsuite/btcd/btcjson"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/wire"
@@ -24,11 +25,18 @@ const (
 
 var SatoshiToBitcoin = float64(100000000)
 
+type TransactionBrief struct {
+	Commitment []byte
+	BlockNum   int64
+	Addresses  []string
+	Signatures []string
+}
+
 type WorkerService struct {
 	gdb         *gorm.DB
 	btcCli      *rpcclient.Client
 	magicNumber string
-	net         string
+	netParams   *chaincfg.Params
 	startNum    uint64
 }
 
@@ -36,14 +44,14 @@ func NewWorkerService(
 	gdb *gorm.DB,
 	btcCli *rpcclient.Client,
 	magicNumber string,
-	net string,
+	netParams *chaincfg.Params,
 	startNum uint64,
 ) *WorkerService {
 	return &WorkerService{
 		gdb:         gdb,
 		btcCli:      btcCli,
 		magicNumber: magicNumber,
-		net:         net,
+		netParams:   netParams,
 		startNum:    startNum,
 	}
 }
@@ -80,7 +88,7 @@ func (ws *WorkerService) SyncBlock(ctx context.Context, blockHeight int64) error
 	}
 
 	// 保存文件
-	_, err = ws.SaveFiles(ctx, blockHeightAndBlockMap)
+	err = ws.SaveFiles(ctx, blockHeightAndBlockMap)
 	if err != nil {
 		return err
 	}
@@ -88,7 +96,7 @@ func (ws *WorkerService) SyncBlock(ctx context.Context, blockHeight int64) error
 	return nil
 }
 
-func (ws *WorkerService) RunSync(ctx context.Context) (map[string][][]byte, error) {
+func (ws *WorkerService) RunSync(ctx context.Context) (map[string][]TransactionBrief, error) {
 	var err error
 
 	// 获取当前区块高度
@@ -134,7 +142,12 @@ func (ws *WorkerService) RunSync(ctx context.Context) (map[string][][]byte, erro
 	}
 
 	// 保存文件
-	transaction2Commitments, err := ws.SaveFiles(ctx, blockHeightAndBlockMap)
+	err = ws.SaveFiles(ctx, blockHeightAndBlockMap)
+	if err != nil {
+		return nil, err
+	}
+
+	transaction2TransactionBriefs, err := ws.GenerateBrief(ctx, blockHeightAndBlockMap)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +158,7 @@ func (ws *WorkerService) RunSync(ctx context.Context) (map[string][][]byte, erro
 		return nil, err
 	}
 
-	return transaction2Commitments, nil
+	return transaction2TransactionBriefs, nil
 }
 
 // 获取链上当前区块高度
@@ -169,7 +182,7 @@ func (ws *WorkerService) GetPresentBlockHeight(ctx context.Context) (int64, erro
 	now := tool.TimeStampNowSecond()
 
 	gormdb = ws.gdb.WithContext(ctx).
-		Where(baseModel.BaseChain{MagicNumber: ws.magicNumber, Net: ws.net}).
+		Where(baseModel.BaseChain{MagicNumber: ws.magicNumber, Net: ws.netParams.Name}).
 		Attrs(baseModel.BaseChain{CurrentHeight: ws.startNum, CreateAt: now}).
 		FirstOrCreate(&bc)
 	if gormdb.Error != nil {
@@ -184,7 +197,7 @@ func (ws *WorkerService) UpdateChain(ctx context.Context, blockHeight int64) err
 	var bc baseModel.BaseChain
 
 	gormdb = ws.gdb.WithContext(ctx).
-		Where(baseModel.BaseChain{MagicNumber: ws.magicNumber, Net: ws.net}).
+		Where(baseModel.BaseChain{MagicNumber: ws.magicNumber, Net: ws.netParams.Name}).
 		First(&bc)
 	if gormdb.Error != nil {
 		return gormdb.Error
@@ -255,7 +268,7 @@ func (ws *WorkerService) SaveBlocks(ctx context.Context, blockHeightAndBlockHead
 		block := blockHeightAndBlockVerboseMap[blockHeight]
 		blockModels = append(blockModels, baseModel.BaseBlock{
 			MagicNumber:    ws.magicNumber,
-			Net:            ws.net,
+			Net:            ws.netParams.Name,
 			BlockHeight:    block.Height,
 			BlockHash:      block.Hash,
 			Confirmations:  block.Confirmations,
@@ -339,7 +352,7 @@ func (ws *WorkerService) SaveTransactions(ctx context.Context, blockHeightAndBlo
 
 			transactionModels = append(transactionModels, baseModel.BaseTransaction{
 				MagicNumber:     ws.magicNumber,
-				Net:             ws.net,
+				Net:             ws.netParams.Name,
 				Hex:             transactionVerbose.Hex,
 				Txid:            transactionVerbose.Txid,
 				TransactionHash: transactionVerbose.Hash,
@@ -380,33 +393,24 @@ func (ws *WorkerService) SaveTransactions(ctx context.Context, blockHeightAndBlo
 }
 
 // 保存文件
-func (ws *WorkerService) SaveFiles(ctx context.Context, blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) (map[string][][]byte, error) {
+func (ws *WorkerService) SaveFiles(ctx context.Context, blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) error {
 	fileModels := make([]baseModel.BaseFile, 0)
-
-	transaction2Commitments := make(map[string][][]byte)
 
 	now := tool.TimeStampNowSecond()
 
 	for blockHeight, blockVerbose := range blockHeightAndBlockVerboseMap {
 		for _, tx := range blockVerbose.Tx {
-			txid, err := chainhash.NewHashFromStr(tx)
+			transactionInscriptions, err := ws.ParseTransaction(tx)
 			if err != nil {
-				log.Error("Error converting txid string to hash", "tx", tx, "err", err)
-				continue
-			}
-			transactionInscriptions, err := ws.ParseTransaction(txid)
-			if err != nil {
-				log.Error("Error parse transaction", "txid", txid, "err", err)
+				log.Error("Error parse transaction", "tx", tx, "err", err)
 				continue
 			}
 			log.Info("parse transaction", "tx", tx, "transactionInscriptions", transactionInscriptions)
 
-			commitments := make([][]byte, 0)
 			for _, ins := range transactionInscriptions {
 				contentType := ins.Inscription.ContentType
 				contentLength := ins.Inscription.ContentLength
 				contentBody := ins.Inscription.ContentBody
-				commitment := contentBody
 				index := ins.TxInIndex
 				offset := ins.TxInOffset
 				log.Info("INSCRIPTION Verbose", "index", index, "offset", offset, "contentType", string(contentType), "contentLength", contentLength, "contentBody", common.Bytes2Hex(contentBody))
@@ -417,7 +421,7 @@ func (ws *WorkerService) SaveFiles(ctx context.Context, blockHeightAndBlockVerbo
 
 				fileModels = append(fileModels, baseModel.BaseFile{
 					MagicNumber:     ws.magicNumber,
-					Net:             ws.net,
+					Net:             ws.netParams.Name,
 					BlockHeight:     blockHeight,
 					BlockHash:       blockVerbose.Hash,
 					TransactionHash: tx,
@@ -428,15 +432,11 @@ func (ws *WorkerService) SaveFiles(ctx context.Context, blockHeightAndBlockVerbo
 					Offset:          offset,
 					CreateAt:        now,
 				})
-				commitments = append(commitments, commitment)
 			}
-
-			transaction2Commitments[tx] = commitments
 		}
 	}
 
 	log.Info("number of files", "number", len(fileModels))
-	log.Info("number of commitments", "number", len(transaction2Commitments))
 
 	var gormdb *gorm.DB
 
@@ -449,29 +449,87 @@ func (ws *WorkerService) SaveFiles(ctx context.Context, blockHeightAndBlockVerbo
 		CreateInBatches(&fileModels, 5)
 
 	if gormdb.Error != nil {
-		return nil, gormdb.Error
+		return gormdb.Error
 	}
 
-	return transaction2Commitments, nil
+	return nil
+}
+
+// 生成返回数据: 交易哈希、区块号、地址、签名
+func (ws *WorkerService) GenerateBrief(ctx context.Context, blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) (map[string][]TransactionBrief, error) {
+	transaction2TransactionBriefs := make(map[string][]TransactionBrief)
+
+	for blockHeight, blockVerbose := range blockHeightAndBlockVerboseMap {
+		for _, tx := range blockVerbose.Tx {
+			transactionInscriptions, err := ws.ParseTransaction(tx)
+			if err != nil {
+				log.Error("Error parse transaction", "tx", tx, "err", err)
+				continue
+			}
+			log.Info("parse transaction", "tx", tx, "transactionInscriptions", transactionInscriptions)
+
+			transactionSignature, err := ws.GetTransactionSignature(tx)
+			if err != nil {
+				log.Error("Error get transaction signature", "tx", tx, "err", err)
+				continue
+			}
+			log.Info("get transaction signature", "tx", tx, "transactionSignature", transactionSignature)
+
+			transactionBriefs := make([]TransactionBrief, 0)
+			for _, ins := range transactionInscriptions {
+				contentType := ins.Inscription.ContentType
+				contentLength := ins.Inscription.ContentLength
+				contentBody := ins.Inscription.ContentBody
+				validatorAddresses := ins.Validator.ValidatorAddresses
+				commitment := contentBody
+				index := ins.TxInIndex
+				offset := ins.TxInOffset
+				log.Info("INSCRIPTION Verbose", "index", index, "offset", offset, "contentType", string(contentType), "contentLength", contentLength, "contentBody", common.Bytes2Hex(contentBody))
+				if string(contentType) != CUSTOM_CONTENT_TYPE {
+					log.Info("Not custom content", "contentType", string(contentType))
+					continue
+				}
+
+				transactionBrief := TransactionBrief{
+					Commitment: commitment,
+					BlockNum:   blockHeight,
+					Addresses:  validatorAddresses,
+					Signatures: []string{transactionSignature},
+				}
+				transactionBriefs = append(transactionBriefs, transactionBrief)
+			}
+
+			transaction2TransactionBriefs[tx] = transactionBriefs
+		}
+	}
+
+	log.Info("number of commitments", "number", len(transaction2TransactionBriefs))
+
+	return transaction2TransactionBriefs, nil
 }
 
 // 解析交易
-func (ws *WorkerService) ParseTransaction(txHash *chainhash.Hash) ([]*scriptparser.TransactionInscription, error) {
+func (ws *WorkerService) ParseTransaction(txID string) ([]*scriptparser.TransactionInscription, error) {
+	txHash, err := chainhash.NewHashFromStr(txID)
+	if err != nil {
+		return nil, errors.New("invalid transaction ID:" + err.Error())
+	}
+
 	rawTx, err := ws.btcCli.GetRawTransaction(txHash)
 	if err != nil {
 		log.Error("Get raw tx failed", "txHash", txHash, "err", err)
 		return nil, err
 	}
-	transactionInscriptions := scriptparser.ParseInscriptionsFromTransaction(rawTx.MsgTx())
+	transactionInscriptions := scriptparser.ParseInscriptionsFromTransaction(rawTx.MsgTx(), ws.netParams)
 	if len(transactionInscriptions) == 0 {
 		log.Info("NO INSCRIPTIONS", "txHash", txHash)
 	}
 	log.Info("SOME INSCRIPTIONS", "txHash", txHash, "number", len(transactionInscriptions))
+
 	return transactionInscriptions, nil
 }
 
 func (ws *WorkerService) GetTransactionFee(txID string) (float64, error) {
-	// 将交易 ID 转换为 ShaHash
 	txHash, err := chainhash.NewHashFromStr(txID)
 	if err != nil {
 		return 0, errors.New("invalid transaction ID:" + err.Error())
@@ -507,4 +565,22 @@ func (ws *WorkerService) GetTransactionFee(txID string) (float64, error) {
 	fee := inputSum - outputSum
 
 	return fee, nil
+}
+
+func (ws *WorkerService) GetTransactionSignature(txID string) (string, error) {
+	txHash, err := chainhash.NewHashFromStr(txID)
+	if err != nil {
+		log.Error("Invalid transaction ID", "txID", txID, "err", err)
+		return "", err
+	}
+
+	rawTx, err := ws.btcCli.GetRawTransactionVerbose(txHash)
+	if err != nil {
+		log.Error("Error getting raw transaction", "txHash", txHash, "err", err)
+		return "", err
+	}
+
+	log.Info("Get Transaction Signatures", "TransactionID", txID, "Hex", rawTx.Hex)
+
+	return rawTx.Hex, nil
 }
