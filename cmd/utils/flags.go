@@ -594,6 +594,13 @@ var (
 		Category: flags.APICategory,
 	}
 
+	ExplorerPortFlag = &cli.IntFlag{
+		Name:     "explorer.port",
+		Usage:    "Explorer server listening port",
+		Value:    node.DefaultExplorerPort,
+		Category: flags.ExplorerCategory,
+	}
+
 	WSEnabledFlag = &cli.BoolFlag{
 		Name:     "ws",
 		Usage:    "Enable the WS-RPC server",
@@ -950,8 +957,8 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 			urls = params.GoerliBootnodes
 		}
 	}
-	for _,url := range urls{
-		log.Info("setBootstrapNodes----",url)
+	for _, url := range urls {
+		log.Info("setBootstrapNodes----", url)
 	}
 	cfg.BootstrapNodes = mustParseBootnodes(urls)
 }
@@ -1041,6 +1048,10 @@ func setHTTP(ctx *cli.Context, cfg *node.Config) {
 
 	if ctx.IsSet(HTTPPortFlag.Name) {
 		cfg.HTTPPort = ctx.Int(HTTPPortFlag.Name)
+	}
+
+	if ctx.IsSet(ExplorerPortFlag.Name) {
+		cfg.ExplorerPort = ctx.Int(ExplorerPortFlag.Name)
 	}
 
 	if ctx.IsSet(AuthListenFlag.Name) {
@@ -1197,7 +1208,7 @@ func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error
 
 // setEtherbase retrieves the etherbase from the directly specified command line flags.
 func setEtherbase(ctx *cli.Context, cfg *ethconfig.Config) {
-	if  ctx.IsSet(EtherbaseFlag.Name) {
+	if ctx.IsSet(EtherbaseFlag.Name) {
 		addr := ctx.String(EtherbaseFlag.Name)
 		if strings.HasPrefix(addr, "0x") || strings.HasPrefix(addr, "0X") {
 			addr = addr[2:]
@@ -1625,8 +1636,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		cfg.Genesis = core.DefaultGoerliGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.GoerliGenesisHash)
 	case ctx.Bool(DeveloperFlag.Name):
-
-
 
 		if !ctx.IsSet(NetworkIdFlag.Name) {
 			cfg.NetworkId = 1337

@@ -126,6 +126,7 @@ var (
 		utils.HTTPEnabledFlag,
 		utils.HTTPListenAddrFlag,
 		utils.HTTPPortFlag,
+		utils.ExplorerPortFlag,
 		utils.HTTPCORSDomainFlag,
 		utils.AuthListenFlag,
 		utils.AuthPortFlag,

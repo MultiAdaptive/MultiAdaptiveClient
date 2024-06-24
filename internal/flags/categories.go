@@ -31,6 +31,7 @@ const (
 	PerfCategory       = "PERFORMANCE TUNING"
 	AccountCategory    = "ACCOUNT"
 	APICategory        = "API AND CONSOLE"
+	ExplorerCategory   = "Explorer"
 	NetworkingCategory = "NETWORKING"
 	MinerCategory      = "MINER"
 	GasPriceCategory   = "GAS PRICE ORACLE"

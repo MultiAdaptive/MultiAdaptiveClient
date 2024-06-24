@@ -507,10 +507,11 @@ func (n *Node) startRPC() error {
 	}
 
 	if true {
-		if err := initExplorer(n.explorer, 18080); err != nil {
+		if err := initExplorer(n.explorer, n.config.ExplorerPort); err != nil {
 			return err
 		}
 	}
+
 	// Configure WebSocket.
 	if n.config.WSHost != "" {
 		// legacy unauthenticated
