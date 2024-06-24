@@ -3,72 +3,74 @@ package types
 import (
 	"crypto/ecdsa"
 	"errors"
-	kzgSdk "github.com/multiAdaptive/kzg-sdk"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	kzgSdk "github.com/multiAdaptive/kzg-sdk"
 	//"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/params"
 	"os"
 	"strings"
 )
+
 const dSrsSize = 1 << 16
+
 type SingerTool struct {
-	config  *params.ChainConfig
-	prv *ecdsa.PrivateKey
+	config *params.ChainConfig
+	prv    *ecdsa.PrivateKey
 }
 
-func NewSingerTool(conf *params.ChainConfig,prv *ecdsa.PrivateKey) *SingerTool {
+func NewSingerTool(conf *params.ChainConfig, prv *ecdsa.PrivateKey) *SingerTool {
 	return &SingerTool{
 		config: conf,
-		prv: prv,
+		prv:    prv,
 	}
 }
 
-func (s *SingerTool) Sign(da *DA) ([]byte,error) {
+func (s *SingerTool) Sign(da *DA) ([]byte, error) {
 	singer := NewEIP155FdSigner(s.config.ChainID)
 	h := singer.Hash(da)
-	sign,err := crypto.Sign(h.Bytes(),s.prv)
+	sign, err := crypto.Sign(h.Bytes(), s.prv)
 	v := []byte{sign[64] + 27}
 	newSig := sign[:64]
 	newSig = append(newSig, v...)
-	return newSig,err
+	return newSig, err
 }
 
-func (s *SingerTool) Sender(da *DA) ([]common.Address,[]error) {
+func (s *SingerTool) Sender(da *DA) ([]common.Address, []error) {
 	singer := NewEIP155FdSigner(s.config.ChainID)
-	addr,err := singer.Sender(da)
-	return addr,err
+	addr, err := singer.Sender(da)
+	return addr, err
 }
 
-func (s *SingerTool) VerifyEth(da *DA) (bool,error) {
+func (s *SingerTool) VerifyEth(da *DA) (bool, error) {
 	if da.Length != uint64(len(da.Data)) {
-		return false,errors.New("da data length is not match")
+		return false, errors.New("da data length is not match")
 	}
 	currentPath, _ := os.Getwd()
-	path := strings.Split(currentPath,"/build")[0] + "/srs"
-	domiconSDK,err := kzgSdk.InitDomiconSdk(dSrsSize,path)
+	path := strings.Split(currentPath, "/build")[0] + "/srs"
+	domiconSDK, err := kzgSdk.InitMultiAdaptiveSdk(path)
 	if err != nil {
-		return false,err
+		return false, err
 	}
 	commit := da.Commitment.Marshal()
-	flag,err := domiconSDK.VerifyCommitWithProof(commit,da.Proof,da.ClaimedValue)
+	flag, err := domiconSDK.VerifyCommitWithProof(commit, da.Proof, da.ClaimedValue)
 	if err != nil {
-		return false,err
+		return false, err
 	}
-	return flag,nil
+	return flag, nil
 }
 
-func (s *SingerTool) VerifyBtc(da *DA) (bool,error) {
+func (s *SingerTool) VerifyBtc(da *DA) (bool, error) {
 	currentPath, _ := os.Getwd()
-	path := strings.Split(currentPath,"/build")[0] + "/srs"
-	domiconSDK,err := kzgSdk.InitDomiconSdk(dSrsSize,path)
+	path := strings.Split(currentPath, "/build")[0] + "/srs"
+	domiconSDK, err := kzgSdk.InitMultiAdaptiveSdk(path)
 	if err != nil {
-		return false,err
+		return false, err
 	}
 	commit := da.Commitment.Marshal()
-	flag,err := domiconSDK.VerifyCommitWithProof(commit,da.Proof,da.ClaimedValue)
+	flag, err := domiconSDK.VerifyCommitWithProof(commit, da.Proof, da.ClaimedValue)
 	if err != nil {
-		return false,err
+		return false, err
 	}
-	return flag,nil
+	return flag, nil
 }
