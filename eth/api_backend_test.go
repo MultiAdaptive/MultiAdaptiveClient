@@ -3,7 +3,7 @@ package eth
 import (
 	"bytes"
 	"context"
-	kzgSdk "github.com/domicon-labs/kzg-sdk"
+	kzgSdk "github.com/multiAdaptive/kzg-sdk"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"os"
