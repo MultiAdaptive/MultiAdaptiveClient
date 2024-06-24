@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	kzg "github.com/domicon-labs/kzg-sdk"
+	kzg "github.com/multiAdaptive/kzg-sdk"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )

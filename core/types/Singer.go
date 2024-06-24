@@ -3,7 +3,7 @@ package types
 import (
 	"crypto/ecdsa"
 	"errors"
-	kzgSdk "github.com/domicon-labs/kzg-sdk"
+	kzgSdk "github.com/multiAdaptive/kzg-sdk"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	//"github.com/ethereum/go-ethereum/accounts"

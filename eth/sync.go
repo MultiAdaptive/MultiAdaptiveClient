@@ -78,7 +78,7 @@ func newChainSync(
 
 	switch strings.ToLower(chainName) {
 	case "ethereum", "eth":
-		return newEthereumChainSync(ctx, sqlDb, url, handler, chain, address, nodeType, chainName)
+		return newEthereumChainSync(ctx, sqlDb, url, handler, chain, address ,nodeType, chainName)
 	case "bitcoin", "btc":
 		return newBitcoinChainSync(ctx, sqlDb, host, user, password, handler, chain, nodeType, chainName)
 	default:
@@ -435,13 +435,14 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 						trans = append(trans, tx)
 						txData := tx.Data()
 						if len(txData) != 0 {
+							log.Info("processBlocks--------","有 da 交易")
 							commitment := slice(txData)
-							commitCache.Set(tx.Hash().String(), &db.CommitDetail{
-								Commit:   commitment,
+							commitCache.Set(tx.Hash().String(),&db.CommitDetail{
+								Commit:  commitment,
 								BlockNum: bc.NumberU64(),
-								TxHash:   tx.Hash(),
-								Time:     time.Unix(0, int64(bc.Time())),
-							})
+								TxHash: tx.Hash(),
+								Time:  time.Unix(0, int64(bc.Time())),
+							} )
 						}
 					}
 				}
@@ -483,30 +484,31 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		log.Error("AddBatchLogs--", "err", err.Error())
 	}
 	db.Commit(db.Tx)
-	contractAddr := common.HexToAddress(cs.chain.Config().L1Conf.CommitmentManager)
-	instance, _ := contract.NewCommitmentManager(contractAddr, cs.ethClient)
+	contractAddr := common.HexToAddress(cs.chain.Config().L1Conf.CommitmentManagerProxy)
+	instance, _ := contract.NewCommitmentManager(contractAddr,cs.ethClient)
 
-	for _, logDetail := range logs {
-		daDetail, err := instance.ParseSendDACommitment(*logDetail)
+	for _,logDetail := range logs{
+		daDetail,err := instance.ParseSendDACommitment(*logDetail)
 		if err != nil {
 			log.Error("ParseSendDACommitment--", "err", err.Error())
 		}
-		detailFinal, ok := commitCache.Get(logDetail.TxHash.Hex())
-		if ok && err == nil {
+		detailFinal,ok := commitCache.Get(logDetail.TxHash.Hex())
+		if ok&&err==nil {
 			detailFinal.NameSpaceId = daDetail.NameSpaceId
 			detailFinal.Nonce = daDetail.Nonce.Uint64()
+			detailFinal.Index = daDetail.Index.Uint64()
 			detailFinal.Root = daDetail.Root
 			detailFinal.SigData = daDetail.Signatures
 			detailFinal.BlockNum = logDetail.BlockNumber
-			addrList, err := cs.handler.fileDataPool.GetSender(daDetail.Signatures)
-			for _, errDetail := range err {
+			addrList,err := cs.handler.fileDataPool.GetSender(daDetail.Signatures)
+			for _,errDetail := range err {
 				if errDetail != nil {
-					log.Info("GetSender----", "err", errDetail.Error())
+					log.Info("GetSender----","err",errDetail.Error())
 				}
 			}
 			detailFinal.SignAddress = addrList
 		}
-		commitCache.Set(logDetail.TxHash.Hex(), detailFinal)
+		commitCache.Set(logDetail.TxHash.Hex(),detailFinal)
 	}
 
 	finalKeys := commitCache.Keys()
@@ -534,29 +536,37 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			}
 		}
 	}
+	
+	if len(daDatas) > 0 {
+		parentHashData, err := db.GetMaxIDDAStateHash(cs.db)
+		if err != nil {
+			parentHashData = ""
+		}
+		parentHash := common.HexToHash(parentHashData)
+		storageAddr := common.HexToAddress(cs.chain.Config().L1Conf.StorageManagementProxy)
+		storageIns, _ := contract.NewStorageManager(storageAddr,cs.ethClient)
+		num := cs.chain.CurrentBlock()
+		for _,da := range daDatas{
+			if da.NameSpaceID.Uint64() != 0 && cs.nodeType == "s" {
+				opts := &bind.CallOpts{
+					Pending: false,
+					From: cs.address,
+					BlockNumber: num.Number,
+					Context: context.Background(),
+				}
 
-	parentHashData, err := db.GetMaxIDDAStateHash(cs.db)
-	if err != nil {
-		parentHashData = ""
-	}
-	parentHash := common.HexToHash(parentHashData)
-	storageAddr := common.HexToAddress(cs.chain.Config().L1Conf.StorageManagement)
-	storageIns, _ := contract.NewStorageManager(storageAddr, cs.ethClient)
-	for _, da := range daDatas {
-		if da.NameSpaceID.Uint64() != 0 && cs.nodeType == "s" {
-			opts := &bind.CallOpts{
-				Pending: false,
-				Context: context.Background(),
+				ns,_ := storageIns.NAMESPACE(opts,da.NameSpaceID)
+				flag :=  addressIncluded(ns.Addr,cs.address)
+				if flag {
+					db.SaveDACommit(cs.db,da,true,parentHash)
+				}
 			}
 
-			ns, _ := storageIns.NAMESPACE(opts, da.NameSpaceID)
-			flag := addressIncluded(ns.Addr, cs.address)
-			if flag {
-				db.SaveDACommit(cs.db, da, true, parentHash)
+			if cs.nodeType == "b" {
+				currentHash,_ := db.SaveDACommit(cs.db,da,true,parentHash)
+				parentHash = currentHash
 			}
-		} else if da.NameSpaceID.Uint64() == 0 && cs.nodeType == "b" {
-			currentHash, _ := db.SaveDACommit(cs.db, da, true, parentHash)
-			parentHash = currentHash
+
 		}
 	}
 
@@ -573,14 +583,15 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	return nil
 }
 
-func addressIncluded(list []common.Address, targe common.Address) bool {
-	for _, addr := range list {
+func addressIncluded(list []common.Address,targe common.Address) bool {
+	for _,addr  := range list{
 		if addr == targe {
 			return true
 		}
 	}
 	return false
 }
+
 
 func slice(data []byte) []byte {
 	digst := new(kzg.Digest)

@@ -8,6 +8,7 @@ import (
 
 type CommitDetail struct {
 	Nonce    uint64
+	Index    uint64
 	BlockNum uint64
 	Commit   []byte
 	TxHash   common.Hash
