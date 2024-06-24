@@ -5,9 +5,8 @@ import (
 	"errors"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	kzgSdk "github.com/multiAdaptive/kzg-sdk"
-	//"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/params"
+	kzgSdk "github.com/multiAdaptive/kzg-sdk"
 	"os"
 	"strings"
 )
@@ -47,6 +46,7 @@ func (s *SingerTool) VerifyEth(da *DA) (bool, error) {
 		return false, errors.New("da data length is not match")
 	}
 	currentPath, _ := os.Getwd()
+
 	path := strings.Split(currentPath, "/build")[0] + "/srs"
 	domiconSDK, err := kzgSdk.InitMultiAdaptiveSdk(path)
 	if err != nil {
@@ -62,6 +62,7 @@ func (s *SingerTool) VerifyEth(da *DA) (bool, error) {
 
 func (s *SingerTool) VerifyBtc(da *DA) (bool, error) {
 	currentPath, _ := os.Getwd()
+
 	path := strings.Split(currentPath, "/build")[0] + "/srs"
 	domiconSDK, err := kzgSdk.InitMultiAdaptiveSdk(path)
 	if err != nil {
