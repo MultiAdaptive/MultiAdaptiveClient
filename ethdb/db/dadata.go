@@ -66,6 +66,7 @@ func SaveDACommit(db *gorm.DB, da *types.DA, shouldSave bool, parentHash common.
 		}
 		addrRes := strings.Join(addrStr, JoinString)
 
+		cmHash := common.BytesToHash(da.Commitment.Marshal())
 		wd := DA{
 			Sender:          da.Sender.Hex(),
 			Nonce:           int64(da.Nonce),
@@ -74,6 +75,7 @@ func SaveDACommit(db *gorm.DB, da *types.DA, shouldSave bool, parentHash common.
 			TxHash:          da.TxHash.Hex(),
 			BlockNum:        int64(da.BlockNum),
 			Commitment:      common.Bytes2Hex(da.Commitment.Marshal()),
+			CommitmentHash:  cmHash.Hex(),
 			Data:            common.Bytes2Hex(da.Data),
 			SignData:        result,
 			SignAddr:        addrRes,

@@ -416,6 +416,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 						trans = append(trans, tx)
 						txData := tx.Data()
 						if len(txData) != 0 {
+							log.Info("processBlocks--------","有 da 交易")
 							commitment := slice(txData)
 							commitCache.Set(tx.Hash().String(),&db.CommitDetail{
 								Commit:  commitment,
@@ -476,6 +477,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		if ok&&err==nil {
 			detailFinal.NameSpaceId = daDetail.NameSpaceId
 			detailFinal.Nonce = daDetail.Nonce.Uint64()
+			detailFinal.Index = daDetail.Index.Uint64()
 			detailFinal.Root = daDetail.Root
 			detailFinal.SigData = daDetail.Signatures
 			detailFinal.BlockNum = logDetail.BlockNumber
@@ -526,8 +528,6 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		storageIns, _ := contract.NewStorageManager(storageAddr,cs.ethClient)
 		num := cs.chain.CurrentBlock()
 		for _,da := range daDatas{
-			log.Info("processBlocks------存数据----1","commit Hash",common.BytesToHash(da.Commitment.Marshal()).Hex(),"num",num.Number.Uint64())
-
 			if da.NameSpaceID.Uint64() != 0 && cs.nodeType == "s" {
 				opts := &bind.CallOpts{
 					Pending: false,
@@ -544,7 +544,6 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			}
 
 			if cs.nodeType == "b" {
-				log.Info("processBlocks------存数据----","commit Hash",common.BytesToHash(da.Commitment.Marshal()).Hex())
 				currentHash,_ := db.SaveDACommit(cs.db,da,true,parentHash)
 				parentHash = currentHash
 			}
