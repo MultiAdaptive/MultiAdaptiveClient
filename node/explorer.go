@@ -571,7 +571,7 @@ func NodesHandler(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "No Node Info found", http.StatusNotFound)
 				return
 			}
-			contractAddress := common.HexToAddress(l1Conf.NodeManager)
+			contractAddress := common.HexToAddress(l1Conf.NodeManagerProxy)
 			instance, err := contract.NewNodeManager(contractAddress, client)
 			if err != nil {
 				http.Error(w, "No Node Info found", http.StatusNotFound)
@@ -584,6 +584,7 @@ func NodesHandler(w http.ResponseWriter, r *http.Request) {
 			// 创建一个签名交易的发送者
 			fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 			num,_ := client.BlockNumber(context.Background())
+			log.Info("NodesHandler------","num",num)
 			ops := bind.CallOpts{
 				Pending:     false,
 				From:        fromAddress,
@@ -596,6 +597,7 @@ func NodesHandler(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "No Node Info found", http.StatusNotFound)
 				return
 			}
+			log.Info("GetBroadcastingNodes-----","nodes",len(nodes))
 			result = append(result, nodes...)
 			strNodes, err := instance.GetstorageNodes(&ops)
 			storResult = append(storResult, strNodes...)
@@ -609,7 +611,10 @@ func NodesHandler(w http.ResponseWriter, r *http.Request) {
 					Location:     node.Location,
 					NodeType:     "BroadCast Node",
 				}
-				filteredNodes = append(filteredNodes, filNode)
+				if  filNode.StakedTokens > 0{
+					filteredNodes = append(filteredNodes, filNode)
+				}
+
 			}
 
 			for _, node := range storResult {
@@ -622,7 +627,9 @@ func NodesHandler(w http.ResponseWriter, r *http.Request) {
 					Location:     node.Location,
 					NodeType:     "Storage Node",
 				}
-				filteredNodes = append(filteredNodes, filNode)
+				if filNode.StakedTokens > 0 {
+					filteredNodes = append(filteredNodes, filNode)
+				}
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
