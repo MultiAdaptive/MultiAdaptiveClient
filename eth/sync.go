@@ -464,7 +464,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		log.Error("AddBatchLogs--", "err", err.Error())
 	}
 	db.Commit(db.Tx)
-	contractAddr := common.HexToAddress(cs.chain.Config().L1Conf.CommitmentManager)
+	contractAddr := common.HexToAddress(cs.chain.Config().L1Conf.CommitmentManagerProxy)
 	instance, _ := contract.NewCommitmentManager(contractAddr,cs.ethClient)
 
 	for _,logDetail := range logs{
