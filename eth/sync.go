@@ -536,11 +536,14 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 				if flag {
 					db.SaveDACommit(cs.db,da,true,parentHash)
 				}
-			}else {
+			}
+
+			if cs.nodeType == "b" {
 				log.Info("processBlocks------存数据----","commit Hash",common.BytesToHash(da.Commitment.Marshal()).Hex())
 				currentHash,_ := db.SaveDACommit(cs.db,da,true,parentHash)
 				parentHash = currentHash
 			}
+
 		}
 	}
 
