@@ -69,12 +69,6 @@ func (h *explorerServer) setListenAddr(host string, port int) error {
 	return nil
 }
 
-// InfoHandler 处理 /info 请求
-func InfoHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Server is alive!"))
-}
-
 type BlobBrief struct {
 	BlobID         int64    `json:"blob_id"`
 	Commitment     string   `json:"commitment"`
@@ -87,7 +81,17 @@ type BlobBrief struct {
 	Fee            string   `json:"fee"`
 }
 
-// Blob represents the blob data structure
+type BlobFilter struct {
+	Index          int64    `json:"index"`
+	Length         int64    `json:"length"`
+	TxHash         string   `json:"tx_hash"`
+	CommitmentHash string   `json:"commitment_hash"`
+	BlockNum       int64    `json:"block_num"`
+	ReceiveAt      string   `json:"receive_at"`
+	Fee            string   `json:"fee"`
+	Validators     []string `json:"validators"`
+}
+
 type Blob struct {
 	Sender          string   `json:"sender"`
 	Index           int64    `json:"index"`
@@ -98,7 +102,6 @@ type Blob struct {
 	Data            string   `json:"data"`
 	DAsKey          string   `json:"das_key"`
 	SignData        string   `json:"sign_data"`
-	Validator       []string `json:"validator"`
 	ParentStateHash string   `json:"parent_state_hash"`
 	StateHash       string   `json:"state_hash"`
 	BlockNum        int64    `json:"block_num"`
@@ -111,6 +114,11 @@ type Pagination struct {
 	Total   int `json:"total"`
 	Page    int `json:"page"`
 	PerPage int `json:"perPage"`
+}
+
+type PageBlobFilters struct {
+	Data       []BlobFilter `json:"data"`
+	Pagination Pagination   `json:"pagination"`
 }
 
 type PageBlobs struct {
@@ -159,6 +167,12 @@ type Validator struct {
 	AvailableStakedAmount float64 `json:"available_staked_amount"`
 	CommissionRate        float64 `json:"commission_rate"`
 	VotingPower           float64 `json:"voting_power"`
+}
+
+// InfoHandler 处理 /info 请求
+func InfoHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Server is alive!"))
 }
 
 // HomeDataHandler handles the GET /api/home-data endpoint
@@ -376,7 +390,6 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		filter := r.URL.Query().Get("filter")
 		pageStr := r.URL.Query().Get("page")
-		dataSize := r.URL.Query().Get("data_size")
 
 		if pageStr == "" {
 			http.Error(w, "Missing pageStr parameter", http.StatusBadRequest)
@@ -389,19 +402,23 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Filter blobs based on the provided filter parameter
-		var filteredBlobs []Blob
+		var filteredBlobs []BlobFilter
 
 		var gormdb *gorm.DB
 		var das []db.DA
 
 		if len(filter) == 0 {
-			gormdb = stateSqlDB.Find(&das)
+			gormdb = stateSqlDB.
+				Select("f_index, f_nonce, f_tx_hash, f_commitment_hash, f_block_num, f_length, f_sign_address, f_receive_at").
+				Order("f_receive_at desc").
+				Find(&das)
 		} else {
 			gormdb = stateSqlDB.
+				Select("f_index, f_nonce, f_tx_hash, f_commitment_hash, f_block_num, f_length, f_sign_address, f_receive_at").
 				Where("f_commitment LIKE ?", "%"+filter+"%").
 				Or("f_sender LIKE ?", "%"+filter+"%").
 				Or("f_tx_hash LIKE ?", "%"+filter+"%").
+				Order("f_receive_at desc").
 				Find(&das)
 		}
 		if gormdb.Error != nil {
@@ -423,8 +440,6 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, da := range das {
-			dataLimit := los.Min([]int{cast.ToInt(dataSize), len(da.Data)})
-
 			item, found := los.Find(baseTransactions, func(baseTransaction baseModel.BaseTransaction) bool {
 				return strings.ToLower(baseTransaction.TransactionHash) == strings.ToLower(da.TxHash)
 			})
@@ -434,27 +449,19 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 				fee = item.Fee
 			}
 
-			blob := Blob{
-				Sender:          da.Sender,
-				Index:           da.Index,
-				Length:          da.Length,
-				TxHash:          da.TxHash,
-				Commitment:      da.Commitment,
-				CommitmentHash:  da.CommitmentHash,
-				Data:            da.Data[0:dataLimit],
-				DAsKey:          da.DAsKey,
-				SignData:        da.SignData,
-				ParentStateHash: da.ParentStateHash,
-				StateHash:       da.StateHash,
-				BlockNum:        da.BlockNum,
-				ReceiveAt:       da.ReceiveAt,
-				Validators:      strings.Split(da.SignAddr, SEPARATOR_COMMA),
-				Fee:             cast.ToString(fee),
+			blob := BlobFilter{
+				Index:          da.Index,
+				Length:         da.Length,
+				TxHash:         da.TxHash,
+				CommitmentHash: da.CommitmentHash,
+				BlockNum:       da.BlockNum,
+				ReceiveAt:      da.ReceiveAt,
+				Validators:     strings.Split(da.SignAddr, SEPARATOR_COMMA),
+				Fee:            cast.ToString(fee),
 			}
 			filteredBlobs = append(filteredBlobs, blob)
 		}
 
-		// Pagination
 		const perPage = 10
 		total := len(filteredBlobs)
 		start := (page - 1) * perPage
@@ -467,8 +474,7 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		paginatedBlobs := filteredBlobs[start:end]
 
-		// Response
-		response := PageBlobs{
+		response := PageBlobFilters{
 			Data: paginatedBlobs,
 			Pagination: Pagination{
 				Total:   total,
