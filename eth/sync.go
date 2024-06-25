@@ -224,16 +224,16 @@ func (cs *chainSyncer) doBitcoinSync() error {
 
 	var netParams *chaincfg.Params
 	switch strings.ToLower(net) {
-	case "regtest":
+	case "bitcoinregtest":
 		netParams = &chaincfg.RegressionNetParams
-	case "mainnet":
+	case "bitcoinmainnet":
 		netParams = &chaincfg.MainNetParams
-	case "simnet":
+	case "bitcoinsimnet":
 		netParams = &chaincfg.SimNetParams
-	case "testnet3":
+	case "bitcointestnet3":
 		netParams = &chaincfg.TestNet3Params
 	default:
-		log.Error("err config bitcoinNet. should be regtest or mainnet or simnet or testnet3")
+		log.Error("err config bitcoinNet. should be bitcoinregtest or bitcoinmainnet or bitcoinsimnet or bitcointestnet3")
 		netParams = nil
 	}
 
