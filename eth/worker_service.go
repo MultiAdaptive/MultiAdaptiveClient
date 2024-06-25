@@ -110,15 +110,21 @@ func (ws *WorkerService) RunSync(ctx context.Context) (map[string][]TransactionB
 	// 读取数据库中的区块高度
 	presentBlockHeight, err := ws.GetPresentBlockHeight(ctx)
 	if err != nil {
+		log.Error("get present block number fail", "err", err)
 		return nil, err
 	}
 	log.Info("present block number", "presentBlockHeight", presentBlockHeight)
 
 	// 如果当前区块高度等于数据库中的区块高度，则不处理
 	if presentBlockHeight >= currentBlockHeight {
-		log.Info("The current blockchain height is not greater than the height of synchronized blocks in the database")
+		log.Info("The current blockchain height is not greater than the height of synchronized blocks in the database",
+			"presentBlockHeight", presentBlockHeight,
+			"currentBlockHeight", currentBlockHeight)
 		return nil, nil
 	}
+	log.Info("The current blockchain height is greater than the height of synchronized blocks in the database",
+		"presentBlockHeight", presentBlockHeight,
+		"currentBlockHeight", currentBlockHeight)
 
 	beginBlockHeight := presentBlockHeight + 1
 	endBlockHeight := currentBlockHeight
@@ -126,37 +132,61 @@ func (ws *WorkerService) RunSync(ctx context.Context) (map[string][]TransactionB
 	// 遍历获取block
 	blockHeightAndBlockMap, blockHeightAndBlockHeaderMap, err := ws.GetBlocks(ctx, beginBlockHeight, endBlockHeight)
 	if err != nil {
+		log.Error("get blocks fail", "err", err)
 		return nil, err
 	}
+	log.Info("get blocks complete",
+		"beginBlockHeight", beginBlockHeight,
+		"endBlockHeight", endBlockHeight)
 
 	//保存区块
 	err = ws.SaveBlocks(ctx, blockHeightAndBlockHeaderMap, blockHeightAndBlockMap)
 	if err != nil {
+		log.Error("save blocks fail", "err", err)
 		return nil, err
 	}
+	log.Info("save blocks complete",
+		"beginBlockHeight", beginBlockHeight,
+		"endBlockHeight", endBlockHeight)
 
 	// 保存交易
 	err = ws.SaveTransactions(ctx, blockHeightAndBlockMap)
 	if err != nil {
+		log.Error("save transactions fail", "err", err)
 		return nil, err
 	}
+	log.Info("save transactions complete",
+		"beginBlockHeight", beginBlockHeight,
+		"endBlockHeight", endBlockHeight)
 
 	// 保存文件
 	err = ws.SaveFiles(ctx, blockHeightAndBlockMap)
 	if err != nil {
+		log.Error("save files fail", "err", err)
 		return nil, err
 	}
+	log.Info("save files complete",
+		"beginBlockHeight", beginBlockHeight,
+		"endBlockHeight", endBlockHeight)
 
 	transaction2TransactionBriefs, err := ws.GenerateBrief(ctx, blockHeightAndBlockMap)
 	if err != nil {
+		log.Error("generate brief fail", "err", err)
 		return nil, err
 	}
+	log.Info("generate brief complete",
+		"beginBlockHeight", beginBlockHeight,
+		"endBlockHeight", endBlockHeight)
 
 	// 更新当前区块高度
 	err = ws.UpdateChain(ctx, endBlockHeight)
 	if err != nil {
+		log.Error("update chain fail", "err", err)
 		return nil, err
 	}
+	log.Info("update chain complete",
+		"beginBlockHeight", beginBlockHeight,
+		"endBlockHeight", endBlockHeight)
 
 	return transaction2TransactionBriefs, nil
 }
@@ -286,6 +316,8 @@ func (ws *WorkerService) SaveBlocks(ctx context.Context, blockHeightAndBlockHead
 			CreateAt:       now,
 		})
 	}
+
+	log.Info("number of blocks", "number", len(blockModels))
 
 	var gormdb *gorm.DB
 
