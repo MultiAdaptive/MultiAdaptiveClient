@@ -390,6 +390,7 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		filter := r.URL.Query().Get("filter")
 		pageStr := r.URL.Query().Get("page")
+		perPageStr := r.URL.Query().Get("per_page")
 
 		if pageStr == "" {
 			http.Error(w, "Missing pageStr parameter", http.StatusBadRequest)
@@ -462,7 +463,7 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 			filteredBlobs = append(filteredBlobs, blob)
 		}
 
-		const perPage = 10
+		perPage := cast.ToInt(perPageStr)
 		total := len(filteredBlobs)
 		start := (page - 1) * perPage
 		end := start + perPage
