@@ -32,7 +32,7 @@ type DA struct {
 	Data       []byte						`json:"Data"`//上传的的文件
 	Commitment kzg.Digest                           `json:"Commitment"`
 	SignData   [][]byte                              `json:"SignData"`
-	SignerAddr []common.Address                      `json:"SignerAddr"`
+	SignerAddr []string                                `json:"SignerAddr"`
 	DasKey     [32]byte                              `json:"DasKey"`
 	TxHash     common.Hash                           `json:"TxHash"`
 	BlockNum   uint64                                `json:"BlockNum"`

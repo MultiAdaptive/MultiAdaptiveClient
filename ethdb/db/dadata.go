@@ -62,7 +62,7 @@ func SaveDACommit(db *gorm.DB, da *types.DA, shouldSave bool, parentHash common.
 
 		addrStr := make([]string, len(da.SignerAddr))
 		for i, addr := range da.SignerAddr {
-			addrStr[i] = addr.Hex()
+			addrStr[i] = addr
 		}
 		addrRes := strings.Join(addrStr, JoinString)
 
@@ -110,7 +110,7 @@ func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) e
 		result := strings.Join(sigDatStr, JoinString)
 		addrStr := make([]string, len(da.SignerAddr))
 		for i, addr := range da.SignerAddr {
-			addrStr[i] = addr.Hex()
+			addrStr[i] = addr
 		}
 		addrRes := strings.Join(addrStr, JoinString)
 		wda := DA{
@@ -161,7 +161,7 @@ func AddBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) er
 		result := strings.Join(sigDatStr, JoinString)
 		addrStr := make([]string, len(da.SignerAddr))
 		for i, addr := range da.SignerAddr {
-			addrStr[i] = addr.Hex()
+			addrStr[i] = addr
 		}
 		addrRes := strings.Join(addrStr, JoinString)
 		wda := DA{
@@ -234,9 +234,9 @@ func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 		signData[i] = common.Hex2Bytes(sg)
 	}
 
-	signAdd := make([]common.Address, len(da.SignAddr))
+	signAdd := make([]string, len(da.SignAddr))
 	for i, add := range strings.Split(da.SignAddr, JoinString) {
-		signAdd[i] = common.HexToAddress(add)
+		signAdd[i] = add
 	}
 
 	return &types.DA{
@@ -295,9 +295,9 @@ func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
 		signData[i] = common.Hex2Bytes(sg)
 	}
 
-	signAdd := make([]common.Address, len(da.SignAddr))
+	signAdd := make([]string, len(da.SignAddr))
 	for i, add := range strings.Split(da.SignAddr, JoinString) {
-		signAdd[i] = common.HexToAddress(add)
+		signAdd[i] = add
 	}
 	return &types.DA{
 		Sender:      common.HexToAddress(da.Sender),
@@ -357,9 +357,9 @@ func GetCommitmentByTxHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 		signData[i] = common.Hex2Bytes(sg)
 	}
 
-	signAdd := make([]common.Address, len(da.SignAddr))
+	signAdd := make([]string, len(da.SignAddr))
 	for i, add := range strings.Split(da.SignAddr, JoinString) {
-		signAdd[i] = common.HexToAddress(add)
+		signAdd[i] = add
 	}
 	return &types.DA{
 		Sender:      common.HexToAddress(da.Sender),

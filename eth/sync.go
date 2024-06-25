@@ -539,7 +539,11 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 				da.ReceiveAt = daDetail.Time
 				da.SignData = daDetail.SigData
 				da.BlockNum = daDetail.BlockNum
-				da.SignerAddr = daDetail.SignAddress
+				signStr := make([]string,len(daDetail.SignAddress))
+				for i,str := range daDetail.SignAddress{
+					signStr[i] = str.Hex()
+				}
+				da.SignerAddr = signStr
 				da.Root = daDetail.Root
 				da.ReceiveAt = time.Now()
 				cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)

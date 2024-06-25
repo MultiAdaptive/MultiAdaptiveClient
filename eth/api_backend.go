@@ -111,7 +111,11 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 		signData,err := b.eth.singer.Sign(fd)
 		fd.SignData = [][]byte{signData}
 		addr,_ := b.eth.singer.Sender(fd)
-		fd.SignerAddr = addr
+		signAddr := make([]string,len(addr))
+		for i,str := range addr{
+			signAddr[i] = str.Hex()
+		}
+		fd.SignerAddr = signAddr
 		fd.ReceiveAt = time.Now()
 		b.eth.fdPool.Add([]*types.DA{fd},true,false)
 		return signData,err
