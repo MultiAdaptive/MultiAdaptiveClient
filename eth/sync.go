@@ -269,9 +269,15 @@ func (cs *chainSyncer) doBitcoinSync() error {
 			if err != nil || da == nil {
 				continue
 			}
-			//da.SignerAddr= transactionBrief.Addresses
+
+			signData := make([][]byte, 0)
+			for _, signature := range transactionBrief.Signatures {
+				signData = append(signData, common.Hex2Bytes(signature))
+			}
+
+			da.SignerAddr = transactionBrief.Addresses
 			da.BlockNum = uint64(transactionBrief.BlockNum)
-			//da.SignData=transactionBrief.Signatures
+			da.SignData = signData
 			da.TxHash = common.HexToHash(tx)
 			da.ReceiveAt = time.Now()
 			cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
@@ -539,8 +545,8 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 				da.ReceiveAt = daDetail.Time
 				da.SignData = daDetail.SigData
 				da.BlockNum = daDetail.BlockNum
-				signStr := make([]string,len(daDetail.SignAddress))
-				for i,str := range daDetail.SignAddress{
+				signStr := make([]string, len(daDetail.SignAddress))
+				for i, str := range daDetail.SignAddress {
 					signStr[i] = str.Hex()
 				}
 				da.SignerAddr = signStr
