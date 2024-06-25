@@ -92,6 +92,17 @@ type BlobFilter struct {
 	Validators     []string `json:"validators"`
 }
 
+type BlobShow struct {
+	BlobID         int64    `json:"blob_id"`
+	CommitmentHash string   `json:"commitment_hash"`
+	ReceiveAt      string   `json:"receive_at"`
+	Length         int64    `json:"length"`
+	TxHash         string   `json:"tx_hash"`
+	BlockNum       int64    `json:"block_num"`
+	Fee            string   `json:"fee"`
+	Validators     []string `json:"validators"`
+}
+
 type Blob struct {
 	Sender          string   `json:"sender"`
 	Index           int64    `json:"index"`
@@ -119,6 +130,11 @@ type Pagination struct {
 type PageBlobFilters struct {
 	Data       []BlobFilter `json:"data"`
 	Pagination Pagination   `json:"pagination"`
+}
+
+type PageBlobShows struct {
+	Data       []BlobShow `json:"data"`
+	Pagination Pagination `json:"pagination"`
 }
 
 type PageBlobs struct {
@@ -392,14 +408,16 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 		pageStr := r.URL.Query().Get("page")
 		perPageStr := r.URL.Query().Get("per_page")
 
-		if pageStr == "" {
-			http.Error(w, "Missing pageStr parameter", http.StatusBadRequest)
+		if pageStr == "" || perPageStr == "" {
+			http.Error(w, "Missing page or per_page parameter", http.StatusBadRequest)
 			return
 		}
 
-		page, err := strconv.Atoi(pageStr)
-		if err != nil || page < 1 {
-			http.Error(w, "Invalid page parameter", http.StatusBadRequest)
+		page := cast.ToInt64(pageStr)
+		perPage := cast.ToInt64(perPageStr)
+
+		if page < 1 || perPage == 0 {
+			http.Error(w, "Invalid page or perPage parameter", http.StatusBadRequest)
 			return
 		}
 
@@ -407,19 +425,37 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 
 		var gormdb *gorm.DB
 		var das []db.DA
+		var count int64
+
+		offset := (page - 1) * perPage
 
 		if len(filter) == 0 {
 			gormdb = stateSqlDB.
+				Model(&db.DA{}).
+				Count(&count)
+
+			gormdb = stateSqlDB.
 				Select("f_index, f_nonce, f_tx_hash, f_commitment_hash, f_block_num, f_length, f_sign_address, f_receive_at").
 				Order("f_receive_at desc").
+				Offset(int(offset)).
+				Limit(int(perPage)).
 				Find(&das)
 		} else {
+			gormdb = stateSqlDB.
+				Model(&db.DA{}).
+				Where("f_commitment LIKE ?", "%"+filter+"%").
+				Or("f_sender LIKE ?", "%"+filter+"%").
+				Or("f_tx_hash LIKE ?", "%"+filter+"%").
+				Count(&count)
+
 			gormdb = stateSqlDB.
 				Select("f_index, f_nonce, f_tx_hash, f_commitment_hash, f_block_num, f_length, f_sign_address, f_receive_at").
 				Where("f_commitment LIKE ?", "%"+filter+"%").
 				Or("f_sender LIKE ?", "%"+filter+"%").
 				Or("f_tx_hash LIKE ?", "%"+filter+"%").
 				Order("f_receive_at desc").
+				Offset(int(offset)).
+				Limit(int(perPage)).
 				Find(&das)
 		}
 		if gormdb.Error != nil {
@@ -463,24 +499,107 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 			filteredBlobs = append(filteredBlobs, blob)
 		}
 
-		perPage := cast.ToInt(perPageStr)
-		total := len(filteredBlobs)
-		start := (page - 1) * perPage
-		end := start + perPage
-		if start > total {
-			start = total
-		}
-		if end > total {
-			end = total
-		}
-		paginatedBlobs := filteredBlobs[start:end]
-
 		response := PageBlobFilters{
-			Data: paginatedBlobs,
+			Data: filteredBlobs,
 			Pagination: Pagination{
-				Total:   total,
-				Page:    page,
-				PerPage: perPage,
+				Total:   int(count),
+				Page:    int(page),
+				PerPage: int(perPage),
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	} else {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+	}
+}
+
+func ShowBlobHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		pageStr := r.URL.Query().Get("page")
+		perPageStr := r.URL.Query().Get("per_page")
+
+		if pageStr == "" || perPageStr == "" {
+			http.Error(w, "Missing page or per_page parameter", http.StatusBadRequest)
+			return
+		}
+
+		page := cast.ToInt64(pageStr)
+		perPage := cast.ToInt64(perPageStr)
+
+		if page < 1 || perPage == 0 {
+			http.Error(w, "Invalid page or perPage parameter", http.StatusBadRequest)
+			return
+		}
+
+		var showBlobs []BlobShow
+
+		var gormdb *gorm.DB
+		var das []db.DA
+		var count int64
+
+		offset := (page - 1) * perPage
+
+		gormdb = stateSqlDB.
+			Model(&db.DA{}).
+			Count(&count)
+
+		gormdb = stateSqlDB.
+			Select("f_index, f_nonce, f_tx_hash, f_commitment_hash, f_block_num, f_length, f_sign_address, f_receive_at").
+			Order("f_receive_at desc").
+			Offset(int(offset)).
+			Limit(int(perPage)).
+			Find(&das)
+
+		if gormdb.Error != nil {
+			log.Error("can not find DA", "err", gormdb.Error)
+		}
+
+		txHashs := los.Map(das, func(da db.DA, index int) string {
+			return da.TxHash
+		})
+
+		var baseTransactions []baseModel.BaseTransaction
+		gormdb = stateSqlDB.
+			Model(&baseModel.BaseTransaction{}).
+			Select("f_transaction_hash, f_fee").
+			Where("f_transaction_hash IN ?", txHashs).
+			Find(&baseTransactions)
+		if gormdb.Error != nil {
+			log.Error("can not find BaseTransaction", "txHashs", txHashs, "err", gormdb.Error)
+		}
+
+		for _, da := range das {
+			item, found := los.Find(baseTransactions, func(baseTransaction baseModel.BaseTransaction) bool {
+				return strings.ToLower(baseTransaction.TransactionHash) == strings.ToLower(da.TxHash)
+			})
+
+			fee := 0.0
+			if found {
+				fee = item.Fee
+			}
+
+			blob := BlobShow{
+				BlobID:         da.Nonce,
+				Length:         da.Length,
+				TxHash:         da.TxHash,
+				CommitmentHash: da.CommitmentHash,
+				BlockNum:       da.BlockNum,
+				ReceiveAt:      da.ReceiveAt,
+				Validators:     strings.Split(da.SignAddr, SEPARATOR_COMMA),
+				Fee:            cast.ToString(fee),
+			}
+			showBlobs = append(showBlobs, blob)
+		}
+
+		response := PageBlobShows{
+			Data: showBlobs,
+			Pagination: Pagination{
+				Total:   int(count),
+				Page:    int(page),
+				PerPage: int(perPage),
 			},
 		}
 
@@ -663,6 +782,7 @@ func (h *explorerServer) start() error {
 	router.HandleFunc("/api/create-blob", CreateBlobHandler).Methods("POST")
 	router.HandleFunc("/api/search-blob", SearchBlobHandler).Methods("GET")
 	router.HandleFunc("/api/filter-blob", FilterBlobHandler).Methods("GET")
+	router.HandleFunc("/api/show-blob", ShowBlobHandler).Methods("GET")
 	router.HandleFunc("/api/blob-detail", BlobDetailHandler).Methods("GET")
 	router.HandleFunc("/api/nodes", NodesHandler).Methods("GET")
 
