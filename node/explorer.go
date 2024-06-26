@@ -160,15 +160,15 @@ type CommitmentCoordinate struct {
 
 type BlobDetail struct {
 	BlobID         int64                `json:"blob_id"`
-	Commitment     string               `json:"Commitment"`
+	Commitment     string               `json:"commitment"`
 	CommitmentHash string               `json:"commitment_hash"`
-	TxHash         string               `json:"TxHash"`
-	BlockNum       int64                `json:"BlockNum"`
-	Timestamp      string               `json:"Timestamp"`
-	Size           int64                `json:"Size,omitempty"`
-	StorageState   string               `json:"StorageState,omitempty"`
-	CommitmentXY   CommitmentCoordinate `json:"Commitment_xy,omitempty"`
-	Data           string               `json:"Data,omitempty"`
+	TxHash         string               `json:"tx_hash"`
+	BlockNum       int64                `json:"block_num"`
+	Timestamp      string               `json:"timestamp"`
+	Size           int64                `json:"size"`
+	StorageState   string               `json:"storage_state"`
+	CommitmentXY   CommitmentCoordinate `json:"commitment_xy"`
+	Data           string               `json:"data"`
 	Validators     []string             `json:"validators"`
 	Fee            string               `json:"fee"`
 	Proof          string               `json:"proof"`
