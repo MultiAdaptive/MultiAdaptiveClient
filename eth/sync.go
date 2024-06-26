@@ -17,6 +17,7 @@
 package eth
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -628,6 +629,9 @@ func (cs *chainSyncer) checkReorg(block *types.Block) (bool, *types.Block) {
 	l1Block, err := cs.ethClient.BlockByNumber(cs.ctx, block.Number())
 	if err != nil {
 		log.Error("checkReorg------BlockByNumber", "num", blockNum)
+	}
+	if block == nil || bytes.Compare(common.Hash{}.Bytes(),block.Hash().Bytes()) == 0  {
+		return false,block
 	}
 	if block.Hash().Hex() == l1Block.Hash().String() {
 		return false, block
