@@ -581,23 +581,28 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	for _, txHash := range finalKeys {
 		daDetail, flag := commitCache.Get(txHash)
 		if flag {
+			//daDetail.Time
 			//new commit get from memory pool
-			da, err := cs.handler.fileDataPool.GetDAByCommit(daDetail.Commit)
-			if err != nil {
-				log.Info("processBlocks-----", "err", err.Error())
-			}
-			if err == nil && da != nil {
-				da.NameSpaceID = daDetail.NameSpaceId
-				da.TxHash = common.HexToHash(txHash)
-				da.Nonce = daDetail.Nonce
-				da.ReceiveAt = daDetail.Time
-				da.SignData = daDetail.SigData
-				da.BlockNum = daDetail.BlockNum
-				da.SignerAddr = daDetail.SignAddress
-				da.Root = daDetail.Root
-				da.ReceiveAt = time.Now()
-				cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
-				daDatas = append(daDatas, da)
+			outOfData := daDetail.Time.Add(14*24*time.Hour).Before(time.Now())
+			if !outOfData {
+				da, err := cs.handler.fileDataPool.GetDAByCommit(daDetail.Commit)
+				if err != nil {
+					log.Info("processBlocks-----", "err", err.Error())
+					continue
+				}
+				if err == nil && da != nil {
+					da.NameSpaceID = daDetail.NameSpaceId
+					da.TxHash = common.HexToHash(txHash)
+					da.Nonce = daDetail.Nonce
+					da.ReceiveAt = daDetail.Time
+					da.SignData = daDetail.SigData
+					da.BlockNum = daDetail.BlockNum
+					da.SignerAddr = daDetail.SignAddress
+					da.Root = daDetail.Root
+					da.ReceiveAt = time.Now()
+					cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
+					daDatas = append(daDatas, da)
+				}
 			}
 		}
 	}
