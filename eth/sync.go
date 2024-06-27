@@ -249,7 +249,7 @@ func (cs *chainSyncer) doBitcoinSync() error {
 		return err
 	}
 
-	for tx, transactionBriefs := range transaction2TransactionBriefs {
+	/*for tx, transactionBriefs := range transaction2TransactionBriefs {
 		for _, transactionBrief := range transactionBriefs {
 			log.Info("RunSync complete",
 				"tx", tx,
@@ -258,32 +258,75 @@ func (cs *chainSyncer) doBitcoinSync() error {
 				"blockNum", transactionBrief.BlockNum,
 				"commitment", common.Bytes2Hex(transactionBrief.Commitment))
 		}
+	}*/
+	for _, tx := range transaction2TransactionBriefs.Keys() {
+		value := transaction2TransactionBriefs.Get(tx)
+		transactionBriefs,ok := value.([]TransactionBrief)
+		if ok {
+			for _, transactionBrief := range transactionBriefs {
+				log.Info("RunSync complete",
+					"tx", tx,
+					"addresses", transactionBrief.Addresses,
+					"signatures", transactionBrief.Signatures,
+					"blockNum", transactionBrief.BlockNum,
+					"commitment", common.Bytes2Hex(transactionBrief.Commitment))
+			}
+		}
 	}
 
 	daDatas := make([]*types.DA, 0)
 
-	for tx, transactionBriefs := range transaction2TransactionBriefs {
-		for _, transactionBrief := range transactionBriefs {
-			//new commit get from memory pool
-			commitment := transactionBrief.Commitment
-			da, err := cs.handler.fileDataPool.GetDAByCommit(commitment)
-			if err != nil || da == nil {
-				continue
-			}
+	//for tx, transactionBriefs := range transaction2TransactionBriefs {
+	//	for _, transactionBrief := range transactionBriefs {
+	//		//new commit get from memory pool
+	//		commitment := transactionBrief.Commitment
+	//		da, err := cs.handler.fileDataPool.GetDAByCommit(commitment)
+	//		if err != nil || da == nil {
+	//			continue
+	//		}
+	//
+	//		signData := make([][]byte, 0)
+	//		for _, signature := range transactionBrief.Signatures {
+	//			signData = append(signData, common.Hex2Bytes(signature))
+	//		}
+	//
+	//		da.SignerAddr = transactionBrief.Addresses
+	//		da.BlockNum = uint64(transactionBrief.BlockNum)
+	//		da.SignData = signData
+	//		da.TxHash = common.HexToHash(tx)
+	//		da.ReceiveAt = time.Now()
+	//		cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
+	//		daDatas = append(daDatas, da)
+	//	}
+	//}
 
-			signData := make([][]byte, 0)
-			for _, signature := range transactionBrief.Signatures {
-				signData = append(signData, common.Hex2Bytes(signature))
+	for _, tx := range transaction2TransactionBriefs.Keys() {
+		value := transaction2TransactionBriefs.Get(tx)
+		transactionBriefs,ok := value.([]TransactionBrief)
+		if ok {
+			for _, transactionBrief := range transactionBriefs {
+				//new commit get from memory pool
+				commitment := transactionBrief.Commitment
+				da, err := cs.handler.fileDataPool.GetDAByCommit(commitment)
+				if err != nil || da == nil {
+					continue
+				}
+				ws.stateNonce++
+				signData := make([][]byte, 0)
+				for _, signature := range transactionBrief.Signatures {
+					signData = append(signData, common.Hex2Bytes(signature))
+				}
+				da.Nonce = ws.stateNonce
+				da.SignerAddr = transactionBrief.Addresses
+				da.BlockNum = uint64(transactionBrief.BlockNum)
+				da.SignData = signData
+				da.TxHash = common.HexToHash(tx)
+				da.ReceiveAt = time.Now()
+				cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
+				daDatas = append(daDatas, da)
 			}
-
-			da.SignerAddr = transactionBrief.Addresses
-			da.BlockNum = uint64(transactionBrief.BlockNum)
-			da.SignData = signData
-			da.TxHash = common.HexToHash(tx)
-			da.ReceiveAt = time.Now()
-			cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
-			daDatas = append(daDatas, da)
 		}
+
 	}
 
 	log.Info("number of daDatas", "number", len(daDatas))
@@ -524,7 +567,11 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 					log.Info("GetSender----", "err", errDetail.Error())
 				}
 			}
-			detailFinal.SignAddress = addrList
+			list := make([]string,len(addrList))
+			for i,addr := range addrList{
+				list[i] = addr.Hex()
+			}
+			detailFinal.SignAddress = list
 		}
 		commitCache.Set(logDetail.TxHash.Hex(), detailFinal)
 	}
@@ -534,27 +581,28 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	for _, txHash := range finalKeys {
 		daDetail, flag := commitCache.Get(txHash)
 		if flag {
+			//daDetail.Time
 			//new commit get from memory pool
-			da, err := cs.handler.fileDataPool.GetDAByCommit(daDetail.Commit)
-			if err != nil {
-				log.Info("processBlocks-----", "err", err.Error())
-			}
-			if err == nil && da != nil {
-				da.NameSpaceID = daDetail.NameSpaceId
-				da.TxHash = common.HexToHash(txHash)
-				da.Nonce = daDetail.Nonce
-				da.ReceiveAt = daDetail.Time
-				da.SignData = daDetail.SigData
-				da.BlockNum = daDetail.BlockNum
-				signStr := make([]string, len(daDetail.SignAddress))
-				for i, str := range daDetail.SignAddress {
-					signStr[i] = str.Hex()
+			outOfData := daDetail.Time.Add(14*24*time.Hour).Before(time.Now())
+			if !outOfData {
+				da, err := cs.handler.fileDataPool.GetDAByCommit(daDetail.Commit)
+				if err != nil {
+					log.Info("processBlocks-----", "err", err.Error())
+					continue
 				}
-				da.SignerAddr = signStr
-				da.Root = daDetail.Root
-				da.ReceiveAt = time.Now()
-				cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
-				daDatas = append(daDatas, da)
+				if err == nil && da != nil {
+					da.NameSpaceID = daDetail.NameSpaceId
+					da.TxHash = common.HexToHash(txHash)
+					da.Nonce = daDetail.Nonce
+					da.ReceiveAt = daDetail.Time
+					da.SignData = daDetail.SigData
+					da.BlockNum = daDetail.BlockNum
+					da.SignerAddr = daDetail.SignAddress
+					da.Root = daDetail.Root
+					da.ReceiveAt = time.Now()
+					cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
+					daDatas = append(daDatas, da)
+				}
 			}
 		}
 	}

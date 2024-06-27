@@ -95,12 +95,12 @@ type BlobFilter struct {
 type BlobShow struct {
 	BlobID         int64    `json:"blob_id"`
 	CommitmentHash string   `json:"commitment_hash"`
-	ReceiveAt      string   `json:"receive_at"`
-	Length         int64    `json:"length"`
-	TxHash         string   `json:"tx_hash"`
 	BlockNum       int64    `json:"block_num"`
+	ReceiveAt      string   `json:"receive_at"`
 	Fee            string   `json:"fee"`
+	Length         int64    `json:"length"`
 	Validators     []string `json:"validators"`
+	TxHash         string   `json:"tx_hash"`
 }
 
 type Blob struct {

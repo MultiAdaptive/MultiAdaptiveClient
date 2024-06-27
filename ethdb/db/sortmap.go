@@ -14,7 +14,7 @@ type CommitDetail struct {
 	TxHash   common.Hash
 	SigData  [][]byte
 	NameSpaceId *big.Int
-	SignAddress []common.Address
+	SignAddress []string
 	Time     time.Time
 	Root     common.Hash
 }
