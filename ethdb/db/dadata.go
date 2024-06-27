@@ -389,7 +389,7 @@ func GetMaxIDDAStateHash(db *gorm.DB) (string, error) {
 func GetMaxIDDA(db *gorm.DB) (uint64, error) {
 	var da DA
 	if err := db.Order("f_id DESC").First(&da).Error; err != nil {
-		return "", err
+		return 0, err
 	}
 	return uint64(da.ID), nil
 }
