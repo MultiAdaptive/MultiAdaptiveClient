@@ -124,7 +124,7 @@ type Blob struct {
 type Pagination struct {
 	Total   int `json:"total"`
 	Page    int `json:"page"`
-	PerPage int `json:"perPage"`
+	PerPage int `json:"per_page"`
 }
 
 type PageBlobFilters struct {
