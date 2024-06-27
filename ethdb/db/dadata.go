@@ -388,10 +388,10 @@ func GetMaxIDDAStateHash(db *gorm.DB) (string, error) {
 
 func GetMaxIDDA(db *gorm.DB) (uint64, error) {
 	var da DA
-	if err := db.Order("f_id DESC").First(&da).Error; err != nil {
+	if err := db.Order("f_nonce DESC").First(&da).Error; err != nil {
 		return 0, err
 	}
-	return uint64(da.ID), nil
+	return uint64(da.Nonce), nil
 }
 func DeleteDAByHash(db *gorm.DB, hash common.Hash) error {
 	var da DA

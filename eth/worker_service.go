@@ -49,11 +49,13 @@ func NewWorkerService(
 	startNum uint64,
 ) *WorkerService {
 	var stateNonce uint64
-	num,err := db.GetMaxIDDA(gdb)
-	if err != nil {
-		stateNonce = 0
-	}else {
-		stateNonce = num
+	if stateNonce == 0 {
+		num,err := db.GetMaxIDDA(gdb)
+		if err != nil {
+			stateNonce = 0
+		}else {
+			stateNonce = num
+		}
 	}
 
 	return &WorkerService{
