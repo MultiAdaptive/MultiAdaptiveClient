@@ -8,11 +8,11 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
-	"github.com/btcsuite/btcd/wire"
 	"github.com/ethereum/go-ethereum/common"
 	baseModel "github.com/ethereum/go-ethereum/eth/basemodel"
 	"github.com/ethereum/go-ethereum/eth/scriptparser"
 	"github.com/ethereum/go-ethereum/eth/tool"
+	"github.com/ethereum/go-ethereum/ethdb/db"
 	"github.com/ethereum/go-ethereum/log"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -38,6 +38,7 @@ type WorkerService struct {
 	magicNumber string
 	netParams   *chaincfg.Params
 	startNum    uint64
+	stateNonce  uint64 //状态nonce
 }
 
 func NewWorkerService(
@@ -47,12 +48,21 @@ func NewWorkerService(
 	netParams *chaincfg.Params,
 	startNum uint64,
 ) *WorkerService {
+	var stateNonce uint64
+	num,err := db.GetMaxIDDA(gdb)
+	if err != nil {
+		stateNonce = 0
+	}else {
+		stateNonce = num
+	}
+
 	return &WorkerService{
 		gdb:         gdb,
 		btcCli:      btcCli,
 		magicNumber: magicNumber,
 		netParams:   netParams,
 		startNum:    startNum,
+		stateNonce:  stateNonce,
 	}
 }
 
@@ -61,7 +71,6 @@ func (ws *WorkerService) SetBlockHeight(ctx context.Context, blockHeight int64) 
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -96,7 +105,7 @@ func (ws *WorkerService) SyncBlock(ctx context.Context, blockHeight int64) error
 	return nil
 }
 
-func (ws *WorkerService) RunSync(ctx context.Context) (map[string][]TransactionBrief, error) {
+func (ws *WorkerService) RunSync(ctx context.Context) (*btcTxSortCache, error) {
 	var err error
 
 	// 获取当前区块高度
@@ -246,10 +255,11 @@ func (ws *WorkerService) UpdateChain(ctx context.Context, blockHeight int64) err
 	return nil
 }
 
-func (ws *WorkerService) GetBlocks(ctx context.Context, from int64, to int64) (map[int64]*btcjson.GetBlockVerboseResult, map[int64]*wire.BlockHeader, error) {
-	blockHeightAndBlockVerboseMap := make(map[int64]*btcjson.GetBlockVerboseResult)
-	blockHeightAndBlockHeaderMap := make(map[int64]*wire.BlockHeader)
-
+func (ws *WorkerService) GetBlocks(ctx context.Context, from int64, to int64) (*btcSortCache, *btcSortCache, error) {
+	//blockHeightAndBlockVerboseMap := make(map[int64]*btcjson.GetBlockVerboseResult)
+	//blockHeightAndBlockHeaderMap := make(map[int64]*wire.BlockHeader)
+	blockHeightAndBlockVerboseMap := NewBtcSortCache()
+	blockHeightAndBlockHeaderMap := NewBtcSortCache()
 	// 遍历获取block
 	for i := from; i <= to; i++ {
 		blockHeight := i
@@ -271,8 +281,8 @@ func (ws *WorkerService) GetBlocks(ctx context.Context, from int64, to int64) (m
 
 		// 打印区块详细信息
 		log.Info("get block verbose by hash", "blockHeight", blockHeight, "blockHash", blockHash, "blockTime", blockVerbose.Time, "numberOfTransactions", len(blockVerbose.Tx))
-
-		blockHeightAndBlockVerboseMap[i] = blockVerbose
+		blockHeightAndBlockVerboseMap.Set(i,blockVerbose)
+		//blockHeightAndBlockVerboseMap[i] = blockVerbose
 
 		// 使用最新区块哈希获取区块详细信息
 		blockHeader, err := ws.btcCli.GetBlockHeader(blockHash)
@@ -280,41 +290,46 @@ func (ws *WorkerService) GetBlocks(ctx context.Context, from int64, to int64) (m
 			log.Error("Error getting block header by hash", "blockHash", blockHash, "err", err)
 			return nil, nil, errors.New("get block header by hash err:" + err.Error())
 		}
-
-		blockHeightAndBlockHeaderMap[i] = blockHeader
+		blockHeightAndBlockHeaderMap.Set(i,blockHeader)
+		//blockHeightAndBlockHeaderMap[i] = blockHeader
 	}
 
 	return blockHeightAndBlockVerboseMap, blockHeightAndBlockHeaderMap, nil
 }
 
 // 保存区块
-func (ws *WorkerService) SaveBlocks(ctx context.Context, blockHeightAndBlockHeaderMap map[int64]*wire.BlockHeader, blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) error {
+func (ws *WorkerService) SaveBlocks(ctx context.Context, blockHeightAndBlockHeaderMap *btcSortCache, blockHeightAndBlockVerboseMap *btcSortCache) error {
 	// 遍历获取block
 	blockModels := make([]baseModel.BaseBlock, 0)
 
 	now := tool.TimeStampNowSecond()
-
-	for blockHeight, _ := range blockHeightAndBlockHeaderMap {
-		block := blockHeightAndBlockVerboseMap[blockHeight]
-		blockModels = append(blockModels, baseModel.BaseBlock{
-			MagicNumber:    ws.magicNumber,
-			Net:            ws.netParams.Name,
-			BlockHeight:    block.Height,
-			BlockHash:      block.Hash,
-			Confirmations:  block.Confirmations,
-			StrippedSize:   block.StrippedSize,
-			Size:           block.Size,
-			Weight:         block.Weight,
-			MerkleRoot:     block.MerkleRoot,
-			TransactionCnt: uint32(len(block.Tx)),
-			BlockTime:      block.Time,
-			Nonce:          block.Nonce,
-			Bits:           block.Bits,
-			Difficulty:     block.Difficulty,
-			PreviousHash:   block.PreviousHash,
-			NextHash:       block.NextHash,
-			CreateAt:       now,
-		})
+	//blockHeightAndBlockHeaderMap map[int64]*wire.BlockHeader,
+	//blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult
+	for _, blockHeight := range blockHeightAndBlockHeaderMap.Keys() {
+		value := blockHeightAndBlockVerboseMap.Get(blockHeight)
+		block,ok := value.(*btcjson.GetBlockVerboseResult)
+		if ok {
+			blockModels = append(blockModels, baseModel.BaseBlock{
+				MagicNumber:    ws.magicNumber,
+				Net:            ws.netParams.Name,
+				BlockHeight:    block.Height,
+				BlockHash:      block.Hash,
+				Confirmations:  block.Confirmations,
+				StrippedSize:   block.StrippedSize,
+				Size:           block.Size,
+				Weight:         block.Weight,
+				MerkleRoot:     block.MerkleRoot,
+				TransactionCnt: uint32(len(block.Tx)),
+				BlockTime:      block.Time,
+				Nonce:          block.Nonce,
+				Bits:           block.Bits,
+				Difficulty:     block.Difficulty,
+				PreviousHash:   block.PreviousHash,
+				NextHash:       block.NextHash,
+				CreateAt:       now,
+			})
+		}
+		//block := blockHeightAndBlockVerboseMap[blockHeight]
 	}
 
 	log.Info("number of blocks", "number", len(blockModels))
@@ -337,12 +352,22 @@ func (ws *WorkerService) SaveBlocks(ctx context.Context, blockHeightAndBlockHead
 }
 
 // 保存交易
-func (ws *WorkerService) SaveTransactions(ctx context.Context, blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) error {
+func (ws *WorkerService) SaveTransactions(ctx context.Context, blockHeightAndBlockVerboseMap *btcSortCache) error {
+	//blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult
 	txHashes := make([]string, 0)
 
-	for _, blockVerbose := range blockHeightAndBlockVerboseMap {
-		for _, tx := range blockVerbose.Tx {
-			txHashes = append(txHashes, tx)
+	//for _, blockVerbose := range blockHeightAndBlockVerboseMap {
+	//	for _, tx := range blockVerbose.Tx {
+	//		txHashes = append(txHashes, tx)
+	//	}
+	//}
+	for _, height := range blockHeightAndBlockVerboseMap.keyList {
+		value := blockHeightAndBlockVerboseMap.Get(height)
+		blockVerbose,ok := value.(*btcjson.GetBlockVerboseResult)
+		if ok {
+			for _, tx := range blockVerbose.Tx {
+				txHashes = append(txHashes, tx)
+			}
 		}
 	}
 
@@ -350,60 +375,120 @@ func (ws *WorkerService) SaveTransactions(ctx context.Context, blockHeightAndBlo
 
 	now := tool.TimeStampNowSecond()
 
+	//// 校验交易内容
+	//for blockHeight, blockVerbose := range blockHeightAndBlockVerboseMap {
+	//	for _, tx := range blockVerbose.Tx {
+	//		txid, err := chainhash.NewHashFromStr(tx)
+	//		if err != nil {
+	//			log.Error("Error converting txid string to hash", "tx", tx, "err", err)
+	//			continue
+	//		}
+	//
+	//		transactionVerbose, err := ws.btcCli.GetRawTransactionVerbose(txid)
+	//		if err != nil {
+	//			log.Error("Error getting transaction by hash", "txid", txid, "err", err)
+	//			continue
+	//		}
+	//
+	//		vinDataBytes, err := json.Marshal(transactionVerbose.Vin)
+	//		if err != nil {
+	//			log.Error("Error marshaling vin data", "err", err)
+	//			continue
+	//		}
+	//
+	//		voutDataBytes, err := json.Marshal(transactionVerbose.Vout)
+	//		if err != nil {
+	//			log.Error("Error marshaling vout data", "err", err)
+	//			continue
+	//		}
+	//
+	//		fee, err := ws.GetTransactionFee(tx)
+	//		if err != nil {
+	//			log.Debug("Error get transaction fee", "tx", tx, "err", err)
+	//		}
+	//
+	//		transactionModels = append(transactionModels, baseModel.BaseTransaction{
+	//			MagicNumber:     ws.magicNumber,
+	//			Net:             ws.netParams.Name,
+	//			Hex:             transactionVerbose.Hex,
+	//			Txid:            transactionVerbose.Txid,
+	//			TransactionHash: transactionVerbose.Hash,
+	//			Size:            transactionVerbose.Size,
+	//			Vsize:           transactionVerbose.Vsize,
+	//			Weight:          transactionVerbose.Weight,
+	//			LockTime:        transactionVerbose.LockTime,
+	//			Vin:             vinDataBytes,
+	//			Vout:            voutDataBytes,
+	//			BlockHeight:     blockHeight,
+	//			BlockHash:       transactionVerbose.BlockHash,
+	//			Confirmations:   transactionVerbose.Confirmations,
+	//			TransactionTime: transactionVerbose.Time,
+	//			BlockTime:       transactionVerbose.Blocktime,
+	//			Fee:             fee,
+	//			CreateAt:        now,
+	//		})
+	//	}
+	//}
+
 	// 校验交易内容
-	for blockHeight, blockVerbose := range blockHeightAndBlockVerboseMap {
-		for _, tx := range blockVerbose.Tx {
-			txid, err := chainhash.NewHashFromStr(tx)
-			if err != nil {
-				log.Error("Error converting txid string to hash", "tx", tx, "err", err)
-				continue
-			}
+	for  _, blockHeight := range blockHeightAndBlockVerboseMap.Keys() {
+		value := blockHeightAndBlockVerboseMap.Get(blockHeight)
+		blockVerbose,ok := value.(*btcjson.GetBlockVerboseResult)
+		if ok {
+			for _, tx := range blockVerbose.Tx {
+				txid, err := chainhash.NewHashFromStr(tx)
+				if err != nil {
+					log.Error("Error converting txid string to hash", "tx", tx, "err", err)
+					continue
+				}
 
-			transactionVerbose, err := ws.btcCli.GetRawTransactionVerbose(txid)
-			if err != nil {
-				log.Error("Error getting transaction by hash", "txid", txid, "err", err)
-				continue
-			}
+				transactionVerbose, err := ws.btcCli.GetRawTransactionVerbose(txid)
+				if err != nil {
+					log.Error("Error getting transaction by hash", "txid", txid, "err", err)
+					continue
+				}
 
-			vinDataBytes, err := json.Marshal(transactionVerbose.Vin)
-			if err != nil {
-				log.Error("Error marshaling vin data", "err", err)
-				continue
-			}
+				vinDataBytes, err := json.Marshal(transactionVerbose.Vin)
+				if err != nil {
+					log.Error("Error marshaling vin data", "err", err)
+					continue
+				}
 
-			voutDataBytes, err := json.Marshal(transactionVerbose.Vout)
-			if err != nil {
-				log.Error("Error marshaling vout data", "err", err)
-				continue
-			}
+				voutDataBytes, err := json.Marshal(transactionVerbose.Vout)
+				if err != nil {
+					log.Error("Error marshaling vout data", "err", err)
+					continue
+				}
 
-			fee, err := ws.GetTransactionFee(tx)
-			if err != nil {
-				log.Debug("Error get transaction fee", "tx", tx, "err", err)
-			}
+				fee, err := ws.GetTransactionFee(tx)
+				if err != nil {
+					log.Debug("Error get transaction fee", "tx", tx, "err", err)
+				}
 
-			transactionModels = append(transactionModels, baseModel.BaseTransaction{
-				MagicNumber:     ws.magicNumber,
-				Net:             ws.netParams.Name,
-				Hex:             transactionVerbose.Hex,
-				Txid:            transactionVerbose.Txid,
-				TransactionHash: transactionVerbose.Hash,
-				Size:            transactionVerbose.Size,
-				Vsize:           transactionVerbose.Vsize,
-				Weight:          transactionVerbose.Weight,
-				LockTime:        transactionVerbose.LockTime,
-				Vin:             vinDataBytes,
-				Vout:            voutDataBytes,
-				BlockHeight:     blockHeight,
-				BlockHash:       transactionVerbose.BlockHash,
-				Confirmations:   transactionVerbose.Confirmations,
-				TransactionTime: transactionVerbose.Time,
-				BlockTime:       transactionVerbose.Blocktime,
-				Fee:             fee,
-				CreateAt:        now,
-			})
+				transactionModels = append(transactionModels, baseModel.BaseTransaction{
+					MagicNumber:     ws.magicNumber,
+					Net:             ws.netParams.Name,
+					Hex:             transactionVerbose.Hex,
+					Txid:            transactionVerbose.Txid,
+					TransactionHash: transactionVerbose.Hash,
+					Size:            transactionVerbose.Size,
+					Vsize:           transactionVerbose.Vsize,
+					Weight:          transactionVerbose.Weight,
+					LockTime:        transactionVerbose.LockTime,
+					Vin:             vinDataBytes,
+					Vout:            voutDataBytes,
+					BlockHeight:     blockHeight,
+					BlockHash:       transactionVerbose.BlockHash,
+					Confirmations:   transactionVerbose.Confirmations,
+					TransactionTime: transactionVerbose.Time,
+					BlockTime:       transactionVerbose.Blocktime,
+					Fee:             fee,
+					CreateAt:        now,
+				})
+			}
 		}
 	}
+
 
 	log.Info("number of transactions", "number", len(transactionModels))
 
@@ -425,49 +510,91 @@ func (ws *WorkerService) SaveTransactions(ctx context.Context, blockHeightAndBlo
 }
 
 // 保存文件
-func (ws *WorkerService) SaveFiles(ctx context.Context, blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) error {
+func (ws *WorkerService) SaveFiles(ctx context.Context, blockHeightAndBlockVerboseMap *btcSortCache) error {
+	//blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult
 	fileModels := make([]baseModel.BaseFile, 0)
 
 	now := tool.TimeStampNowSecond()
 
-	for blockHeight, blockVerbose := range blockHeightAndBlockVerboseMap {
-		for _, tx := range blockVerbose.Tx {
-			transactionInscriptions, err := ws.ParseTransaction(tx)
-			if err != nil {
-				log.Error("Error parse transaction", "tx", tx, "err", err)
-				continue
-			}
-			log.Info("parse transaction", "tx", tx, "transactionInscriptions", transactionInscriptions)
+	//for blockHeight, blockVerbose := range blockHeightAndBlockVerboseMap {
+	//	for _, tx := range blockVerbose.Tx {
+	//		transactionInscriptions, err := ws.ParseTransaction(tx)
+	//		if err != nil {
+	//			log.Error("Error parse transaction", "tx", tx, "err", err)
+	//			continue
+	//		}
+	//		log.Info("parse transaction", "tx", tx, "transactionInscriptions", transactionInscriptions)
+	//
+	//		for _, ins := range transactionInscriptions {
+	//			contentType := ins.Inscription.ContentType
+	//			contentLength := ins.Inscription.ContentLength
+	//			contentBody := ins.Inscription.ContentBody
+	//			index := ins.TxInIndex
+	//			offset := ins.TxInOffset
+	//			log.Info("INSCRIPTION Verbose", "index", index, "offset", offset, "contentType", string(contentType), "contentLength", contentLength, "contentBody", common.Bytes2Hex(contentBody))
+	//			if string(contentType) != CUSTOM_CONTENT_TYPE {
+	//				log.Info("Not custom content", "contentType", string(contentType))
+	//				continue
+	//			}
+	//
+	//			fileModels = append(fileModels, baseModel.BaseFile{
+	//				MagicNumber:     ws.magicNumber,
+	//				Net:             ws.netParams.Name,
+	//				BlockHeight:     blockHeight,
+	//				BlockHash:       blockVerbose.Hash,
+	//				TransactionHash: tx,
+	//				ContentType:     contentType,
+	//				ContentLength:   contentLength,
+	//				ContentBody:     contentBody,
+	//				Index:           index,
+	//				Offset:          offset,
+	//				CreateAt:        now,
+	//			})
+	//		}
+	//	}
+	//}
 
-			for _, ins := range transactionInscriptions {
-				contentType := ins.Inscription.ContentType
-				contentLength := ins.Inscription.ContentLength
-				contentBody := ins.Inscription.ContentBody
-				index := ins.TxInIndex
-				offset := ins.TxInOffset
-				log.Info("INSCRIPTION Verbose", "index", index, "offset", offset, "contentType", string(contentType), "contentLength", contentLength, "contentBody", common.Bytes2Hex(contentBody))
-				if string(contentType) != CUSTOM_CONTENT_TYPE {
-					log.Info("Not custom content", "contentType", string(contentType))
+	for _, blockHeight := range blockHeightAndBlockVerboseMap.Keys() {
+		value := blockHeightAndBlockVerboseMap.Get(blockHeight)
+		blockVerbose,ok := value.(*btcjson.GetBlockVerboseResult)
+		if ok {
+			for _, tx := range blockVerbose.Tx {
+				transactionInscriptions, err := ws.ParseTransaction(tx)
+				if err != nil {
+					log.Error("Error parse transaction", "tx", tx, "err", err)
 					continue
 				}
+				log.Info("parse transaction", "tx", tx, "transactionInscriptions", transactionInscriptions)
 
-				fileModels = append(fileModels, baseModel.BaseFile{
-					MagicNumber:     ws.magicNumber,
-					Net:             ws.netParams.Name,
-					BlockHeight:     blockHeight,
-					BlockHash:       blockVerbose.Hash,
-					TransactionHash: tx,
-					ContentType:     contentType,
-					ContentLength:   contentLength,
-					ContentBody:     contentBody,
-					Index:           index,
-					Offset:          offset,
-					CreateAt:        now,
-				})
+				for _, ins := range transactionInscriptions {
+					contentType := ins.Inscription.ContentType
+					contentLength := ins.Inscription.ContentLength
+					contentBody := ins.Inscription.ContentBody
+					index := ins.TxInIndex
+					offset := ins.TxInOffset
+					log.Info("INSCRIPTION Verbose", "index", index, "offset", offset, "contentType", string(contentType), "contentLength", contentLength, "contentBody", common.Bytes2Hex(contentBody))
+					if string(contentType) != CUSTOM_CONTENT_TYPE {
+						log.Info("Not custom content", "contentType", string(contentType))
+						continue
+					}
+
+					fileModels = append(fileModels, baseModel.BaseFile{
+						MagicNumber:     ws.magicNumber,
+						Net:             ws.netParams.Name,
+						BlockHeight:     blockHeight,
+						BlockHash:       blockVerbose.Hash,
+						TransactionHash: tx,
+						ContentType:     contentType,
+						ContentLength:   contentLength,
+						ContentBody:     contentBody,
+						Index:           index,
+						Offset:          offset,
+						CreateAt:        now,
+					})
+				}
 			}
 		}
 	}
-
 	log.Info("number of files", "number", len(fileModels))
 
 	var gormdb *gorm.DB
@@ -488,54 +615,103 @@ func (ws *WorkerService) SaveFiles(ctx context.Context, blockHeightAndBlockVerbo
 }
 
 // 生成返回数据: 交易哈希、区块号、地址、签名
-func (ws *WorkerService) GenerateBrief(ctx context.Context, blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult) (map[string][]TransactionBrief, error) {
-	transaction2TransactionBriefs := make(map[string][]TransactionBrief)
-
-	for blockHeight, blockVerbose := range blockHeightAndBlockVerboseMap {
-		for _, tx := range blockVerbose.Tx {
-			transactionInscriptions, err := ws.ParseTransaction(tx)
-			if err != nil {
-				log.Error("Error parse transaction", "tx", tx, "err", err)
-				continue
-			}
-			log.Info("parse transaction", "tx", tx, "transactionInscriptions", transactionInscriptions)
-
-			transactionSignature, err := ws.GetTransactionSignature(tx)
-			if err != nil {
-				log.Error("Error get transaction signature", "tx", tx, "err", err)
-				continue
-			}
-			log.Info("get transaction signature", "tx", tx, "transactionSignature", transactionSignature)
-
-			transactionBriefs := make([]TransactionBrief, 0)
-			for _, ins := range transactionInscriptions {
-				contentType := ins.Inscription.ContentType
-				contentLength := ins.Inscription.ContentLength
-				contentBody := ins.Inscription.ContentBody
-				validatorAddresses := ins.Validator.ValidatorAddresses
-				commitment := contentBody
-				index := ins.TxInIndex
-				offset := ins.TxInOffset
-				log.Info("INSCRIPTION Verbose", "index", index, "offset", offset, "contentType", string(contentType), "contentLength", contentLength, "contentBody", common.Bytes2Hex(contentBody))
-				if string(contentType) != CUSTOM_CONTENT_TYPE {
-					log.Info("Not custom content", "contentType", string(contentType))
+func (ws *WorkerService) GenerateBrief(ctx context.Context, blockHeightAndBlockVerboseMap *btcSortCache) (*btcTxSortCache, error) {
+	//blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult
+	//transaction2TransactionBriefs := make(map[string][]TransactionBrief)
+	transaction2TransactionBriefs := NewBtcTxSortCache()
+	//for blockHeight, blockVerbose := range blockHeightAndBlockVerboseMap {
+	//	for _, tx := range blockVerbose.Tx {
+	//		transactionInscriptions, err := ws.ParseTransaction(tx)
+	//		if err != nil {
+	//			log.Error("Error parse transaction", "tx", tx, "err", err)
+	//			continue
+	//		}
+	//		log.Info("parse transaction", "tx", tx, "transactionInscriptions", transactionInscriptions)
+	//
+	//		transactionSignature, err := ws.GetTransactionSignature(tx)
+	//		if err != nil {
+	//			log.Error("Error get transaction signature", "tx", tx, "err", err)
+	//			continue
+	//		}
+	//		log.Info("get transaction signature", "tx", tx, "transactionSignature", transactionSignature)
+	//
+	//		transactionBriefs := make([]TransactionBrief, 0)
+	//		for _, ins := range transactionInscriptions {
+	//			contentType := ins.Inscription.ContentType
+	//			contentLength := ins.Inscription.ContentLength
+	//			contentBody := ins.Inscription.ContentBody
+	//			validatorAddresses := ins.Validator.ValidatorAddresses
+	//			commitment := contentBody
+	//			index := ins.TxInIndex
+	//			offset := ins.TxInOffset
+	//			log.Info("INSCRIPTION Verbose", "index", index, "offset", offset, "contentType", string(contentType), "contentLength", contentLength, "contentBody", common.Bytes2Hex(contentBody))
+	//			if string(contentType) != CUSTOM_CONTENT_TYPE {
+	//				log.Info("Not custom content", "contentType", string(contentType))
+	//				continue
+	//			}
+	//
+	//			transactionBrief := TransactionBrief{
+	//				Commitment: commitment,
+	//				BlockNum:   blockHeight,
+	//				Addresses:  validatorAddresses,
+	//				Signatures: []string{transactionSignature},
+	//			}
+	//			transactionBriefs = append(transactionBriefs, transactionBrief)
+	//		}
+	//
+	//		transaction2TransactionBriefs[tx] = transactionBriefs
+	//	}
+	//}
+	for _, blockHeight := range blockHeightAndBlockVerboseMap.Keys() {
+		value := blockHeightAndBlockVerboseMap.Get(blockHeight)
+		blockVerbose,ok := value.(*btcjson.GetBlockVerboseResult)
+		if ok {
+			for _, tx := range blockVerbose.Tx {
+				transactionInscriptions, err := ws.ParseTransaction(tx)
+				if err != nil {
+					log.Error("Error parse transaction", "tx", tx, "err", err)
 					continue
 				}
+				log.Info("parse transaction", "tx", tx, "transactionInscriptions", transactionInscriptions)
 
-				transactionBrief := TransactionBrief{
-					Commitment: commitment,
-					BlockNum:   blockHeight,
-					Addresses:  validatorAddresses,
-					Signatures: []string{transactionSignature},
+				transactionSignature, err := ws.GetTransactionSignature(tx)
+				if err != nil {
+					log.Error("Error get transaction signature", "tx", tx, "err", err)
+					continue
 				}
-				transactionBriefs = append(transactionBriefs, transactionBrief)
-			}
+				log.Info("get transaction signature", "tx", tx, "transactionSignature", transactionSignature)
 
-			transaction2TransactionBriefs[tx] = transactionBriefs
+				transactionBriefs := make([]TransactionBrief, 0)
+				for _, ins := range transactionInscriptions {
+					contentType := ins.Inscription.ContentType
+					contentLength := ins.Inscription.ContentLength
+					contentBody := ins.Inscription.ContentBody
+					validatorAddresses := ins.Validator.ValidatorAddresses
+					commitment := contentBody
+					index := ins.TxInIndex
+					offset := ins.TxInOffset
+					log.Info("INSCRIPTION Verbose", "index", index, "offset", offset, "contentType", string(contentType), "contentLength", contentLength, "contentBody", common.Bytes2Hex(contentBody))
+					if string(contentType) != CUSTOM_CONTENT_TYPE {
+						log.Info("Not custom content", "contentType", string(contentType))
+						continue
+					}
+
+					transactionBrief := TransactionBrief{
+						Commitment: commitment,
+						BlockNum:   blockHeight,
+						Addresses:  validatorAddresses,
+						Signatures: []string{transactionSignature},
+					}
+					transactionBriefs = append(transactionBriefs, transactionBrief)
+				}
+
+				//transaction2TransactionBriefs[tx] = transactionBriefs
+				transaction2TransactionBriefs.Set(tx,transactionBriefs)
+			}
 		}
 	}
 
-	log.Info("number of commitments", "number", len(transaction2TransactionBriefs))
+	log.Info("number of commitments", "number", len(transaction2TransactionBriefs.Keys()))
 
 	return transaction2TransactionBriefs, nil
 }

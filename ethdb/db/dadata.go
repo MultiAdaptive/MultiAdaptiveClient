@@ -20,7 +20,7 @@ const JoinString = ","
 
 // 创建commitment表格模型
 type DA struct {
-	ID              int32  `gorm:"column:f_id;primaryKey;autoIncrement:true;comment:ID" json:"id"`                                      // ID
+	ID              int64  `gorm:"column:f_id;primaryKey;autoIncrement:true;comment:ID" json:"id"`                                      // ID
 	Nonce           int64  `gorm:"column:f_nonce;not null;comment:发送号" json:"nonce"`                                                    // 发送号
 	Sender          string `gorm:"column:f_sender;not null;comment:发送者;index:idx_das_sender" json:"sender"`                             // 发送者
 	Index           int64  `gorm:"column:f_index;not null;comment:序号;index:idx_das_index" json:"index"`                                 // 序号
@@ -386,6 +386,13 @@ func GetMaxIDDAStateHash(db *gorm.DB) (string, error) {
 	return da.StateHash, nil
 }
 
+func GetMaxIDDA(db *gorm.DB) (uint64, error) {
+	var da DA
+	if err := db.Order("f_id DESC").First(&da).Error; err != nil {
+		return "", err
+	}
+	return uint64(da.ID), nil
+}
 func DeleteDAByHash(db *gorm.DB, hash common.Hash) error {
 	var da DA
 	tx := db.Where("f_tx_hash = ?", hash)
