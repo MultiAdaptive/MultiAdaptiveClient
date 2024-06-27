@@ -25,7 +25,7 @@ func (b *btcTxSortCache) Get(tx string) interface{} {
 }
 
 func (b *btcTxSortCache) Keys() []string {
-	if b.keyList == nil {
+	if b == nil || b.keyList == nil {
 		return []string{}
 	}
 	return b.keyList
