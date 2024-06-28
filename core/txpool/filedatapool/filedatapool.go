@@ -1,8 +1,6 @@
 package filedatapool
 
 import (
-	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
