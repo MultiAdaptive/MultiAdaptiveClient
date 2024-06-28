@@ -1,6 +1,8 @@
 package filedatapool
 
 import (
+	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
@@ -12,8 +14,10 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/params"
+	kzgSdk "github.com/multiAdaptive/kzg-sdk"
 	"gorm.io/gorm"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -214,7 +218,7 @@ func (fp *FilePool) loop() {
 
 		case <- remove.C:
 			for hash,receive := range fp.diskCache.Hashes {
-				if receive.Before(time.Now().Add(14*24*time.Hour)) {
+				if receive.Add(14*24*time.Hour).Before(time.Now()) {
 					db.DeleteDAByHash(fp.chain.SqlDB(),hash)
 				}
 			}
@@ -222,9 +226,9 @@ func (fp *FilePool) loop() {
 		// Handle inactive txHash fileData eviction
 		case <-evict.C:
 			fp.mu.Lock()
-			for txHash := range fp.collector {
+			for hash := range fp.collector {
 				// Any non-locals old enough should be removed
-				if time.Since(fp.beats[txHash]) > fp.config.Lifetime {
+				if time.Since(fp.beats[hash]) > 24 * time.Hour {
 					for txHash := range fp.collector {
 						for hash,_ := range fp.diskCache.Hashes {
 							if hash == txHash {
@@ -450,6 +454,12 @@ func (fp *FilePool) Add(fds []*types.DA, local, sync bool) []error {
 	for i, fd := range fds {
 		// If the fileData is known, pre-set the error slot
 		var hashData  common.Hash
+
+		flag,err := fp.validateFileDataSignature(fd,local)
+		if !flag || err != nil {
+			errs = append(errs,err)
+		}
+
 		if fd.TxHash.Cmp(common.Hash{}) != 0 {
 			hashData = fd.TxHash
 			txHash := fd.TxHash.String()
@@ -577,6 +587,37 @@ func (fp *FilePool) Close() error {
 	log.Info("FilePool pool stopped")
 	return nil
 }
+
+// validateFileDataSignature checks whether a fileData is valid according to the consensus
+// rules, but does not check state-dependent validation such as sufficient balance.
+// This check is meant as an early check which only needs to be performed once,
+// and does not require the pool mutex to be held.
+func (fp *FilePool) validateFileDataSignature(da *types.DA, local bool) (bool,error) {
+	if local {
+		return true,nil
+	}
+	if da.Length != uint64(len(da.Data)) {
+		return false,errors.New("fileData data length not match legth")
+	}
+	if len(da.SignData) == 0  {
+		return false,errors.New("fileData signature is empty")
+	}
+
+	currentPath, _ := os.Getwd()
+	path := strings.Split(currentPath,"/build")[0] + "/srs"
+	domiconSDK, err := kzgSdk.InitMultiAdaptiveSdk(path)
+	if err != nil {
+		return false, err
+	}
+	commit := da.Commitment.Marshal()
+	_, err = domiconSDK.VerifyCommitWithProof(commit, da.Proof, da.ClaimedValue)
+	if err != nil {
+		return false, err
+	}
+	return true,nil
+}
+
+
 
 type lookup struct {
 	slots   int

@@ -29,6 +29,7 @@ type DA struct {
 	Commitment      string `gorm:"column:f_commitment;not null;comment:承诺;index:idx_das_commitment" json:"commitment"`                  // 承诺
 	CommitmentHash  string `gorm:"column:f_commitment_hash;not null;comment:承诺哈希;index:idx_das_commitment_hash" json:"commitment_hash"` // 承诺哈希
 	Data            string `gorm:"column:f_data;not null;comment:数据;index:idx_das_data" json:"data"`                                    // 数据
+	Proof           string `gorm:"column:f_proof;not null;comment:证据;index:idx_proof" json:"proof"`
 	DAsKey          string `gorm:"column:f_d_as_key;not null;comment:钥" json:"d_as_key"`                                                // 钥
 	SignData        string `gorm:"column:f_sign_data;not null;comment:签名数据" json:"sign_data"`                                           // 签名数据
 	SignAddr        string `gorm:"column:f_sign_address;not null;comment:签名地址" json:"sign_addr"`
@@ -36,6 +37,7 @@ type DA struct {
 	StateHash       string `gorm:"column:f_state_hash;not null;comment:最新数据哈希;index:idx_das_state_hash" json:"state_hash"`                       // 最新数据哈希
 	BlockNum        int64  `gorm:"column:f_block_num;not null;comment:区块号;index:idx_das_block_num" json:"block_num"`                             // 区块号
 	ReceiveAt       string `gorm:"column:f_receive_at;not null;comment:接收时间" json:"receive_at"`                                                  // 接收时间
+	OutOfTime       string `gorm:"column:f_out_time;not null;comment:失效时间" json:"out_of_time"`
 	CreateAt        int64  `gorm:"column:f_create_at;not null;comment:创建时间" json:"create_at"`                                                    // 创建时间
 	NameSpaceID     int64  `gorm:"column:f_name_space_id;not null;comment:命名空间" json:"name_space_id"`
 }
@@ -77,8 +79,10 @@ func SaveDACommit(db *gorm.DB, da *types.DA, shouldSave bool, parentHash common.
 			Commitment:      common.Bytes2Hex(da.Commitment.Marshal()),
 			CommitmentHash:  cmHash.Hex(),
 			Data:            common.Bytes2Hex(da.Data),
+			Proof:           common.Bytes2Hex(da.Proof),
 			SignData:        result,
 			SignAddr:        addrRes,
+			OutOfTime:       da.OutOfTime.Format(time.RFC3339),
 			ParentStateHash: currentParentHash.Hex(),
 			StateHash:       stateHash.Hex(),
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
@@ -121,6 +125,7 @@ func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) e
 			Length:          int64(da.Length),
 			BlockNum:        int64(da.BlockNum),
 			Data:            common.Bytes2Hex(da.Data),
+			Proof:           common.Bytes2Hex(da.Proof),
 			Commitment:      common.Bytes2Hex(commitData),
 			CommitmentHash:  common.BytesToHash(commitData).Hex(),
 			SignData:        result,
@@ -246,6 +251,7 @@ func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 		Length:      uint64(da.Length),
 		Commitment:  digest,
 		Data:        common.Hex2Bytes(da.Data),
+		Proof:       common.Hex2Bytes(da.Proof),
 		SignData:    signData,
 		SignerAddr:  signAdd,
 		TxHash:      common.HexToHash(da.TxHash),
@@ -306,6 +312,7 @@ func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
 		Length:      uint64(da.Length),
 		Commitment:  digest,
 		Data:        common.Hex2Bytes(da.Data),
+		Proof:       common.Hex2Bytes(da.Proof),
 		SignData:    signData,
 		SignerAddr:  signAdd,
 		BlockNum:    uint64(da.BlockNum),
@@ -368,6 +375,7 @@ func GetCommitmentByTxHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 		Length:      uint64(da.Length),
 		Commitment:  digest,
 		Data:        common.Hex2Bytes(da.Data),
+		Proof:       common.Hex2Bytes(da.Proof),
 		BlockNum:    uint64(da.BlockNum),
 		SignData:    signData,
 		SignerAddr:  signAdd,

@@ -110,6 +110,7 @@ type Blob struct {
 	TxHash          string   `json:"tx_hash"`
 	Commitment      string   `json:"commitment"`
 	CommitmentHash  string   `json:"commitment_hash"`
+	//Proof           string    `json:"proof"`
 	Data            string   `json:"data"`
 	DAsKey          string   `json:"das_key"`
 	SignData        string   `json:"sign_data"`
@@ -380,6 +381,7 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 				TxHash:          da.TxHash,
 				Commitment:      da.Commitment,
 				CommitmentHash:  da.CommitmentHash,
+				//Proof:           da.Proof,
 				Data:            da.Data[0:dataLimit],
 				DAsKey:          da.DAsKey,
 				SignData:        da.SignData,
@@ -671,7 +673,7 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 			Data:       da.Data[0:dataLimit],
 			Validators: strings.Split(da.SignAddr, SEPARATOR_COMMA),
 			Fee:        cast.ToString(fee),
-			Proof:      "",
+			Proof:     da.Proof,
 		}
 
 		w.Header().Set("Content-Type", "application/json")

@@ -558,6 +558,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			detailFinal.NameSpaceId = daDetail.NameSpaceId
 			detailFinal.Nonce = daDetail.Nonce.Uint64()
 			detailFinal.Index = daDetail.Index.Uint64()
+			//detailFinal.OutOfTime = daDetail.
 			detailFinal.Root = daDetail.Root
 			detailFinal.SigData = daDetail.Signatures
 			detailFinal.BlockNum = logDetail.BlockNumber
@@ -600,7 +601,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 					da.SignerAddr = daDetail.SignAddress
 					da.Root = daDetail.Root
 					da.ReceiveAt = time.Now()
-					cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
+					cs.handler.fileDataPool.Add([]*types.DA{da}, false, false)
 					daDatas = append(daDatas, da)
 				}
 			}
