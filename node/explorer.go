@@ -448,6 +448,8 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 				Where("f_commitment LIKE ?", "%"+filter+"%").
 				Or("f_sender LIKE ?", "%"+filter+"%").
 				Or("f_tx_hash LIKE ?", "%"+filter+"%").
+				Or("f_nonce LIKE ?", "%"+filter+"%").
+				Or("f_sign_address LIKE ?", "%"+filter+"%").
 				Count(&count)
 
 			gormdb = stateSqlDB.
@@ -455,6 +457,8 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 				Where("f_commitment LIKE ?", "%"+filter+"%").
 				Or("f_sender LIKE ?", "%"+filter+"%").
 				Or("f_tx_hash LIKE ?", "%"+filter+"%").
+				Or("f_nonce LIKE ?", "%"+filter+"%").
+				Or("f_sign_address LIKE ?", "%"+filter+"%").
 				Order("f_receive_at desc").
 				Offset(int(offset)).
 				Limit(int(perPage)).
