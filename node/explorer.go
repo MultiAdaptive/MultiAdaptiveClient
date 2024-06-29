@@ -104,12 +104,12 @@ type BlobShow struct {
 }
 
 type Blob struct {
-	Sender          string   `json:"sender"`
-	Index           int64    `json:"index"`
-	Length          int64    `json:"length"`
-	TxHash          string   `json:"tx_hash"`
-	Commitment      string   `json:"commitment"`
-	CommitmentHash  string   `json:"commitment_hash"`
+	Sender         string `json:"sender"`
+	Index          int64  `json:"index"`
+	Length         int64  `json:"length"`
+	TxHash         string `json:"tx_hash"`
+	Commitment     string `json:"commitment"`
+	CommitmentHash string `json:"commitment_hash"`
 	//Proof           string    `json:"proof"`
 	Data            string   `json:"data"`
 	DAsKey          string   `json:"das_key"`
@@ -200,7 +200,7 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 		gormdb = stateSqlDB.
 			Model(&db.DA{}).
 			Select("f_nonce, f_tx_hash, f_commitment, f_commitment_hash, f_block_num, f_length, f_sign_address, f_receive_at").
-			Order("f_receive_at desc").
+			Order("f_nonce desc").
 			Limit(5).
 			Find(&das)
 
@@ -375,12 +375,12 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			blob := Blob{
-				Sender:          da.Sender,
-				Index:           da.Index,
-				Length:          da.Length,
-				TxHash:          da.TxHash,
-				Commitment:      da.Commitment,
-				CommitmentHash:  da.CommitmentHash,
+				Sender:         da.Sender,
+				Index:          da.Index,
+				Length:         da.Length,
+				TxHash:         da.TxHash,
+				Commitment:     da.Commitment,
+				CommitmentHash: da.CommitmentHash,
 				//Proof:           da.Proof,
 				Data:            da.Data[0:dataLimit],
 				DAsKey:          da.DAsKey,
@@ -677,7 +677,7 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 			Data:       da.Data[0:dataLimit],
 			Validators: strings.Split(da.SignAddr, SEPARATOR_COMMA),
 			Fee:        cast.ToString(fee),
-			Proof:     da.Proof,
+			Proof:      da.Proof,
 		}
 
 		w.Header().Set("Content-Type", "application/json")

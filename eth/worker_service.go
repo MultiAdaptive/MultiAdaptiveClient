@@ -50,10 +50,10 @@ func NewWorkerService(
 ) *WorkerService {
 	var stateNonce uint64
 	if stateNonce == 0 {
-		num,err := db.GetMaxIDDA(gdb)
+		num, err := db.GetMaxIDDANonce(gdb)
 		if err != nil {
 			stateNonce = 0
-		}else {
+		} else {
 			stateNonce = num
 		}
 	}
@@ -283,7 +283,7 @@ func (ws *WorkerService) GetBlocks(ctx context.Context, from int64, to int64) (*
 
 		// 打印区块详细信息
 		log.Info("get block verbose by hash", "blockHeight", blockHeight, "blockHash", blockHash, "blockTime", blockVerbose.Time, "numberOfTransactions", len(blockVerbose.Tx))
-		blockHeightAndBlockVerboseMap.Set(i,blockVerbose)
+		blockHeightAndBlockVerboseMap.Set(i, blockVerbose)
 		//blockHeightAndBlockVerboseMap[i] = blockVerbose
 
 		// 使用最新区块哈希获取区块详细信息
@@ -292,7 +292,7 @@ func (ws *WorkerService) GetBlocks(ctx context.Context, from int64, to int64) (*
 			log.Error("Error getting block header by hash", "blockHash", blockHash, "err", err)
 			return nil, nil, errors.New("get block header by hash err:" + err.Error())
 		}
-		blockHeightAndBlockHeaderMap.Set(i,blockHeader)
+		blockHeightAndBlockHeaderMap.Set(i, blockHeader)
 		//blockHeightAndBlockHeaderMap[i] = blockHeader
 	}
 
@@ -309,7 +309,7 @@ func (ws *WorkerService) SaveBlocks(ctx context.Context, blockHeightAndBlockHead
 	//blockHeightAndBlockVerboseMap map[int64]*btcjson.GetBlockVerboseResult
 	for _, blockHeight := range blockHeightAndBlockHeaderMap.Keys() {
 		value := blockHeightAndBlockVerboseMap.Get(blockHeight)
-		block,ok := value.(*btcjson.GetBlockVerboseResult)
+		block, ok := value.(*btcjson.GetBlockVerboseResult)
 		if ok {
 			blockModels = append(blockModels, baseModel.BaseBlock{
 				MagicNumber:    ws.magicNumber,
@@ -365,7 +365,7 @@ func (ws *WorkerService) SaveTransactions(ctx context.Context, blockHeightAndBlo
 	//}
 	for _, height := range blockHeightAndBlockVerboseMap.keyList {
 		value := blockHeightAndBlockVerboseMap.Get(height)
-		blockVerbose,ok := value.(*btcjson.GetBlockVerboseResult)
+		blockVerbose, ok := value.(*btcjson.GetBlockVerboseResult)
 		if ok {
 			for _, tx := range blockVerbose.Tx {
 				txHashes = append(txHashes, tx)
@@ -433,9 +433,9 @@ func (ws *WorkerService) SaveTransactions(ctx context.Context, blockHeightAndBlo
 	//}
 
 	// 校验交易内容
-	for  _, blockHeight := range blockHeightAndBlockVerboseMap.Keys() {
+	for _, blockHeight := range blockHeightAndBlockVerboseMap.Keys() {
 		value := blockHeightAndBlockVerboseMap.Get(blockHeight)
-		blockVerbose,ok := value.(*btcjson.GetBlockVerboseResult)
+		blockVerbose, ok := value.(*btcjson.GetBlockVerboseResult)
 		if ok {
 			for _, tx := range blockVerbose.Tx {
 				txid, err := chainhash.NewHashFromStr(tx)
@@ -490,7 +490,6 @@ func (ws *WorkerService) SaveTransactions(ctx context.Context, blockHeightAndBlo
 			}
 		}
 	}
-
 
 	log.Info("number of transactions", "number", len(transactionModels))
 
@@ -558,7 +557,7 @@ func (ws *WorkerService) SaveFiles(ctx context.Context, blockHeightAndBlockVerbo
 
 	for _, blockHeight := range blockHeightAndBlockVerboseMap.Keys() {
 		value := blockHeightAndBlockVerboseMap.Get(blockHeight)
-		blockVerbose,ok := value.(*btcjson.GetBlockVerboseResult)
+		blockVerbose, ok := value.(*btcjson.GetBlockVerboseResult)
 		if ok {
 			for _, tx := range blockVerbose.Tx {
 				transactionInscriptions, err := ws.ParseTransaction(tx)
@@ -666,7 +665,7 @@ func (ws *WorkerService) GenerateBrief(ctx context.Context, blockHeightAndBlockV
 	//}
 	for _, blockHeight := range blockHeightAndBlockVerboseMap.Keys() {
 		value := blockHeightAndBlockVerboseMap.Get(blockHeight)
-		blockVerbose,ok := value.(*btcjson.GetBlockVerboseResult)
+		blockVerbose, ok := value.(*btcjson.GetBlockVerboseResult)
 		if ok {
 			for _, tx := range blockVerbose.Tx {
 				transactionInscriptions, err := ws.ParseTransaction(tx)
@@ -708,7 +707,7 @@ func (ws *WorkerService) GenerateBrief(ctx context.Context, blockHeightAndBlockV
 				}
 
 				//transaction2TransactionBriefs[tx] = transactionBriefs
-				transaction2TransactionBriefs.Set(tx,transactionBriefs)
+				transaction2TransactionBriefs.Set(tx, transactionBriefs)
 			}
 		}
 	}

@@ -21,7 +21,7 @@ const JoinString = ","
 // 创建commitment表格模型
 type DA struct {
 	ID              int64  `gorm:"column:f_id;primaryKey;autoIncrement:true;comment:ID" json:"id"`                                      // ID
-	Nonce           int64  `gorm:"column:f_nonce;not null;comment:发送号" json:"nonce"`                                                    // 发送号
+	Nonce           int64  `gorm:"column:f_nonce;not null;comment:发送号;index:idx_das_nonce" json:"nonce"`                                // 发送号
 	Sender          string `gorm:"column:f_sender;not null;comment:发送者;index:idx_das_sender" json:"sender"`                             // 发送者
 	Index           int64  `gorm:"column:f_index;not null;comment:序号;index:idx_das_index" json:"index"`                                 // 序号
 	Length          int64  `gorm:"column:f_length;not null;comment:长度" json:"length"`                                                   // 长度
@@ -30,15 +30,15 @@ type DA struct {
 	CommitmentHash  string `gorm:"column:f_commitment_hash;not null;comment:承诺哈希;index:idx_das_commitment_hash" json:"commitment_hash"` // 承诺哈希
 	Data            string `gorm:"column:f_data;not null;comment:数据;index:idx_das_data" json:"data"`                                    // 数据
 	Proof           string `gorm:"column:f_proof;not null;comment:证据;index:idx_proof" json:"proof"`
-	DAsKey          string `gorm:"column:f_d_as_key;not null;comment:钥" json:"d_as_key"`                                                // 钥
-	SignData        string `gorm:"column:f_sign_data;not null;comment:签名数据" json:"sign_data"`                                           // 签名数据
+	DAsKey          string `gorm:"column:f_d_as_key;not null;comment:钥" json:"d_as_key"`      // 钥
+	SignData        string `gorm:"column:f_sign_data;not null;comment:签名数据" json:"sign_data"` // 签名数据
 	SignAddr        string `gorm:"column:f_sign_address;not null;comment:签名地址" json:"sign_addr"`
 	ParentStateHash string `gorm:"column:f_parent_state_hash;not null;comment:父提交数据哈希;index:idx_das_parent_state_hash" json:"parent_state_hash"` // 父提交数据哈希
 	StateHash       string `gorm:"column:f_state_hash;not null;comment:最新数据哈希;index:idx_das_state_hash" json:"state_hash"`                       // 最新数据哈希
 	BlockNum        int64  `gorm:"column:f_block_num;not null;comment:区块号;index:idx_das_block_num" json:"block_num"`                             // 区块号
 	ReceiveAt       string `gorm:"column:f_receive_at;not null;comment:接收时间" json:"receive_at"`                                                  // 接收时间
 	OutOfTime       string `gorm:"column:f_out_time;not null;comment:失效时间" json:"out_of_time"`
-	CreateAt        int64  `gorm:"column:f_create_at;not null;comment:创建时间" json:"create_at"`                                                    // 创建时间
+	CreateAt        int64  `gorm:"column:f_create_at;not null;comment:创建时间;index:idx_das_create_at" json:"create_at"` // 创建时间
 	NameSpaceID     int64  `gorm:"column:f_name_space_id;not null;comment:命名空间" json:"name_space_id"`
 }
 
@@ -215,7 +215,7 @@ func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
 	var da DA
-	gormdb = db.First(&da, "commitment = ?", common.Bytes2Hex(digest.Marshal()))
+	gormdb = db.Limit(1).Find(&da, "commitment = ?", common.Bytes2Hex(digest.Marshal()))
 	if gormdb.Error != nil {
 		log.Error("can not find DA with given commitment", "commitment", common.Bytes2Hex(commitment), "err", gormdb.Error)
 		return nil, gormdb.Error
@@ -276,7 +276,7 @@ func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
 		return nil, errors.New(msg)
 	}
 	var da DA
-	gormdb = db.First(&da, "commitment_hash = ?", cmHash.Hex())
+	gormdb = db.Limit(1).Find(&da, "commitment_hash = ?", cmHash.Hex())
 	if gormdb.Error != nil {
 		log.Error("can not find DA with given commitment_hash", "commitment_hash", cmHash.Hex(), "err", gormdb.Error)
 		return nil, gormdb.Error
@@ -339,7 +339,7 @@ func GetCommitmentByTxHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 		return nil, errors.New(msg)
 	}
 	var da DA
-	gormdb = db.First(&da, "f_tx_hash = ?", txHash.Hex())
+	gormdb = db.Limit(1).Find(&da, "f_tx_hash = ?", txHash.Hex())
 	if gormdb.Error != nil {
 		log.Error("can not find DA with given txHash", "txHash", txHash.Hex(), "err", gormdb.Error)
 		return nil, gormdb.Error
@@ -388,15 +388,15 @@ func GetCommitmentByTxHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 // 获取ID最大的DA记录
 func GetMaxIDDAStateHash(db *gorm.DB) (string, error) {
 	var da DA
-	if err := db.Order("f_id DESC").First(&da).Error; err != nil {
+	if err := db.Order("f_nonce DESC").Limit(1).Find(&da).Error; err != nil {
 		return "", err
 	}
 	return da.StateHash, nil
 }
 
-func GetMaxIDDA(db *gorm.DB) (uint64, error) {
+func GetMaxIDDANonce(db *gorm.DB) (uint64, error) {
 	var da DA
-	if err := db.Order("f_nonce DESC").First(&da).Error; err != nil {
+	if err := db.Order("f_nonce DESC").Limit(1).Find(&da).Error; err != nil {
 		return 0, err
 	}
 	return uint64(da.Nonce), nil
