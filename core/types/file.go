@@ -37,6 +37,7 @@ type DA struct {
 	TxHash     common.Hash                           `json:"TxHash"`
 	BlockNum   uint64                                `json:"BlockNum"`
 	ReceiveAt  time.Time                            `json:"ReceiveAt"`
+	OutOfTime  time.Time                            `json:"OutOfTime"`
 	Proof      []byte                                `json:"Proof"`
 	ClaimedValue []byte                              `json:"ClaimedValue"`
 	NameSpaceID *big.Int                              `json:"NameSpaceID"`
