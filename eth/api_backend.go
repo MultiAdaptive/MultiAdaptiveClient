@@ -121,7 +121,6 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 		fd.SignerAddr = signAddr
 		fd.ReceiveAt = time.Now()
 		b.eth.fdPool.Add([]*types.DA{fd},true,false)
-
 		outOfTimeByte,_ := fd.OutOfTime.MarshalBinary()
 		return signData,outOfTimeByte,err
 	}

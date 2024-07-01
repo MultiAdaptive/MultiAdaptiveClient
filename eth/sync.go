@@ -496,13 +496,12 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 						trans = append(trans, tx)
 						txData := tx.Data()
 						if len(txData) != 0 {
-							log.Info("processBlocks--------", "有 da 交易")
 							commitment := slice(txData)
 							commitCache.Set(tx.Hash().String(), &db.CommitDetail{
 								Commit:   commitment,
 								BlockNum: bc.NumberU64(),
 								TxHash:   tx.Hash(),
-								Time:     time.Unix(0, int64(bc.Time())),
+								Time:     time.Unix(int64(bc.Time()),0 ),
 							})
 						}
 					}
@@ -549,17 +548,19 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	instance, _ := contract.NewCommitmentManager(contractAddr, cs.ethClient)
 
 	for _, logDetail := range logs {
+		log.Info("扫到了没有---1-")
 		daDetail, err := instance.ParseSendDACommitment(*logDetail)
 		if err != nil {
 			log.Error("ParseSendDACommitment--", "err", err.Error())
 		}
+		log.Info("扫到了没有---2-")
 		detailFinal, ok := commitCache.Get(logDetail.TxHash.Hex())
 		if ok && err == nil {
+			log.Info("扫到了没有---3-")
 			detailFinal.NameSpaceId = daDetail.NameSpaceId
 			detailFinal.Nonce = daDetail.Nonce.Uint64()
 			detailFinal.Index = daDetail.Index.Uint64()
 			detailFinal.OutOfTime = time.Unix(daDetail.Timestamp.Int64(),0)
-			//detailFinal.Root = daDetail.Root
 			detailFinal.SigData = daDetail.Signatures
 			detailFinal.BlockNum = logDetail.BlockNumber
 			addrList, err := cs.handler.fileDataPool.GetSender(daDetail.Signatures)
@@ -584,7 +585,8 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		if flag {
 			//daDetail.Time
 			//new commit get from memory pool
-			outOfData := daDetail.Time.Add(14*24*time.Hour).Before(time.Now())
+			outTime := daDetail.Time.Add(14*24*time.Hour)
+			outOfData := outTime.Before(time.Now())
 			if !outOfData {
 				da, err := cs.handler.fileDataPool.GetDAByCommit(daDetail.Commit)
 				if err != nil {
@@ -601,6 +603,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 					da.SignerAddr = daDetail.SignAddress
 					da.Root = daDetail.Root
 					da.ReceiveAt = time.Now()
+					da.OutOfTime = daDetail.OutOfTime
 					cs.handler.fileDataPool.Add([]*types.DA{da}, false, false)
 					daDatas = append(daDatas, da)
 				}
@@ -609,11 +612,6 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	}
 
 	if len(daDatas) > 0 {
-		parentHashData, err := db.GetMaxIDDAStateHash(cs.db)
-		if err != nil {
-			parentHashData = ""
-		}
-		parentHash := common.HexToHash(parentHashData)
 		storageAddr := common.HexToAddress(cs.chain.Config().L1Conf.StorageManagementProxy)
 		storageIns, _ := contract.NewStorageManager(storageAddr, cs.ethClient)
 		num := cs.chain.CurrentBlock()
@@ -629,15 +627,14 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 				ns, _ := storageIns.NAMESPACE(opts, da.NameSpaceID)
 				flag := addressIncluded(ns.Addr, cs.address)
 				if flag {
-					db.SaveDACommit(cs.db, da, true, parentHash)
+					db.SaveDACommit(cs.db, da, true)
 				}
 			}
 
 			if cs.nodeType == "b" {
-				currentHash, _ := db.SaveDACommit(cs.db, da, true, parentHash)
-				parentHash = currentHash
+				log.Info("SaveDACommit-----","da",da.BlockNum)
+				 db.SaveDACommit(cs.db, da, true)
 			}
-
 		}
 	}
 

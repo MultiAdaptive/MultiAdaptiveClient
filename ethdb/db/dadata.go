@@ -46,15 +46,15 @@ func (*DA) TableName() string {
 	return TableNameDA
 }
 
-func SaveDACommit(db *gorm.DB, da *types.DA, shouldSave bool, parentHash common.Hash) (common.Hash, error) {
+func SaveDACommit(db *gorm.DB, da *types.DA, shouldSave bool)  error {
 	if shouldSave {
-		currentParentHash := parentHash
-		dataCollect := make([]byte, 0)
-		dataCollect = append(dataCollect, da.Commitment.X.Marshal()...)
-		dataCollect = append(dataCollect, da.Commitment.Y.Marshal()...)
-		dataCollect = append(dataCollect, da.Sender.Bytes()...)
-		dataCollect = append(dataCollect, currentParentHash.Bytes()...)
-		stateHash := common.BytesToHash(dataCollect)
+		//currentParentHash := parentHash
+		//dataCollect := make([]byte, 0)
+		//dataCollect = append(dataCollect, da.Commitment.X.Marshal()...)
+		//dataCollect = append(dataCollect, da.Commitment.Y.Marshal()...)
+		//dataCollect = append(dataCollect, da.Sender.Bytes()...)
+		//dataCollect = append(dataCollect, currentParentHash.Bytes()...)
+		//stateHash := common.BytesToHash(dataCollect)
 
 		sigDatStr := make([]string, len(da.SignData))
 		for i, data := range da.SignData {
@@ -83,15 +83,15 @@ func SaveDACommit(db *gorm.DB, da *types.DA, shouldSave bool, parentHash common.
 			SignData:        result,
 			SignAddr:        addrRes,
 			OutOfTime:       da.OutOfTime.Format(time.RFC3339),
-			ParentStateHash: currentParentHash.Hex(),
-			StateHash:       stateHash.Hex(),
+			//ParentStateHash: currentParentHash.Hex(),
+			//StateHash:       stateHash.Hex(),
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
 			NameSpaceID:     da.NameSpaceID.Int64(),
 		}
 		res := db.Create(&wd)
-		return stateHash, res.Error
+		return res.Error
 	}
-	return common.Hash{}, nil
+	return  nil
 }
 
 func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) error {
