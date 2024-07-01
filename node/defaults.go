@@ -29,13 +29,13 @@ import (
 
 const (
 	DefaultHTTPHost     = "localhost" // Default host interface for the HTTP RPC server
-	DefaultHTTPPort     = 8555        // Default TCP port for the HTTP RPC server
+	DefaultHTTPPort     = 8545        // Default TCP port for the HTTP RPC server
 	DefaultExplorerHost = "localhost"
-	DefaultExplorerPort = 8081
+	DefaultExplorerPort = 8080
 	DefaultWSHost       = "localhost" // Default host interface for the websocket RPC server
-	DefaultWSPort       = 8556        // Default TCP port for the websocket RPC server
+	DefaultWSPort       = 8546        // Default TCP port for the websocket RPC server
 	DefaultAuthHost     = "localhost" // Default host interface for the authenticated apis
-	DefaultAuthPort     = 8561        // Default port for the authenticated apis
+	DefaultAuthPort     = 8551        // Default port for the authenticated apis
 )
 
 const (
@@ -70,7 +70,7 @@ var DefaultConfig = Config{
 	BatchResponseMaxSize: 25 * 1000 * 1000,
 	GraphQLVirtualHosts:  []string{"localhost"},
 	P2P: p2p.Config{
-		ListenAddr: ":30304",
+		ListenAddr: ":30303",
 		MaxPeers:   50,
 		NAT:        nat.Any(),
 	},
