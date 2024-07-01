@@ -377,9 +377,21 @@ func (cs *chainSyncer) doEthereumSync() error {
 	}
 	log.Info("doSync-----", "l1num", l1Num, "currentHeader", currentHeader)
 	cs.forced = true
-
 	//当前高度为零 可以直接从genesis开始同步
 	if currentHeader == 0 {
+		//addr := common.HexToAddress(cs.chain.Config().L1Conf.CommitmentManagerProxy)
+		//
+		//queryLog := ethereum.FilterQuery{
+		//	FromBlock: new(big.Int).SetUint64(currentHeader),
+		//	ToBlock: new(big.Int).SetUint64(l1Num),
+		//	Addresses: []common.Address{
+		//		addr,
+		//	},
+		//	Topics: [][]common.Hash{
+		//
+		//	},
+		//}
+		//cs.ethClient.FilterLogs(cs.ctx,queryLog)
 		requireTime := time.NewTimer(QuickReqTime)
 		startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
 		var shouldBreak bool

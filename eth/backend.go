@@ -26,7 +26,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/bloombits"
+	//"github.com/ethereum/go-ethereum/core/bloombits"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state/pruner"
 	"github.com/ethereum/go-ethereum/core/txpool/filedatapool"
@@ -75,8 +75,8 @@ type Ethereum struct {
 	chainDb           ethdb.Database // Block chain database
 	eventMux          *event.TypeMux
 	accountManager    *accounts.Manager
-	bloomRequests     chan chan *bloombits.Retrieval // Channel receiving bloom data retrieval requests
-	closeBloomHandler chan struct{}
+	//bloomRequests     chan chan *bloombits.Retrieval // Channel receiving bloom data retrieval requests
+	//closeBloomHandler chan struct{}
 	APIBackend        *EthAPIBackend
 	gasPrice          *big.Int
 	etherbase         common.Address
@@ -137,9 +137,9 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		chainDb:           chainDb,
 		eventMux:          stack.EventMux(),
 		accountManager:    stack.AccountManager(),
-		closeBloomHandler: make(chan struct{}),
+		//closeBloomHandler: make(chan struct{}),
 		networkID:         config.NetworkId,
-		bloomRequests:     make(chan chan *bloombits.Retrieval),
+		//bloomRequests:     make(chan chan *bloombits.Retrieval),
 		p2pServer:         stack.Server(),
 		shutdownTracker:   shutdowncheck.NewShutdownTracker(chainDb),
 		nodeCloser:        stack.Close,
@@ -400,7 +400,7 @@ func (s *Ethereum) Stop() error {
 	db.CloseDB(s.sqlDb)
 	log.Info("db is closed")
 	// Then stop everything else.
-	close(s.closeBloomHandler)
+	//close(s.closeBloomHandler)
 	s.fdPool.Close()
 	s.blockchain.Stop()
 

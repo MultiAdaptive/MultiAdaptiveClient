@@ -717,7 +717,7 @@ func (ws *WorkerService) GenerateBrief(ctx context.Context, blockHeightAndBlockV
 	return transaction2TransactionBriefs, nil
 }
 
-// 解析交易
+
 func (ws *WorkerService) ParseTransaction(txID string) ([]*scriptparser.TransactionInscription, error) {
 	txHash, err := chainhash.NewHashFromStr(txID)
 	if err != nil {
