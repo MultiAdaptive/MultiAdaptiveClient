@@ -173,13 +173,6 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 			StateScheme:         scheme,
 		}
 	)
-	// Override the chain config with provided settings.
-	var overrides core.ChainOverrides
-
-	if config.OverrideVerkle != nil {
-		overrides.OverrideVerkle = config.OverrideVerkle
-	}
-	overrides.ApplySuperchainUpgrades = config.ApplySuperchainUpgrades
 
 	stateSqlDB, err := db.NewSqlDB(stack.Config().DataDir)
 	if err != nil {

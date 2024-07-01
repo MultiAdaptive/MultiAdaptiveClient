@@ -168,11 +168,6 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, gethConfig) {
 func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 	stack, cfg := makeConfigNode(ctx)
 
-	if ctx.IsSet(utils.OverrideVerkle.Name) {
-		v := ctx.Uint64(utils.OverrideVerkle.Name)
-		cfg.Eth.OverrideVerkle = &v
-	}
-
 	if ctx.IsSet(utils.L1ScanUrlFlag.Name) {
 		url := ctx.String(utils.L1ScanUrlFlag.Name)
 		if url == "" || len(url) == 0 {

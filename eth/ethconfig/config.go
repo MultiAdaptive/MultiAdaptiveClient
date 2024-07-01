@@ -137,8 +137,8 @@ type Config struct {
 	RPCTxFeeCap float64
 
 	// OverrideVerkle (TODO: remove after the fork)
-	OverrideVerkle *uint64 `toml:",omitempty"`
+	//OverrideVerkle *uint64 `toml:",omitempty"`
 
 	// ApplySuperchainUpgrades requests the node to load chain-configuration from the superchain-registry.
-	ApplySuperchainUpgrades bool `toml:",omitempty"`
+	//ApplySuperchainUpgrades bool `toml:",omitempty"`
 }

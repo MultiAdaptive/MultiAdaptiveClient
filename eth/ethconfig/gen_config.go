@@ -42,8 +42,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		DocRoot                                 string `toml:"-"`
 		RPCGasCap                               uint64
 		RPCTxFeeCap                             float64
-		OverrideVerkle                          *uint64 `toml:",omitempty"`
-		ApplySuperchainUpgrades                 bool    `toml:",omitempty"`
+
 	}
 	var enc Config
 	enc.Genesis = c.Genesis
@@ -75,8 +74,6 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.DocRoot = c.DocRoot
 	enc.RPCGasCap = c.RPCGasCap
 	enc.RPCTxFeeCap = c.RPCTxFeeCap
-	enc.OverrideVerkle = c.OverrideVerkle
-	enc.ApplySuperchainUpgrades = c.ApplySuperchainUpgrades
 	return &enc, nil
 }
 
@@ -115,9 +112,6 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		DocRoot                                 *string `toml:"-"`
 		RPCGasCap                               *uint64
 		RPCTxFeeCap                             *float64
-		OverrideVerkle                          *uint64 `toml:",omitempty"`
-		OverrideOptimismCanyon                  *uint64 `toml:",omitempty"`
-		ApplySuperchainUpgrades                 *bool   `toml:",omitempty"`
 	}
 	var dec Config
 	if err := unmarshal(&dec); err != nil {
@@ -211,12 +205,7 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.RPCTxFeeCap != nil {
 		c.RPCTxFeeCap = *dec.RPCTxFeeCap
 	}
-	if dec.OverrideVerkle != nil {
-		c.OverrideVerkle = dec.OverrideVerkle
-	}
-	if dec.ApplySuperchainUpgrades != nil {
-		c.ApplySuperchainUpgrades = *dec.ApplySuperchainUpgrades
-	}
+
 
 	return nil
 }

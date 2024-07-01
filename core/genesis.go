@@ -254,8 +254,8 @@ func (e *GenesisMismatchError) Error() string {
 // ChainOverrides contains the changes to chain config.
 type ChainOverrides struct {
 	OverrideCancun *uint64
-	OverrideVerkle *uint64
-	ApplySuperchainUpgrades bool
+	//OverrideVerkle *uint64
+	//ApplySuperchainUpgrades bool
 }
 
 // SetupGenesisBlock writes or updates the genesis block in db.
