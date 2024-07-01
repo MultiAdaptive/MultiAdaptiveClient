@@ -109,7 +109,7 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 	fd.OutOfTime = hourStart
 	flag,err := b.eth.singer.VerifyEth(fd)
 	if err != nil || flag == false {
-		return nil,nil ,err
+		return nil,0 ,err
 	}else {
 		signData,err := b.eth.singer.Sign(fd)
 		fd.SignData = [][]byte{signData}
