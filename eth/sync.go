@@ -548,15 +548,12 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	instance, _ := contract.NewCommitmentManager(contractAddr, cs.ethClient)
 
 	for _, logDetail := range logs {
-		log.Info("扫到了没有---1-")
 		daDetail, err := instance.ParseSendDACommitment(*logDetail)
 		if err != nil {
 			log.Error("ParseSendDACommitment--", "err", err.Error())
 		}
-		log.Info("扫到了没有---2-")
 		detailFinal, ok := commitCache.Get(logDetail.TxHash.Hex())
 		if ok && err == nil {
-			log.Info("扫到了没有---3-")
 			detailFinal.NameSpaceId = daDetail.NameSpaceId
 			detailFinal.Nonce = daDetail.Nonce.Uint64()
 			detailFinal.Index = daDetail.Index.Uint64()

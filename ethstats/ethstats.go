@@ -22,13 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
-	"net/http"
-	"runtime"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/mclock"
 	"github.com/ethereum/go-ethereum/core"
@@ -38,8 +31,14 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/gorilla/websocket"
+	"math/big"
+	"net/http"
+	"runtime"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
 const (
@@ -60,24 +59,8 @@ const (
 
 // backend encompasses the bare-minimum functionality needed for ethstats reporting
 type backend interface {
-	//SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription
-	//SubscribeNewTxsEvent(ch chan<- core.NewTxsEvent) event.Subscription
 	SubscribeNewFileDataEvent(ch chan<- core.NewFileDataEvent) event.Subscription
-	//CurrentHeader() *types.Header
-	//HeaderByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Header, error)
 	GetTd(ctx context.Context) *big.Int
-	//Stats() (pending int, queued int)
-	//SyncProgress() ethereum.SyncProgress
-}
-
-// fullNodeBackend encompasses the functionality necessary for a full node
-// reporting to ethstats
-type fullNodeBackend interface {
-	backend
-	//Miner() *miner.Miner
-	BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Block, error)
-	CurrentBlock() *types.Block
-	SuggestGasTipCap(ctx context.Context) (*big.Int, error)
 }
 
 // Service implements an Ethereum netstats reporting daemon that pushes local
@@ -197,11 +180,7 @@ func New(node *node.Node, backend backend, url string) error {
 // Start implements node.Lifecycle, starting up the monitoring and reporting daemon.
 func (s *Service) Start() error {
 	// Subscribe to chain events to execute updates on
-	//chainHeadCh := make(chan core.ChainHeadEvent, chainHeadChanSize)
-	//s.headSub = s.backend.SubscribeChainHeadEvent(chainHeadCh)
-	//txEventCh := make(chan core.NewTxsEvent, txChanSize)
 	fdEventCh := make(chan core.NewFileDataEvent, fdChanSize)
-	//s.txSub = s.backend.SubscribeNewTxsEvent(txEventCh)
 	s.fdSub = s.backend.SubscribeNewFileDataEvent(fdEventCh)
 	go s.loop(fdEventCh)
 
