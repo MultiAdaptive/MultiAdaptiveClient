@@ -182,10 +182,13 @@ func (fp *FilePool) Init(head *types.Header) error {
 		if err != nil {
 			log.Info("FilePool init","err",err.Error())
 		}else {
+
 			for _,da := range das{
+				fp.mu.Lock()
 				fp.diskCache.Hashes[da.TxHash] = da.ReceiveAt
 				hashData := common.BytesToHash(da.Commitment.Marshal())
 				fp.diskCache.Hashes[hashData] = da.ReceiveAt
+				fp.mu.Unlock()
 			}
 		}
 	}
@@ -215,11 +218,14 @@ func (fp *FilePool) loop() {
 			return
 
 		case <- remove.C:
+			fp.mu.Lock()
 			for hash,receive := range fp.diskCache.Hashes {
 				if receive.Add(14*24*time.Hour).Before(time.Now()) {
 					db.DeleteDAByHash(fp.chain.SqlDB(),hash)
+					delete(fp.diskCache.Hashes,hash)
 				}
 			}
+			fp.mu.Unlock()
 			remove.Reset(fp.config.Lifetime)
 		// Handle inactive txHash fileData eviction
 		case <-evict.C:
