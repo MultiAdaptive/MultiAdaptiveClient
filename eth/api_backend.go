@@ -99,7 +99,7 @@ func (b *EthAPIBackend) GetTd(ctx context.Context) *big.Int {
 	return b.eth.blockchain.GetTd()
 }
 
-func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte) ([]byte,[]byte,error) {
+func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte) ([]byte,int64,error) {
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
 	//lengthBig := new(big.Int).SetUint64(length)
@@ -121,7 +121,7 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 		fd.SignerAddr = signAddr
 		fd.ReceiveAt = time.Now()
 		b.eth.fdPool.Add([]*types.DA{fd},true,false)
-		outOfTimeByte,_ := fd.OutOfTime.MarshalBinary()
+		outOfTimeByte := fd.OutOfTime.Unix()
 		return signData,outOfTimeByte,err
 	}
 }

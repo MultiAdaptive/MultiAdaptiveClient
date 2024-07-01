@@ -666,7 +666,7 @@ func NewRPCDAs(length int) *RPCDAs {
 
 type RPCSignResult struct {
 	SigData   []byte   `json:"SigData"`
-	TimeStamp []byte   `json:"TimeStamp"`
+	TimeStamp int64   `json:"TimeStamp"`
 }
 
 type RPCTxHashes struct {
