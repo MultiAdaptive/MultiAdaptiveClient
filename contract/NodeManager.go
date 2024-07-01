@@ -41,7 +41,7 @@ type NodeManagerNodeInfo struct {
 
 // NodeManagerMetaData contains all meta data concerning the NodeManager contract.
 var NodeManagerMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"add\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"url\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"stakedTokens\",\"type\":\"uint256\"}],\"name\":\"BroadcastNode\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"add\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"url\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"stakedTokens\",\"type\":\"uint256\"}],\"name\":\"StorageNode\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"GetBroadcastingNodes\",\"outputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"url\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"stakedTokens\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"location\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"maxStorageSpace\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"internalType\":\"structNodeManager.NodeInfo[]\",\"name\":\"nodes\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"GetstorageNodes\",\"outputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"url\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"stakedTokens\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"location\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"maxStorageSpace\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"internalType\":\"structNodeManager.NodeInfo[]\",\"name\":\"nodes\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"IsNodeBroadcast\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"IsNodeStorage\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"url\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"stakedTokens\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"location\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"maxStorageSpace\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"internalType\":\"structNodeManager.NodeInfo\",\"name\":\"info\",\"type\":\"tuple\"}],\"name\":\"RegisterBroadcastNode\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"url\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"stakedTokens\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"location\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"maxStorageSpace\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"internalType\":\"structNodeManager.NodeInfo\",\"name\":\"info\",\"type\":\"tuple\"}],\"name\":\"RegisterStorageNode\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"broadcastNodeList\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"broadcastingNodes\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"url\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"stakedTokens\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"location\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"maxStorageSpace\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"storageNodeList\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"storageNodes\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"url\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"stakedTokens\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"location\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"maxStorageSpace\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"version\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"add\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"url\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"stakedTokens\",\"type\":\"uint256\"}],\"name\":\"BroadcastNode\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"add\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"url\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"stakedTokens\",\"type\":\"uint256\"}],\"name\":\"StorageNode\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"broadcastNodeList\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"broadcastingNodes\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"url\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"stakedTokens\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"location\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"maxStorageSpace\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getBroadcastingNodes\",\"outputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"url\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"stakedTokens\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"location\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"maxStorageSpace\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"internalType\":\"structNodeManager.NodeInfo[]\",\"name\":\"nodes\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getStorageNodes\",\"outputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"url\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"stakedTokens\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"location\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"maxStorageSpace\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"internalType\":\"structNodeManager.NodeInfo[]\",\"name\":\"nodes\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"isNodeBroadcast\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"isNodeStorage\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"url\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"stakedTokens\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"location\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"maxStorageSpace\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"internalType\":\"structNodeManager.NodeInfo\",\"name\":\"info\",\"type\":\"tuple\"}],\"name\":\"registerBroadcastNode\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"url\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"stakedTokens\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"location\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"maxStorageSpace\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"internalType\":\"structNodeManager.NodeInfo\",\"name\":\"info\",\"type\":\"tuple\"}],\"name\":\"registerStorageNode\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"storageNodeList\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"storageNodes\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"url\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"stakedTokens\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"location\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"maxStorageSpace\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"version\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
 }
 
 // NodeManagerABI is the input ABI used to generate the binding from.
@@ -190,130 +190,6 @@ func (_NodeManager *NodeManagerTransactorRaw) Transact(opts *bind.TransactOpts, 
 	return _NodeManager.Contract.contract.Transact(opts, method, params...)
 }
 
-// GetBroadcastingNodes is a free data retrieval call binding the contract method 0x33b61e6a.
-//
-// Solidity: function GetBroadcastingNodes() view returns((string,string,uint256,string,uint256,address)[] nodes)
-func (_NodeManager *NodeManagerCaller) GetBroadcastingNodes(opts *bind.CallOpts) ([]NodeManagerNodeInfo, error) {
-	var out []interface{}
-	err := _NodeManager.contract.Call(opts, &out, "GetBroadcastingNodes")
-
-	if err != nil {
-		return *new([]NodeManagerNodeInfo), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([]NodeManagerNodeInfo)).(*[]NodeManagerNodeInfo)
-
-	return out0, err
-
-}
-
-// GetBroadcastingNodes is a free data retrieval call binding the contract method 0x33b61e6a.
-//
-// Solidity: function GetBroadcastingNodes() view returns((string,string,uint256,string,uint256,address)[] nodes)
-func (_NodeManager *NodeManagerSession) GetBroadcastingNodes() ([]NodeManagerNodeInfo, error) {
-	return _NodeManager.Contract.GetBroadcastingNodes(&_NodeManager.CallOpts)
-}
-
-// GetBroadcastingNodes is a free data retrieval call binding the contract method 0x33b61e6a.
-//
-// Solidity: function GetBroadcastingNodes() view returns((string,string,uint256,string,uint256,address)[] nodes)
-func (_NodeManager *NodeManagerCallerSession) GetBroadcastingNodes() ([]NodeManagerNodeInfo, error) {
-	return _NodeManager.Contract.GetBroadcastingNodes(&_NodeManager.CallOpts)
-}
-
-// GetstorageNodes is a free data retrieval call binding the contract method 0x244de160.
-//
-// Solidity: function GetstorageNodes() view returns((string,string,uint256,string,uint256,address)[] nodes)
-func (_NodeManager *NodeManagerCaller) GetstorageNodes(opts *bind.CallOpts) ([]NodeManagerNodeInfo, error) {
-	var out []interface{}
-	err := _NodeManager.contract.Call(opts, &out, "GetstorageNodes")
-
-	if err != nil {
-		return *new([]NodeManagerNodeInfo), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([]NodeManagerNodeInfo)).(*[]NodeManagerNodeInfo)
-
-	return out0, err
-
-}
-
-// GetstorageNodes is a free data retrieval call binding the contract method 0x244de160.
-//
-// Solidity: function GetstorageNodes() view returns((string,string,uint256,string,uint256,address)[] nodes)
-func (_NodeManager *NodeManagerSession) GetstorageNodes() ([]NodeManagerNodeInfo, error) {
-	return _NodeManager.Contract.GetstorageNodes(&_NodeManager.CallOpts)
-}
-
-// GetstorageNodes is a free data retrieval call binding the contract method 0x244de160.
-//
-// Solidity: function GetstorageNodes() view returns((string,string,uint256,string,uint256,address)[] nodes)
-func (_NodeManager *NodeManagerCallerSession) GetstorageNodes() ([]NodeManagerNodeInfo, error) {
-	return _NodeManager.Contract.GetstorageNodes(&_NodeManager.CallOpts)
-}
-
-// IsNodeBroadcast is a free data retrieval call binding the contract method 0xc0f2acea.
-//
-// Solidity: function IsNodeBroadcast(address addr) view returns(bool)
-func (_NodeManager *NodeManagerCaller) IsNodeBroadcast(opts *bind.CallOpts, addr common.Address) (bool, error) {
-	var out []interface{}
-	err := _NodeManager.contract.Call(opts, &out, "IsNodeBroadcast", addr)
-
-	if err != nil {
-		return *new(bool), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
-
-	return out0, err
-
-}
-
-// IsNodeBroadcast is a free data retrieval call binding the contract method 0xc0f2acea.
-//
-// Solidity: function IsNodeBroadcast(address addr) view returns(bool)
-func (_NodeManager *NodeManagerSession) IsNodeBroadcast(addr common.Address) (bool, error) {
-	return _NodeManager.Contract.IsNodeBroadcast(&_NodeManager.CallOpts, addr)
-}
-
-// IsNodeBroadcast is a free data retrieval call binding the contract method 0xc0f2acea.
-//
-// Solidity: function IsNodeBroadcast(address addr) view returns(bool)
-func (_NodeManager *NodeManagerCallerSession) IsNodeBroadcast(addr common.Address) (bool, error) {
-	return _NodeManager.Contract.IsNodeBroadcast(&_NodeManager.CallOpts, addr)
-}
-
-// IsNodeStorage is a free data retrieval call binding the contract method 0xfdd4e642.
-//
-// Solidity: function IsNodeStorage(address addr) view returns(bool)
-func (_NodeManager *NodeManagerCaller) IsNodeStorage(opts *bind.CallOpts, addr common.Address) (bool, error) {
-	var out []interface{}
-	err := _NodeManager.contract.Call(opts, &out, "IsNodeStorage", addr)
-
-	if err != nil {
-		return *new(bool), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
-
-	return out0, err
-
-}
-
-// IsNodeStorage is a free data retrieval call binding the contract method 0xfdd4e642.
-//
-// Solidity: function IsNodeStorage(address addr) view returns(bool)
-func (_NodeManager *NodeManagerSession) IsNodeStorage(addr common.Address) (bool, error) {
-	return _NodeManager.Contract.IsNodeStorage(&_NodeManager.CallOpts, addr)
-}
-
-// IsNodeStorage is a free data retrieval call binding the contract method 0xfdd4e642.
-//
-// Solidity: function IsNodeStorage(address addr) view returns(bool)
-func (_NodeManager *NodeManagerCallerSession) IsNodeStorage(addr common.Address) (bool, error) {
-	return _NodeManager.Contract.IsNodeStorage(&_NodeManager.CallOpts, addr)
-}
-
 // BroadcastNodeList is a free data retrieval call binding the contract method 0x56f7be58.
 //
 // Solidity: function broadcastNodeList(uint256 ) view returns(address)
@@ -408,6 +284,130 @@ func (_NodeManager *NodeManagerCallerSession) BroadcastingNodes(arg0 common.Addr
 	Addr            common.Address
 }, error) {
 	return _NodeManager.Contract.BroadcastingNodes(&_NodeManager.CallOpts, arg0)
+}
+
+// GetBroadcastingNodes is a free data retrieval call binding the contract method 0x431ece75.
+//
+// Solidity: function getBroadcastingNodes() view returns((string,string,uint256,string,uint256,address)[] nodes)
+func (_NodeManager *NodeManagerCaller) GetBroadcastingNodes(opts *bind.CallOpts) ([]NodeManagerNodeInfo, error) {
+	var out []interface{}
+	err := _NodeManager.contract.Call(opts, &out, "getBroadcastingNodes")
+
+	if err != nil {
+		return *new([]NodeManagerNodeInfo), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]NodeManagerNodeInfo)).(*[]NodeManagerNodeInfo)
+
+	return out0, err
+
+}
+
+// GetBroadcastingNodes is a free data retrieval call binding the contract method 0x431ece75.
+//
+// Solidity: function getBroadcastingNodes() view returns((string,string,uint256,string,uint256,address)[] nodes)
+func (_NodeManager *NodeManagerSession) GetBroadcastingNodes() ([]NodeManagerNodeInfo, error) {
+	return _NodeManager.Contract.GetBroadcastingNodes(&_NodeManager.CallOpts)
+}
+
+// GetBroadcastingNodes is a free data retrieval call binding the contract method 0x431ece75.
+//
+// Solidity: function getBroadcastingNodes() view returns((string,string,uint256,string,uint256,address)[] nodes)
+func (_NodeManager *NodeManagerCallerSession) GetBroadcastingNodes() ([]NodeManagerNodeInfo, error) {
+	return _NodeManager.Contract.GetBroadcastingNodes(&_NodeManager.CallOpts)
+}
+
+// GetStorageNodes is a free data retrieval call binding the contract method 0x2e67d259.
+//
+// Solidity: function getStorageNodes() view returns((string,string,uint256,string,uint256,address)[] nodes)
+func (_NodeManager *NodeManagerCaller) GetStorageNodes(opts *bind.CallOpts) ([]NodeManagerNodeInfo, error) {
+	var out []interface{}
+	err := _NodeManager.contract.Call(opts, &out, "getStorageNodes")
+
+	if err != nil {
+		return *new([]NodeManagerNodeInfo), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]NodeManagerNodeInfo)).(*[]NodeManagerNodeInfo)
+
+	return out0, err
+
+}
+
+// GetStorageNodes is a free data retrieval call binding the contract method 0x2e67d259.
+//
+// Solidity: function getStorageNodes() view returns((string,string,uint256,string,uint256,address)[] nodes)
+func (_NodeManager *NodeManagerSession) GetStorageNodes() ([]NodeManagerNodeInfo, error) {
+	return _NodeManager.Contract.GetStorageNodes(&_NodeManager.CallOpts)
+}
+
+// GetStorageNodes is a free data retrieval call binding the contract method 0x2e67d259.
+//
+// Solidity: function getStorageNodes() view returns((string,string,uint256,string,uint256,address)[] nodes)
+func (_NodeManager *NodeManagerCallerSession) GetStorageNodes() ([]NodeManagerNodeInfo, error) {
+	return _NodeManager.Contract.GetStorageNodes(&_NodeManager.CallOpts)
+}
+
+// IsNodeBroadcast is a free data retrieval call binding the contract method 0x0bc4a3e0.
+//
+// Solidity: function isNodeBroadcast(address addr) view returns(bool)
+func (_NodeManager *NodeManagerCaller) IsNodeBroadcast(opts *bind.CallOpts, addr common.Address) (bool, error) {
+	var out []interface{}
+	err := _NodeManager.contract.Call(opts, &out, "isNodeBroadcast", addr)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsNodeBroadcast is a free data retrieval call binding the contract method 0x0bc4a3e0.
+//
+// Solidity: function isNodeBroadcast(address addr) view returns(bool)
+func (_NodeManager *NodeManagerSession) IsNodeBroadcast(addr common.Address) (bool, error) {
+	return _NodeManager.Contract.IsNodeBroadcast(&_NodeManager.CallOpts, addr)
+}
+
+// IsNodeBroadcast is a free data retrieval call binding the contract method 0x0bc4a3e0.
+//
+// Solidity: function isNodeBroadcast(address addr) view returns(bool)
+func (_NodeManager *NodeManagerCallerSession) IsNodeBroadcast(addr common.Address) (bool, error) {
+	return _NodeManager.Contract.IsNodeBroadcast(&_NodeManager.CallOpts, addr)
+}
+
+// IsNodeStorage is a free data retrieval call binding the contract method 0x258d6848.
+//
+// Solidity: function isNodeStorage(address addr) view returns(bool)
+func (_NodeManager *NodeManagerCaller) IsNodeStorage(opts *bind.CallOpts, addr common.Address) (bool, error) {
+	var out []interface{}
+	err := _NodeManager.contract.Call(opts, &out, "isNodeStorage", addr)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsNodeStorage is a free data retrieval call binding the contract method 0x258d6848.
+//
+// Solidity: function isNodeStorage(address addr) view returns(bool)
+func (_NodeManager *NodeManagerSession) IsNodeStorage(addr common.Address) (bool, error) {
+	return _NodeManager.Contract.IsNodeStorage(&_NodeManager.CallOpts, addr)
+}
+
+// IsNodeStorage is a free data retrieval call binding the contract method 0x258d6848.
+//
+// Solidity: function isNodeStorage(address addr) view returns(bool)
+func (_NodeManager *NodeManagerCallerSession) IsNodeStorage(addr common.Address) (bool, error) {
+	return _NodeManager.Contract.IsNodeStorage(&_NodeManager.CallOpts, addr)
 }
 
 // StorageNodeList is a free data retrieval call binding the contract method 0x7667d104.
@@ -537,48 +537,6 @@ func (_NodeManager *NodeManagerCallerSession) Version() (string, error) {
 	return _NodeManager.Contract.Version(&_NodeManager.CallOpts)
 }
 
-// RegisterBroadcastNode is a paid mutator transaction binding the contract method 0x3ef98a18.
-//
-// Solidity: function RegisterBroadcastNode((string,string,uint256,string,uint256,address) info) returns()
-func (_NodeManager *NodeManagerTransactor) RegisterBroadcastNode(opts *bind.TransactOpts, info NodeManagerNodeInfo) (*types.Transaction, error) {
-	return _NodeManager.contract.Transact(opts, "RegisterBroadcastNode", info)
-}
-
-// RegisterBroadcastNode is a paid mutator transaction binding the contract method 0x3ef98a18.
-//
-// Solidity: function RegisterBroadcastNode((string,string,uint256,string,uint256,address) info) returns()
-func (_NodeManager *NodeManagerSession) RegisterBroadcastNode(info NodeManagerNodeInfo) (*types.Transaction, error) {
-	return _NodeManager.Contract.RegisterBroadcastNode(&_NodeManager.TransactOpts, info)
-}
-
-// RegisterBroadcastNode is a paid mutator transaction binding the contract method 0x3ef98a18.
-//
-// Solidity: function RegisterBroadcastNode((string,string,uint256,string,uint256,address) info) returns()
-func (_NodeManager *NodeManagerTransactorSession) RegisterBroadcastNode(info NodeManagerNodeInfo) (*types.Transaction, error) {
-	return _NodeManager.Contract.RegisterBroadcastNode(&_NodeManager.TransactOpts, info)
-}
-
-// RegisterStorageNode is a paid mutator transaction binding the contract method 0x4d55f62a.
-//
-// Solidity: function RegisterStorageNode((string,string,uint256,string,uint256,address) info) returns()
-func (_NodeManager *NodeManagerTransactor) RegisterStorageNode(opts *bind.TransactOpts, info NodeManagerNodeInfo) (*types.Transaction, error) {
-	return _NodeManager.contract.Transact(opts, "RegisterStorageNode", info)
-}
-
-// RegisterStorageNode is a paid mutator transaction binding the contract method 0x4d55f62a.
-//
-// Solidity: function RegisterStorageNode((string,string,uint256,string,uint256,address) info) returns()
-func (_NodeManager *NodeManagerSession) RegisterStorageNode(info NodeManagerNodeInfo) (*types.Transaction, error) {
-	return _NodeManager.Contract.RegisterStorageNode(&_NodeManager.TransactOpts, info)
-}
-
-// RegisterStorageNode is a paid mutator transaction binding the contract method 0x4d55f62a.
-//
-// Solidity: function RegisterStorageNode((string,string,uint256,string,uint256,address) info) returns()
-func (_NodeManager *NodeManagerTransactorSession) RegisterStorageNode(info NodeManagerNodeInfo) (*types.Transaction, error) {
-	return _NodeManager.Contract.RegisterStorageNode(&_NodeManager.TransactOpts, info)
-}
-
 // Initialize is a paid mutator transaction binding the contract method 0x8129fc1c.
 //
 // Solidity: function initialize() returns()
@@ -598,6 +556,48 @@ func (_NodeManager *NodeManagerSession) Initialize() (*types.Transaction, error)
 // Solidity: function initialize() returns()
 func (_NodeManager *NodeManagerTransactorSession) Initialize() (*types.Transaction, error) {
 	return _NodeManager.Contract.Initialize(&_NodeManager.TransactOpts)
+}
+
+// RegisterBroadcastNode is a paid mutator transaction binding the contract method 0x312f1957.
+//
+// Solidity: function registerBroadcastNode((string,string,uint256,string,uint256,address) info) returns()
+func (_NodeManager *NodeManagerTransactor) RegisterBroadcastNode(opts *bind.TransactOpts, info NodeManagerNodeInfo) (*types.Transaction, error) {
+	return _NodeManager.contract.Transact(opts, "registerBroadcastNode", info)
+}
+
+// RegisterBroadcastNode is a paid mutator transaction binding the contract method 0x312f1957.
+//
+// Solidity: function registerBroadcastNode((string,string,uint256,string,uint256,address) info) returns()
+func (_NodeManager *NodeManagerSession) RegisterBroadcastNode(info NodeManagerNodeInfo) (*types.Transaction, error) {
+	return _NodeManager.Contract.RegisterBroadcastNode(&_NodeManager.TransactOpts, info)
+}
+
+// RegisterBroadcastNode is a paid mutator transaction binding the contract method 0x312f1957.
+//
+// Solidity: function registerBroadcastNode((string,string,uint256,string,uint256,address) info) returns()
+func (_NodeManager *NodeManagerTransactorSession) RegisterBroadcastNode(info NodeManagerNodeInfo) (*types.Transaction, error) {
+	return _NodeManager.Contract.RegisterBroadcastNode(&_NodeManager.TransactOpts, info)
+}
+
+// RegisterStorageNode is a paid mutator transaction binding the contract method 0xfc94101e.
+//
+// Solidity: function registerStorageNode((string,string,uint256,string,uint256,address) info) returns()
+func (_NodeManager *NodeManagerTransactor) RegisterStorageNode(opts *bind.TransactOpts, info NodeManagerNodeInfo) (*types.Transaction, error) {
+	return _NodeManager.contract.Transact(opts, "registerStorageNode", info)
+}
+
+// RegisterStorageNode is a paid mutator transaction binding the contract method 0xfc94101e.
+//
+// Solidity: function registerStorageNode((string,string,uint256,string,uint256,address) info) returns()
+func (_NodeManager *NodeManagerSession) RegisterStorageNode(info NodeManagerNodeInfo) (*types.Transaction, error) {
+	return _NodeManager.Contract.RegisterStorageNode(&_NodeManager.TransactOpts, info)
+}
+
+// RegisterStorageNode is a paid mutator transaction binding the contract method 0xfc94101e.
+//
+// Solidity: function registerStorageNode((string,string,uint256,string,uint256,address) info) returns()
+func (_NodeManager *NodeManagerTransactorSession) RegisterStorageNode(info NodeManagerNodeInfo) (*types.Transaction, error) {
+	return _NodeManager.Contract.RegisterStorageNode(&_NodeManager.TransactOpts, info)
 }
 
 // NodeManagerBroadcastNodeIterator is returned from FilterBroadcastNode and is used to iterate over the raw logs and unpacked data for BroadcastNode events raised by the NodeManager contract.

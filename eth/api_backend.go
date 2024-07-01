@@ -99,14 +99,17 @@ func (b *EthAPIBackend) GetTd(ctx context.Context) *big.Int {
 	return b.eth.blockchain.GetTd()
 }
 
-func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte) ([]byte,error) {
+func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte) ([]byte,[]byte,error) {
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
 	//lengthBig := new(big.Int).SetUint64(length)
 	fd := types.NewDA(sender, index, length, digest, data, dasKey, proof, claimedValue)
+	outData := time.Now().Add(23*time.Hour)
+	hourStart := time.Date(outData.Year(), outData.Month(), outData.Day(), outData.Hour(), 0, 0, 0, outData.Location())
+	fd.OutOfTime = hourStart
 	flag,err := b.eth.singer.VerifyEth(fd)
 	if err != nil || flag == false {
-		return nil, err
+		return nil,nil ,err
 	}else {
 		signData,err := b.eth.singer.Sign(fd)
 		fd.SignData = [][]byte{signData}
@@ -118,7 +121,9 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 		fd.SignerAddr = signAddr
 		fd.ReceiveAt = time.Now()
 		b.eth.fdPool.Add([]*types.DA{fd},true,false)
-		return signData,err
+
+		outOfTimeByte,_ := fd.OutOfTime.MarshalBinary()
+		return signData,outOfTimeByte,err
 	}
 }
 

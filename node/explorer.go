@@ -5,10 +5,8 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contract"
-	"github.com/ethereum/go-ethereum/crypto"
 	baseModel "github.com/ethereum/go-ethereum/eth/basemodel"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethdb/db"
@@ -19,7 +17,6 @@ import (
 	"github.com/spf13/cast"
 	"gorm.io/gorm"
 	"io"
-	"math/big"
 	"net/http"
 	"strconv"
 	"strings"
@@ -710,19 +707,7 @@ func NodesHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			result := make([]contract.NodeManagerNodeInfo, 0)
 			storResult := make([]contract.NodeManagerNodeInfo, 0)
-			publicKey := privateKey.Public()
-			publicKeyECDSA, _ := publicKey.(*ecdsa.PublicKey)
-			// 创建一个签名交易的发送者
-			fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-			num, _ := client.BlockNumber(context.Background())
-			log.Info("NodesHandler------", "num", num)
-			ops := bind.CallOpts{
-				Pending:     false,
-				From:        fromAddress,
-				BlockNumber: new(big.Int).SetUint64(num),
-				Context:     context.Background(),
-			}
-			nodes, err := instance.GetBroadcastingNodes(&ops)
+			nodes, err := instance.GetBroadcastingNodes(nil)
 			if err != nil {
 				log.Info("GetBroadcastingNodes-----", "err", err.Error())
 				http.Error(w, "No Node Info found", http.StatusNotFound)
@@ -730,7 +715,7 @@ func NodesHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			log.Info("GetBroadcastingNodes-----", "nodes", len(nodes))
 			result = append(result, nodes...)
-			strNodes, err := instance.GetstorageNodes(&ops)
+			strNodes, err := instance.GetBroadcastingNodes(nil)
 			storResult = append(storResult, strNodes...)
 			for _, node := range result {
 				filNode := NodeInfo{

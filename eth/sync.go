@@ -558,8 +558,8 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			detailFinal.NameSpaceId = daDetail.NameSpaceId
 			detailFinal.Nonce = daDetail.Nonce.Uint64()
 			detailFinal.Index = daDetail.Index.Uint64()
-			//detailFinal.OutOfTime = daDetail.
-			detailFinal.Root = daDetail.Root
+			detailFinal.OutOfTime = time.Unix(daDetail.Timestamp.Int64(),0)
+			//detailFinal.Root = daDetail.Root
 			detailFinal.SigData = daDetail.Signatures
 			detailFinal.BlockNum = logDetail.BlockNumber
 			addrList, err := cs.handler.fileDataPool.GetSender(daDetail.Signatures)

@@ -16,6 +16,7 @@ type CommitDetail struct {
 	NameSpaceId *big.Int
 	SignAddress []string
 	Time     time.Time
+	OutOfTime time.Time
 	Root     common.Hash
 }
 

@@ -180,6 +180,8 @@ func (s EIP155FdSigner) Hash(fd *DA) common.Hash {
 	chainId := transTo32Byte(uint64ToBigEndianHexBytes(s.chainId.Uint64()))
 	indexByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Index))
 	lengthByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Length))
+	receiveByte,_ := fd.OutOfTime.MarshalBinary()
+	data = append(data,receiveByte...)
 	addrByte := transTo32Byte(fd.Sender.Bytes())
 	commitXByte := fd.Commitment.X.Bytes()
 	commitYByte := fd.Commitment.Y.Bytes()

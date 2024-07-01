@@ -858,7 +858,7 @@ func NewDAAPI(b Backend) *DAAPI {
 	return &DAAPI{b, signer}
 }
 
-func (f *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte) ([]byte,error) {
+func (f *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte) ([]byte,[]byte,error) {
 	return f.b.SendDAByParams(sender,index,length,commitment,data,dasKey,proof,claimedValue)
 }
 
