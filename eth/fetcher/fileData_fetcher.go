@@ -251,7 +251,7 @@ func (f *FileDataFetcher) Enqueue(peer string, fds []*types.DA, direct bool) err
 
 	// Keep track of all the propagated fileData
 	inMeter.Mark(int64(len(fds)))
-
+	log.Info("Enqueue-----","len(fds)",len(fds))
 	// Push all the fileDate into the pool
 	var (
 		added = make([]common.Hash, 0, len(fds))
