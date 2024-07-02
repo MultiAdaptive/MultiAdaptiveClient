@@ -105,7 +105,7 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 		return nil,0 ,err
 	}else {
 		signData,err := b.eth.singer.Sign(fd)
-		b.eth.fdPool.Add([]*types.DA{fd},true,false)
+		//b.eth.fdPool.Add([]*types.DA{fd},true,false)
 		outOfTimeByte := fd.OutOfTime.Unix()
 		return signData,outOfTimeByte,err
 	}
