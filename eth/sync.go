@@ -596,6 +596,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			//new commit get from memory pool
 			outTime := daDetail.Time.Add(14*24*time.Hour)
 			outOfData := outTime.Before(time.Now())
+			log.Info("outOfData------","outOfData",outOfData)
 			if !outOfData {
 				da, err := cs.handler.fileDataPool.GetDAByCommit(daDetail.Commit)
 				if err != nil {
