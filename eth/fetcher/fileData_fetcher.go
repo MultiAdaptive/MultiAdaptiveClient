@@ -280,6 +280,7 @@ func (f *FileDataFetcher) Enqueue(peer string, fds []*types.DA, direct bool) err
 			default:
 				otherreject++
 			}
+			log.Info("Enqueue------","j",j)
 			added = append(added, batch[j].TxHash)
 			met := fdMetadata{size: uint32(batch[j].Size())}
 			metas = append(metas, met)
