@@ -691,7 +691,7 @@ func DeleteReceipts(db ethdb.KeyValueWriter, hash common.Hash, number uint64) {
 	}
 }
 
-// ReadFileDatas retrieves all the fileDatas belonging to a block, including
+// ReadFileDatas retrieves all the DA belonging to a block, including
 // its corresponding metadata fields. If it is unable to populate these metadata
 // fields then nil is returned.
 //
@@ -710,9 +710,9 @@ func ReadFileDatas(db ethdb.Reader, hash common.Hash, number uint64) []*types.DA
 }
 
 
-// WriteFileDatas stores all the fileDatas belonging to a block.
-func WriteFileDatas(db ethdb.KeyValueWriter, hash common.Hash, number uint64,fileDatas []*types.DA) {
-	 data,err := json.Marshal(fileDatas)
+// WriteFileDatas stores all the DA belonging to a block.
+func WriteFileDatas(db ethdb.KeyValueWriter, hash common.Hash, number uint64,DA []*types.DA) {
+	 data,err := json.Marshal(DA)
 	 if err != nil {
 			log.Error("WriteFileDatas--json marshal failed","err",err.Error())
 	 }

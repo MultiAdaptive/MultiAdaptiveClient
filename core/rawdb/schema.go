@@ -102,7 +102,7 @@ var (
 
 	blockBodyPrefix     = []byte("b") // blockBodyPrefix + num (uint64 big endian) + hash -> block body
 	blockReceiptsPrefix = []byte("r") // blockReceiptsPrefix + num (uint64 big endian) + hash -> block receipts
-	blockFileDatasPrefix= []byte("F") // blockFileDatasPrefix + num (uint64 big endian) + hash -> block fileDatas
+	blockFileDatasPrefix= []byte("F") // blockFileDatasPrefix + num (uint64 big endian) + hash -> block DA
 
 	txLookupPrefix        = []byte("l") // txLookupPrefix + hash -> transaction/receipt lookup metadata
 	fdLookupPrefix        = []byte("f") // fdLookupPrefix + hash -> fileData DiskSaved lookup metadata

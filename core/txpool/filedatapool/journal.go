@@ -22,9 +22,9 @@ func (*devNull) Write(p []byte) (n int, err error) { return len(p), nil }
 func (*devNull) Close() error                      { return nil }
 
 type journal struct {
-	path   string         // Filesystem path to store the fileDatas at
+	path   string         // Filesystem path to store the DA at
 
-	writer io.WriteCloser // Output stream to write new fileDatas into
+	writer io.WriteCloser // Output stream to write new DA into
 }
 
 // newFdJournal creates a new fileData journal to
@@ -37,7 +37,7 @@ func newFdJournal(path string) *journal {
 // load parses a fileData journal dump from disk, loading its contents into
 // the specified pool.
 func (journal *journal) load(add func([]*types.DA) []error) error {
-	// Open the journal for loading any past fileDatas
+	// Open the journal for loading any past DA
 	input, err := os.Open(journal.path)
 	if errors.Is(err, fs.ErrNotExist) {
 		// Skip the parsing if the journal file doesn't exist at all
@@ -52,13 +52,13 @@ func (journal *journal) load(add func([]*types.DA) []error) error {
 	journal.writer = new(devNull)
 	defer func() { journal.writer = nil }()
 
-	// Inject all fileDatas from the journal into the pool
+	// Inject all DA from the journal into the pool
 	stream := rlp.NewStream(input, 0)
 	total, dropped := 0, 0
 
-	// Create a method to load a limited batch of fileDatas and bump the
+	// Create a method to load a limited batch of DA and bump the
 	// appropriate progress counters. Then use this method to load all the
-	// journaled fileDatas in small-ish batches.
+	// journaled DA in small-ish batches.
 	loadBatch := func(files types.DAs) {
 		for _, err := range add(files) {
 			if err != nil {
@@ -141,7 +141,7 @@ func (journal *journal) rotate(all map[common.Hash]*types.DA) error {
 		return err
 	}
 	journal.writer = sink
-	log.Info("Regenerated local fileData journal", "fileDatas", journaled, "accounts", len(all))
+	log.Info("Regenerated local fileData journal", "DA", journaled, "accounts", len(all))
 
 	return nil
 }

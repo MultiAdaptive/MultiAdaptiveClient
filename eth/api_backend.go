@@ -20,16 +20,15 @@ import (
 	"context"
 	"errors"
 	"github.com/ethereum/go-ethereum/ethdb/db"
-	"math/big"
 	"time"
 
+	sigSdk "github.com/MultiAdaptive/sig-sdk"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/types"
-	sigSdk "github.com/MultiAdaptive/sig-sdk"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
@@ -94,15 +93,9 @@ func (b *EthAPIBackend) BlockByNumberOrHash(ctx context.Context, blockNrOrHash r
 	return nil, errors.New("invalid arguments; neither block nor hash specified")
 }
 
-
-func (b *EthAPIBackend) GetTd(ctx context.Context) *big.Int {
-	return b.eth.blockchain.GetTd()
-}
-
 func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte) ([]byte,int64,error) {
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
-	//lengthBig := new(big.Int).SetUint64(length)
 	fd := types.NewDA(sender, index, length, digest, data, dasKey, proof, claimedValue)
 	outData := time.Now().Add(23*time.Hour)
 	hourStart := time.Date(outData.Year(), outData.Month(), outData.Day(), outData.Hour(), 0, 0, 0, outData.Location())
@@ -112,14 +105,6 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 		return nil,0 ,err
 	}else {
 		signData,err := b.eth.singer.Sign(fd)
-		fd.SignData = [][]byte{signData}
-		addr,_ := b.eth.singer.Sender(fd)
-		signAddr := make([]string,len(addr))
-		for i,str := range addr{
-			signAddr[i] = str.Hex()
-		}
-		fd.SignerAddr = signAddr
-		fd.ReceiveAt = time.Now()
 		b.eth.fdPool.Add([]*types.DA{fd},true,false)
 		outOfTimeByte := fd.OutOfTime.Unix()
 		return signData,outOfTimeByte,err
@@ -146,8 +131,6 @@ func (b *EthAPIBackend) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byt
 			log.Info("SendBTCDAByParams------SigWithSchnorr","err",err.Error())
 			return nil,err
 		}
-		da.SignData = [][]byte{sign}
-		da.ReceiveAt = time.Now()
 		b.eth.fdPool.Add([]*types.DA{da},true,false)
 		return sign,nil
 	}
@@ -279,10 +262,6 @@ func (b *EthAPIBackend) RPCGasCap() uint64 {
 	return b.eth.config.RPCGasCap
 }
 
-
-func (b *EthAPIBackend) RPCTxFeeCap() float64 {
-	return b.eth.config.RPCTxFeeCap
-}
 
 func (b *EthAPIBackend) HistoricalRPCService() *rpc.Client {
 	return b.eth.historicalRPCService

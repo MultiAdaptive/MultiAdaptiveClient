@@ -161,7 +161,7 @@ func (p *Peer) announceFileDatas() {
 			if failed {
 				continue
 			}
-			// New batch of fileDatas to be broadcast, queue them (with cap)
+			// New batch of DA to be broadcast, queue them (with cap)
 			queue = append(queue, hashes...)
 			if len(queue) > maxQueuedFileData {
 				// Fancy copy and resize to ensure buffer doesn't grow indefinitely

@@ -63,7 +63,7 @@ type Config struct {
 
 	Rejournal time.Duration    // Time interval to regenerate the local fileData journal
 	// JournalRemote controls whether journaling includes remote fileData or not.
-	// When true, all fileDatas loaded from the journal are treated as remote.
+	// When true, all DA loaded from the journal are treated as remote.
 	JournalRemote bool
 	Lifetime      time.Duration
 	GlobalSlots   uint64 // Maximum number of executable fileData slots for all accounts
@@ -266,7 +266,7 @@ func (fp *FilePool) AddInToDisk(hash common.Hash,receive time.Time)  {
 func (fp *FilePool) SubscribenFileDatas(ch chan<- core.NewFileDataEvent) event.Subscription {
 	// The legacy pool has a very messed up internal shuffling, so it's kind of
 	// hard to separate newly discovered fileData from resurrected ones. This
-	// is because the new fileDatas are added to , resurrected ones too and
+	// is because the new DA are added to , resurrected ones too and
 	// reorgs run lazily, so separating the two would need a marker.
 	return fp.fileDataFeed.Subscribe(ch)
 }

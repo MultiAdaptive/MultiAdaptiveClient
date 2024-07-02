@@ -80,7 +80,7 @@ type fileDataPool interface {
 
 	AddInToDisk(hash common.Hash,receive time.Time)
 	// SubscribenFileDatas subscribes to new fileData events. The subscriber
-	// can decide whether to receive notifications only for newly seen fileDatas
+	// can decide whether to receive notifications only for newly seen DA
 	// or also for reorged out ones.
 	SubscribenFileDatas(ch chan<- core.NewFileDataEvent) event.Subscription
 
@@ -375,7 +375,7 @@ func (h *handler) unregisterPeer(id string) {
 
 func (h *handler) Start(maxPeers int) {
 	h.maxPeers = maxPeers
-	// broadcast fileDatas  (only new ones, not resurrected ones)
+	// broadcast DA  (only new ones, not resurrected ones)
 	h.wg.Add(2)
 	h.fdsCh = make(chan core.NewFileDataEvent, fdChanSize)
 	h.fdHashCh = make(chan core.FileDataHashEvent, fdChanSize)
@@ -418,8 +418,8 @@ func (h *handler) BroadcastFileData(fds types.DAs) {
 		directCount int // Number of fileData sent directly to peers (duplicates included)
 		directPeers int // Number of peers that were sent fileData directly
 
-		// annCount    int // Number of fileDatas announced across all peers (duplicates included)
-		// annPeers    int // Number of peers announced about fileDatas
+		// annCount    int // Number of DA announced across all peers (duplicates included)
+		// annPeers    int // Number of peers announced about DA
 
 		fdset = make(map[*ethPeer][]common.Hash)
 		//annos = make(map[*ethPeer][]common.Hash) // Set peer->hash to announce
@@ -483,8 +483,8 @@ func (h *handler) BroadcastFileData(fds types.DAs) {
 // GetFileDatasFileData should get fileData by txHash from remote peer.
 func (h *handler) GetFileDatasFileData(hashs []common.Hash) {
 	var (
-		annCount int // Number of fileDatas announced across all peers (duplicates included)
-		annPeers int // Number of peers announced about fileDatas
+		annCount int // Number of DA announced across all peers (duplicates included)
+		annPeers int // Number of peers announced about DA
 
 		annos = make(map[*ethPeer][]common.Hash) // Set peer->hash to announce
 	)

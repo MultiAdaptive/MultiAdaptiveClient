@@ -18,7 +18,6 @@
 package ethstats
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -30,7 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/gorilla/websocket"
-	"math/big"
 	"net/http"
 	"runtime"
 	"strconv"
@@ -58,7 +56,6 @@ const (
 // backend encompasses the bare-minimum functionality needed for ethstats reporting
 type backend interface {
 	SubscribeNewFileDataEvent(ch chan<- core.NewFileDataEvent) event.Subscription
-	GetTd(ctx context.Context) *big.Int
 }
 
 // Service implements an Ethereum netstats reporting daemon that pushes local

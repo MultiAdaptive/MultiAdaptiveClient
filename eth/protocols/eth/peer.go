@@ -242,9 +242,9 @@ func (p *Peer) AsyncSendFileData(hashes []common.Hash) {
 // directly as the queueing (memory) and transmission (bandwidth) costs should
 // not be managed directly.
 func (p *Peer) sendPooledFileDataHashes66(hashes []common.Hash) error {
-	// Mark all the fileDatas as known, but ensure we don't overflow our limits
+	// Mark all the DA as known, but ensure we don't overflow our limits
 	p.knownFds.Add(hashes...)
-	log.Info("sendPooledFileDataHashes66---广播交易哈希", "txHash", hashes[0].String())
+	log.Info("sendPooledFileDataHashes66---广播交易哈希", "Hash", hashes[0].String())
 	return p2p.Send(p.rw, NewPooledFileDataHashesMsg, NewPooledFileDataHashesPacket67(hashes))
 }
 
@@ -256,26 +256,26 @@ func (p *Peer) sendPooledFileDataHashes66(hashes []common.Hash) error {
 // directly as the queueing (memory) and fileDatamission (bandwidth) costs should
 // not be managed directly.
 func (p *Peer) sendPooledFileDataHashes68(hashes []common.Hash, sizes []uint32) error {
-	// Mark all the fileDatas as known, but ensure we don't overflow our limits
+	// Mark all the DA as known, but ensure we don't overflow our limits
 	p.knownFds.Add(hashes...)
 	log.Info("sendPooledFileDataHashes68---广播交易哈希", "txHash", hashes[0].String())
 	return p2p.Send(p.rw, NewPooledFileDataHashesMsg, NewPooledFileDataHashesPacket68{Sizes: sizes, Hashes: hashes})
 }
 
-// AsyncSendPooledFileDataHashes queues a list of fileDatas hashes to eventually
+// AsyncSendPooledFileDataHashes queues a list of DA hashes to eventually
 // announce to a remote peer.  The number of pending sends are capped (new ones
 // will force old sends to be dropped)
 func (p *Peer) AsyncSendPooledFileDataHashes(hashes []common.Hash) {
 	select {
 	case p.fdAnnounce <- hashes:
-		// Mark all the fileDatas as known, but ensure we don't overflow our limits
+		// Mark all the DA as known, but ensure we don't overflow our limits
 		p.knownFds.Add(hashes...)
 	case <-p.term:
 		p.Log().Debug("Dropping transaction announcement", "count", len(hashes))
 	}
 }
 
-// ReplyPooledFileDatasRLP is the response to RequestTxs.
+// ReplyPooledFileDatasRLP is the response to RequestDAs.
 func (p *Peer) ReplyPooledFileDatasRLP(id uint64, hashes []common.Hash, fds []rlp.RawValue) error {
 	// Mark all the fileData as known, but ensure we don't overflow our limits
 	p.knownFds.Add(hashes...)
@@ -283,7 +283,6 @@ func (p *Peer) ReplyPooledFileDatasRLP(id uint64, hashes []common.Hash, fds []rl
 	return p2p.Send(p.rw, PooledFileDatasMsg, &PooledFileDataRLPPacket{
 		RequestId:                 id,
 		PooledFileDataRLPResponse: fds,
-		//PooledFileDataStatusResponse: status,
 	})
 }
 
@@ -312,9 +311,9 @@ func (p *Peer) ReplyReceiptsRLP(id uint64, receipts []rlp.RawValue) error {
 	})
 }
 
-func (p *Peer) ReplyFileDatasMarshal(id uint64, fileDatas []*BantchFileData) []error {
+func (p *Peer) ReplyFileDatasMarshal(id uint64, DA []*BantchFileData) []error {
 	errs := make([]error, 0)	
-	for _,bfd := range fileDatas {
+	for _,bfd := range DA {
 			data,err := rlp.EncodeToBytes(bfd)
 			if err != nil {
 					log.Error("ReplyFileDatasMarshal---encode","err",err.Error())
@@ -465,9 +464,9 @@ func (p *Peer) RequestTxs(hashes []common.Hash) error {
 	})
 }
 
-// RequestFileDatas fetches a batch of fileDatas from a remote node.
+// RequestFileDatas fetches a batch of DA from a remote node.
 func (p *Peer) RequestFileDatas(hashes []common.Hash) error {
-	p.Log().Debug("Fetching batch of fileDatas", "count", len(hashes))
+	p.Log().Debug("Fetching batch of DA", "count", len(hashes))
 	id := rand.Uint64()
 	log.Info("RequestFileDatas----", "hash", hashes[0].String())
 	requestTracker.Track(p.id, p.version, GetPooledFileDatasMsg, PooledFileDatasMsg, id)

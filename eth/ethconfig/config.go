@@ -132,13 +132,4 @@ type Config struct {
 	// RPCGasCap is the global gas cap for eth-call variants.
 	RPCGasCap uint64
 
-	// RPCTxFeeCap is the global transaction fee(price * gaslimit) cap for
-	// send-transaction variants. The unit is ether.
-	RPCTxFeeCap float64
-
-	// OverrideVerkle (TODO: remove after the fork)
-	//OverrideVerkle *uint64 `toml:",omitempty"`
-
-	// ApplySuperchainUpgrades requests the node to load chain-configuration from the superchain-registry.
-	//ApplySuperchainUpgrades bool `toml:",omitempty"`
 }

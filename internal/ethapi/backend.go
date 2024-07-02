@@ -27,7 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
-	"math/big"
 )
 
 // Backend interface provides the common API services (that are provided by
@@ -39,7 +38,6 @@ type Backend interface {
 	AccountManager() *accounts.Manager
 	ExtRPCEnabled() bool
 	RPCGasCap() uint64            // global gas cap for eth_call over rpc: DoS protection
-	RPCTxFeeCap() float64         // global tx fee cap for all transaction related APIs
 	UnprotectedAllowed() bool     // allows only for EIP155 transactions.
 
 	// Blockchain API
@@ -48,7 +46,6 @@ type Backend interface {
 	BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Block, error)
 	BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error)
 	BlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*types.Block, error)
-	GetTd(ctx context.Context) *big.Int
 
 	// Transaction pool API
 	GetTransaction(ctx context.Context, txHash common.Hash) (*types.Transaction, common.Hash, uint64, uint64, error)

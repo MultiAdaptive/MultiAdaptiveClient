@@ -40,7 +40,7 @@ func MakeFdSigner(config *params.ChainConfig, blockNumber *big.Int, blockTime ui
 }
 
 // LatestFdSigner returns the 'most permissive' Signer available for the given chain
-// configuration. Specifically, this enables support of all types of fileDatas
+// configuration. Specifically, this enables support of all types of DA
 // when their respective forks are scheduled to occur at any block number (or time)
 // in the chain config.
 //

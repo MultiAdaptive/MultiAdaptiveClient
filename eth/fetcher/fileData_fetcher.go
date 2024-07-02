@@ -84,11 +84,11 @@ var (
 )
 
 
-// fdDelivery is the notification that a batch of fileDatas have been added
+// fdDelivery is the notification that a batch of DA have been added
 // to the pool and should be untracked.
 type fdDelivery struct {
 	origin string        // Identifier of the peer originating the notification
-	hashes []common.Hash // Batch of fileDatas hashes having been delivered
+	hashes []common.Hash // Batch of DA hashes having been delivered
 	metas  []fdMetadata  // Batch of metadatas associated with the delivered hashes
 	direct bool          // Whether this is a direct reply or a broadcast
 }
@@ -127,19 +127,19 @@ type FileDataFetcher struct {
 	drop    chan *fdDrop
 	quit    chan struct{}
 
-	// Stage 1: Waiting lists for newly discovered fileDatas that might be
+	// Stage 1: Waiting lists for newly discovered DA that might be
 	// broadcast without needing explicit request/reply round trips.
-	waitlist  map[common.Hash]map[string]struct{}    // fileDatas waiting for an potential broadcast
+	waitlist  map[common.Hash]map[string]struct{}    // DA waiting for an potential broadcast
 	waittime  map[common.Hash]mclock.AbsTime         // Timestamps when transactions were added to the waitlist
 	waitslots map[string]map[common.Hash]*fdMetadata // Waiting announcements grouped by peer (DoS protection)
 
 
-	// Stage 2: Queue of fileDatas that waiting to be allocated to some peer
+	// Stage 2: Queue of DA that waiting to be allocated to some peer
 	// to be retrieved directly.
 	announces map[string]map[common.Hash]*fdMetadata // Set of announced fileData, grouped by origin peer
 	announced map[common.Hash]map[string]struct{}    // Set of download locations, grouped by fileData hash
 
-	// Stage 3: Set of fileDatas currently being retrieved, some which may be
+	// Stage 3: Set of DA currently being retrieved, some which may be
 	// fulfilled and some rescheduled. Note, this step shares 'announces' from the
 	// previous stage to avoid having to duplicate (need it for DoS checks).
 	fetching   map[common.Hash]string              // Transaction set currently being retrieved
@@ -192,9 +192,9 @@ func NewFdFetcherForTests(
 }
 
 // Notify announces the fetcher of the potential availability of a new batch of
-// fileDatas in the network.
+// DA in the network.
 func (f *FileDataFetcher) Notify(peer string, types []byte, sizes []uint32, hashes []common.Hash) error {
-	// Keep track of all the announced fileDatas
+	// Keep track of all the announced DA
 	fdAnnounceInMeter.Mark(int64(len(hashes)))
 
 	// Skip any fileData announcements that we already know of, or that we've
@@ -342,7 +342,7 @@ func (f *FileDataFetcher) loop() {
 			// filter outside is essentially zero.
 			used := len(f.waitslots[ann.origin]) + len(f.announces[ann.origin])
 			if used >= maxFdAnnounces {
-				// This can happen if a set of fileDatas are requested but not
+				// This can happen if a set of DA are requested but not
 				// all fulfilled, so the remainder are rescheduled without the cap
 				// check. Should be fine as the limit is in the thousands and the
 				// request size in the hundreds.
@@ -388,7 +388,7 @@ func (f *FileDataFetcher) loop() {
 					continue
 				}
 
-				// If the fileDatas is already known to the fetcher, but not
+				// If the DA is already known to the fetcher, but not
 				// yet downloading, add the peer as an alternate origin in the
 				// waiting list.
 				if f.waitlist[hash] != nil {
@@ -407,7 +407,7 @@ func (f *FileDataFetcher) loop() {
 					}
 					continue
 				}
-				// fileDatas unknown to the fetcher, insert it into the waiting list
+				// DA unknown to the fetcher, insert it into the waiting list
 				f.waitlist[hash] = map[string]struct{}{ann.origin: {}}
 				f.waittime[hash] = f.clock.Now()
 
@@ -422,7 +422,7 @@ func (f *FileDataFetcher) loop() {
 				f.rescheduleWait(waitTimer, waitTrigger)
 			}
 			// If this peer is new and announced something already queued, maybe
-			// request fileDatas from them
+			// request DA from them
 			if oldPeer && len(f.announces[ann.origin]) > 0 {
 				log.Info("FileDataFetcher---loop--去要了")
 				f.scheduleFetches(timeoutTimer, timeoutTrigger, map[string]struct{}{ann.origin: {}})

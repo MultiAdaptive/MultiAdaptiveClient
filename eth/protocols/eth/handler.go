@@ -52,7 +52,7 @@ const (
 	
 	maxReceiptsServe = 1024
 
-	// maxFileDatasServe is the maximum number of block fileDatas to serve. This
+	// maxFileDatasServe is the maximum number of block DA to serve. This
 	// number is mostly there to limit the number of disk lookups.
 	maxFileDatasServe = 60
 

@@ -101,7 +101,7 @@ func handleGetPooledFileDatas(backend Backend,msg Decoder,peer *Peer) error {
 }
 
 func answerGetPooledFileDatas(backend Backend, query GetPooledFileDatasRequest) ([]common.Hash, []rlp.RawValue) {
-	// Gather fileDatas until the fetch or network limits is reached
+	// Gather DA until the fetch or network limits is reached
 	var (
 		bytes  int
 		hashes []common.Hash
@@ -179,7 +179,7 @@ func handlePooledFileDatas(backend Backend, msg Decoder, peer *Peer) error {
 }
 
 func handleResFileDatas(backend Backend, msg Decoder, peer *Peer) error {
-	// A batch of fileDatas arrived to one of our previous requests
+	// A batch of DA arrived to one of our previous requests
 	res := new(FileDatasResponseRLPPacket)
 	if err := msg.Decode(res); err != nil {
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
@@ -208,7 +208,7 @@ func handleResFileDatas(backend Backend, msg Decoder, peer *Peer) error {
 }
 
 func handleReqFileDatas(backend Backend, msg Decoder, peer *Peer) error {
-	// Decode the block fileDatas retrieval message
+	// Decode the block DA retrieval message
 	var query GetFileDatasPacket
 	if err := msg.Decode(&query); err != nil {
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
@@ -251,7 +251,7 @@ func ServiceGetFileDatasQuery(chain *core.BlockChain, query GetFileDatasRequest)
 			}
 		}
 
-		// how many batch of fileDatas should send by one header hash
+		// how many batch of DA should send by one header hash
 		cap = uint64(len(results))
 		batchFileDatas := make([][][]byte, 0)
 		for index,fd := range results{

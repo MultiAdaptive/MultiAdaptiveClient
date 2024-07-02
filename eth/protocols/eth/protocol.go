@@ -329,16 +329,16 @@ type PooledTransactionsRLPPacket struct {
 	PooledTransactionsRLPResponse
 }
 
-// FileDataPacket is the network packet fo broadcasting new fileDatas.
+// FileDataPacket is the network packet fo broadcasting new DA.
 type FileDataPacket []*types.DA
 
 // GetPooledFileDatasRequest represents a fileData query.
 type GetPooledFileDatasRequest []common.Hash
 
-// GetFileDatasRequest represents a block fileDatas query.
+// GetFileDatasRequest represents a block DA query.
 type GetFileDatasRequest []common.Hash
 
-// GetFileDatasPacket represents a block fileDatas query with request ID wrapping.
+// GetFileDatasPacket represents a block DA query with request ID wrapping.
 type GetFileDatasPacket struct {
 	RequestId uint64
 	GetFileDatasRequest
