@@ -24,7 +24,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core"
 	//"github.com/ethereum/go-ethereum/core/bloombits"
 	"github.com/ethereum/go-ethereum/core/rawdb"
@@ -69,14 +68,11 @@ type Ethereum struct {
 	handler              *handler
 	ethDialCandidates    enode.Iterator
 	snapDialCandidates   enode.Iterator
-	merger               *consensus.Merger
 	historicalRPCService *rpc.Client
 	// DB interfaces
 	chainDb           ethdb.Database // Block chain database
 	eventMux          *event.TypeMux
 	accountManager    *accounts.Manager
-	//bloomRequests     chan chan *bloombits.Retrieval // Channel receiving bloom data retrieval requests
-	//closeBloomHandler chan struct{}
 	APIBackend        *EthAPIBackend
 	gasPrice          *big.Int
 	etherbase         common.Address
@@ -133,7 +129,6 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	}
 	eth := &Ethereum{
 		config:            config,
-		merger:            consensus.NewMerger(chainDb),
 		chainDb:           chainDb,
 		eventMux:          stack.EventMux(),
 		accountManager:    stack.AccountManager(),
@@ -238,7 +233,6 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		Database:       chainDb,
 		Chain:          eth.blockchain,
 		FileDataPool:   eth.fdPool,
-		Merger:         eth.merger,
 		Network:        config.NetworkId,
 		Sync:           config.SyncMode,
 		L1ScanUrl:      eth.config.L1ScanUrl,
@@ -349,7 +343,6 @@ func (s *Ethereum) IsListening() bool                { return true } // Always l
 func (s *Ethereum) Synced() bool                     { return s.handler.synced.Load() }
 func (s *Ethereum) SetSynced()                       { s.handler.enableSyncedFeatures() }
 func (s *Ethereum) ArchiveMode() bool                { return s.config.NoPruning }
-func (s *Ethereum) Merger() *consensus.Merger        { return s.merger }
 func (s *Ethereum) SyncMode() downloader.SyncMode {
 	return downloader.FullSync
 }

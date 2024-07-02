@@ -46,7 +46,6 @@ func (s *SingerTool) VerifyEth(da *DA) (bool, error) {
 		return false, errors.New("da data length is not match")
 	}
 	currentPath, _ := os.Getwd()
-
 	path := strings.Split(currentPath, "/build")[0] + "/srs"
 	domiconSDK, err := kzgSdk.InitMultiAdaptiveSdk(path)
 	if err != nil {

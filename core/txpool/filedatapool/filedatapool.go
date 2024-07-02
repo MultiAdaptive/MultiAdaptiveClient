@@ -96,7 +96,7 @@ type DiskDetail struct {
 	TxHash        common.Hash 				`json:"TxHash"`
 	State         DISK_FILEDATA_STATE	            `json:"State"`
 	TimeRecord    time.Time					`json:"TimeRecord"`
-	Data          types.DA			      `json:"Data"`
+	Data          types.DA			           `json:"Data"`
 }
 
 type HashCollect struct {
@@ -182,7 +182,6 @@ func (fp *FilePool) Init(head *types.Header) error {
 		if err != nil {
 			log.Info("FilePool init","err",err.Error())
 		}else {
-
 			for _,da := range das{
 				fp.mu.Lock()
 				fp.diskCache.Hashes[da.TxHash] = da.ReceiveAt
@@ -334,7 +333,6 @@ Lable:
 	}
 	return da,nil
 }
-
 
 // Get retrieves the fileData from local fileDataPool with given
 // tx hash.

@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/forkid"
 	"github.com/ethereum/go-ethereum/core/rawdb"
@@ -96,7 +95,7 @@ type handlerConfig struct {
 	Chain    *core.BlockChain // Blockchain to serve data from
 	//modify by echo
 	FileDataPool   fileDataPool        // FileData Pool to propagate from
-	Merger         *consensus.Merger   // The manager for eth1/2 transition
+	//Merger         *consensus.Merger   // The manager for eth1/2 transition
 	Network        uint64              // Network identifier to advertise
 	Sync           downloader.SyncMode // Whether to snap or full sync
 	BloomCache     uint64              // Megabytes to alloc for snap sync bloom
@@ -127,10 +126,7 @@ type handler struct {
 
 	fdFetcher    *fetcher.FileDataFetcher
 	peers        *peerSet
-	merger       *consensus.Merger
 	eventMux      *event.TypeMux
-	//txsCh         chan core.NewTxsEvent
-	//txsSub        event.Subscription
 	fdsCh         chan core.NewFileDataEvent
 	fdHashCh      chan core.FileDataHashEvent
 	fdsSub        event.Subscription
@@ -160,7 +156,6 @@ func newHandler(config *handlerConfig) (*handler, error) {
 		noTxGossip:     config.NoTxGossip,
 		chain:          config.Chain,
 		peers:          newPeerSet(),
-		merger:         config.Merger,
 		quitSync:       make(chan struct{}),
 		handlerDoneCh:  make(chan struct{}),
 		handlerStartCh: make(chan struct{}),
@@ -223,7 +218,6 @@ func (h *handler) protoTracker() {
 		case <-h.handlerDoneCh:
 			active--
 		case <-h.quitSync:
-			log.Info("protoTracker-----退出了")
 			// Wait for all active handlers to finish.
 			for ; active > 0; active-- {
 				<-h.handlerDoneCh

@@ -22,10 +22,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/mclock"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
 	ethproto "github.com/ethereum/go-ethereum/eth/protocols/eth"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
@@ -77,8 +75,6 @@ type Service struct {
 	pongCh chan struct{} // Pong notifications are fed into this channel
 	histCh chan []uint64 // History request block numbers are fed into this channel
 
-	//headSub event.Subscription
-	//txSub   event.Subscription
 	fdSub   event.Subscription
 }
 
@@ -164,7 +160,6 @@ func New(node *node.Node, backend backend, url string) error {
 	}
 	ethstats := &Service{
 		backend: backend,
-		//engine:  engine,
 		server:  node.Server(),
 		node:    parts[0],
 		pass:    parts[1],
@@ -201,12 +196,9 @@ func (s *Service) loop(fdEventCh chan core.NewFileDataEvent) {
 	// Start a goroutine that exhausts the subscriptions to avoid events piling up
 	var (
 		quitCh = make(chan struct{})
-		//headCh = make(chan *types.Block, 1)
-		//txCh   = make(chan struct{}, 1)
 		fdCh   = make(chan struct{}, 1)
 	)
 	go func() {
-		//var lastTx mclock.AbsTime
 		var lastFd mclock.AbsTime
 
 	HandleLoop:
@@ -512,54 +504,5 @@ func (s *Service) reportLatency(conn *connWrapper) error {
 		}},
 	}
 	return conn.WriteJSON(stats)
-}
-
-// blockStats is the information to report about individual blocks.
-type blockStats struct {
-	Number     *big.Int       `json:"number"`
-	Hash       common.Hash    `json:"hash"`
-	ParentHash common.Hash    `json:"parentHash"`
-	Timestamp  *big.Int       `json:"timestamp"`
-	Miner      common.Address `json:"miner"`
-	GasUsed    uint64         `json:"gasUsed"`
-	GasLimit   uint64         `json:"gasLimit"`
-	Diff       string         `json:"difficulty"`
-	TotalDiff  string         `json:"totalDifficulty"`
-	Txs        []txStats      `json:"transactions"`
-	TxHash     common.Hash    `json:"transactionsRoot"`
-	Root       common.Hash    `json:"stateRoot"`
-	Uncles     uncleStats     `json:"uncles"`
-}
-
-// txStats is the information to report about individual transactions.
-type txStats struct {
-	Hash common.Hash `json:"hash"`
-}
-
-// uncleStats is a custom wrapper around an uncle array to force serializing
-// empty arrays instead of returning null for them.
-type uncleStats []*types.Header
-
-func (s uncleStats) MarshalJSON() ([]byte, error) {
-	if uncles := ([]*types.Header)(s); len(uncles) > 0 {
-		return json.Marshal(uncles)
-	}
-	return []byte("[]"), nil
-}
-
-// pendStats is the information to report about pending transactions.
-type pendStats struct {
-	Pending int `json:"pending"`
-}
-
-// nodeStats is the information to report about the local node.
-type nodeStats struct {
-	Active   bool `json:"active"`
-	Syncing  bool `json:"syncing"`
-	//Mining   bool `json:"mining"`
-	Hashrate int  `json:"hashrate"`
-	Peers    int  `json:"peers"`
-	GasPrice int  `json:"gasPrice"`
-	Uptime   int  `json:"uptime"`
 }
 

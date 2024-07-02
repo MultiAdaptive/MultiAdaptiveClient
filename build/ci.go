@@ -69,9 +69,7 @@ var (
 	// Files that end up in the geth-alltools*.zip archive.
 	allToolsArchiveFiles = []string{
 		"COPYING",
-		executablePath("abigen"),
 		executablePath("bootnode"),
-		executablePath("evm"),
 		executablePath("geth"),
 		executablePath("rlpdump"),
 		executablePath("clef"),
@@ -80,16 +78,8 @@ var (
 	// A debian package is created for all executables listed here.
 	debExecutables = []debExecutable{
 		{
-			BinaryName:  "abigen",
-			Description: "Source code generator to convert Ethereum contract definitions into easy to use, compile-time type-safe Go packages.",
-		},
-		{
 			BinaryName:  "bootnode",
 			Description: "Ethereum bootnode.",
-		},
-		{
-			BinaryName:  "evm",
-			Description: "Developer utility version of the EVM (Ethereum Virtual Machine) that is capable of running bytecode snippets within a configurable environment and execution mode.",
 		},
 		{
 			BinaryName:  "geth",
