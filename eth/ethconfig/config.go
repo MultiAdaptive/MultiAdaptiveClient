@@ -47,7 +47,6 @@ var Defaults = Config{
 	L1ScanUser:         "",
 	L1ScanPassword:     "",
 	RPCGasCap:          50000000,
-	RPCTxFeeCap:        1, // 1 ether
 }
 
 //go:generate go run github.com/fjl/gencodec -type Config -formats toml -out gen_config.go

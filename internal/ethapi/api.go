@@ -605,7 +605,6 @@ func RPCMarshalBlock(ctx context.Context, block *types.Block, inclTx bool, fullT
 // a `BlockchainAPI`.
 func (s *BlockChainAPI) rpcMarshalHeader(ctx context.Context, header *types.Header) map[string]interface{} {
 	fields := RPCMarshalHeader(header)
-	fields["totalDifficulty"] = (*hexutil.Big)(s.b.GetTd(ctx))
 	return fields
 }
 
@@ -615,9 +614,6 @@ func (s *BlockChainAPI) rpcMarshalBlock(ctx context.Context, b *types.Block, inc
 	fields, err := RPCMarshalBlock(ctx, b, inclTx, fullTx, s.b.ChainConfig(), s.b)
 	if err != nil {
 		return nil, err
-	}
-	if inclTx {
-		fields["totalDifficulty"] = (*hexutil.Big)(s.b.GetTd(ctx))
 	}
 	return fields, nil
 }
