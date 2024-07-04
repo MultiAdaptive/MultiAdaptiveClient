@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"gorm.io/gorm"
-	"math/big"
 	"strings"
 	"time"
 )
@@ -39,7 +38,7 @@ type DA struct {
 	ReceiveAt       string `gorm:"column:f_receive_at;not null;comment:接收时间" json:"receive_at"`                                                  // 接收时间
 	OutOfTime       string `gorm:"column:f_out_time;not null;comment:失效时间" json:"out_of_time"`
 	CreateAt        int64  `gorm:"column:f_create_at;not null;comment:创建时间;index:idx_das_create_at" json:"create_at"` // 创建时间
-	NameSpaceID     int64  `gorm:"column:f_name_space_id;not null;comment:命名空间" json:"name_space_id"`
+	NameSpaceKey    string  `gorm:"column:f_name_space_id;not null;comment:命名空间" json:"name_space_key"`
 }
 
 func (*DA) TableName() string {
@@ -86,7 +85,7 @@ func SaveDACommit(db *gorm.DB, da *types.DA, shouldSave bool)  error {
 			//ParentStateHash: currentParentHash.Hex(),
 			//StateHash:       stateHash.Hex(),
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
-			NameSpaceID:     da.NameSpaceID.Int64(),
+			NameSpaceKey:     da.NameSpaceKey.Hex(),
 		}
 		res := db.Create(&wd)
 		return res.Error
@@ -133,7 +132,7 @@ func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) e
 			ParentStateHash: currentParentHash.String(),
 			StateHash:       stateHash.Hex(),
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
-			//NameSpaceID:     da.NameSpaceID.Int64(),
+			//NameSpaceKey:     da.NameSpaceKey.Int64(),
 		}
 		wdas = append(wdas, wda)
 		currentParentHash = stateHash
@@ -184,7 +183,7 @@ func AddBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) er
 			ParentStateHash: currentParentHash.String(),
 			StateHash:       stateHash.Hex(),
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
-			NameSpaceID:     da.NameSpaceID.Int64(),
+			NameSpaceKey:     da.NameSpaceKey.Hex(),
 		}
 		resul := db.Create(&wda)
 		if resul.Error != nil {
@@ -257,7 +256,7 @@ func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 		TxHash:      common.HexToHash(da.TxHash),
 		BlockNum:    uint64(da.BlockNum),
 		ReceiveAt:   parsedTime,
-		NameSpaceID: new(big.Int).SetInt64(da.NameSpaceID),
+		NameSpaceKey: common.HexToHash(da.NameSpaceKey),
 	}, nil
 }
 
@@ -318,7 +317,7 @@ func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
 		BlockNum:    uint64(da.BlockNum),
 		TxHash:      common.HexToHash(da.TxHash),
 		ReceiveAt:   parsedTime,
-		NameSpaceID: new(big.Int).SetInt64(da.NameSpaceID),
+		NameSpaceKey: common.HexToHash(da.NameSpaceKey),
 	}, nil
 }
 
@@ -381,7 +380,7 @@ func GetCommitmentByTxHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 		SignerAddr:  signAdd,
 		TxHash:      common.HexToHash(da.TxHash),
 		ReceiveAt:   parsedTime,
-		NameSpaceID: new(big.Int).SetInt64(da.NameSpaceID),
+		NameSpaceKey: common.HexToHash(da.NameSpaceKey),
 	}, nil
 }
 

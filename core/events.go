@@ -24,11 +24,11 @@ import (
 // RemovedLogsEvent is posted when a reorg happens
 type RemovedLogsEvent struct{ Logs []*types.Log }
 
-// NewFileDataEvent is posted when a batch of FileDatas enter the FileData pool.
-type NewFileDataEvent struct{ Fileds []*types.DA }
+// NewDAEvent is posted when a batch of DAs enter the DA pool.
+type NewDAEvent struct{ Fileds []*types.DA }
 
-// FileDataHashEvent is posted when a batch of FileDatas hash enter the FileData pool.
-type FileDataHashEvent struct{ Hashes []common.Hash }
+// DAHashEvent is posted when a batch of DAs hash enter the DA pool.
+type DAHashEvent struct{ Hashes []common.Hash }
 
 type ChainEvent struct {
 	Block *types.Block

@@ -50,7 +50,7 @@ type Backend interface {
 	// Transaction pool API
 	GetTransaction(ctx context.Context, txHash common.Hash) (*types.Transaction, common.Hash, uint64, uint64, error)
 
-	// FileData pool API
+	// DA pool API
 	SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64) ([]byte,error)
 	SendBTCDAByParams(commitment ,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error)
 	SendBatchDA(datas [][]byte) ([][]byte,[]error)
@@ -58,7 +58,7 @@ type Backend interface {
 	GetBatchDAsByHashes(hashes []common.Hash) ([]*types.DA,[]error)
 	GetDAByCommitment(comimt []byte) (*types.DA, error)
 	GetBatchDAsByCommitments(commitments [][]byte) ([]*types.DA,[]error)
-	SubscribeNewFileDataEvent(chan<- core.NewFileDataEvent) event.Subscription
+	SubscribeNewDAEvent(chan<- core.NewDAEvent) event.Subscription
 
 	ChainConfig() *params.ChainConfig
 	HistoricalRPCService() *rpc.Client

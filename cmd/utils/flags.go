@@ -39,7 +39,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/fdlimit"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/txpool/filedatapool"
+	"github.com/ethereum/go-ethereum/core/txpool/dapool"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/kzg4844"
 	"github.com/ethereum/go-ethereum/eth"
@@ -352,38 +352,38 @@ var (
 		Category: flags.LightCategory,
 	}
 
-	FileDataPoolLocalsFlag = &cli.StringFlag{
-		Name:     "filedatapool.locals",
+	DAPoolLocalsFlag = &cli.StringFlag{
+		Name:     "dapool.locals",
 		Usage:    "Comma separated accounts to treat as locals (no flush, priority inclusion)",
-		Category: flags.FileDataCategory,
+		Category: flags.DACategory,
 	}
 
-	FileDataPoolJournalFlag = &cli.StringFlag{
-		Name:     "filedatapool.journal",
+	DAPoolJournalFlag = &cli.StringFlag{
+		Name:     "dapool.journal",
 		Usage:    "Disk journal for local fileData to survive node restarts",
-		Value:    ethconfig.Defaults.FileDataPool.Journal,
-		Category: flags.FileDataCategory,
+		Value:    ethconfig.Defaults.DAPool.Journal,
+		Category: flags.DACategory,
 	}
 
-	FileDataLifetimeFlag = &cli.DurationFlag{
-		Name:     "filedatapool.lifetime",
+	DALifetimeFlag = &cli.DurationFlag{
+		Name:     "dapool.lifetime",
 		Usage:    "Maximum amount of time non-executable fileData are queued",
-		Value:    ethconfig.Defaults.FileDataPool.Lifetime,
-		Category: flags.FileDataCategory,
+		Value:    ethconfig.Defaults.DAPool.Lifetime,
+		Category: flags.DACategory,
 	}
 
-	FileDataRejournalFlag = &cli.DurationFlag{
-		Name:     "filedatapool.lifetime",
+	DARejournalFlag = &cli.DurationFlag{
+		Name:     "dapool.lifetime",
 		Usage:    "Time interval to regenerate the local transaction journal",
-		Value:    ethconfig.Defaults.FileDataPool.Rejournal,
-		Category: flags.FileDataCategory,
+		Value:    ethconfig.Defaults.DAPool.Rejournal,
+		Category: flags.DACategory,
 	}
 
-	FileDataGlobalSlotsFlag = &cli.Uint64Flag{
-		Name:     "filedatapool.globalslots",
+	DAGlobalSlotsFlag = &cli.Uint64Flag{
+		Name:     "dapool.globalslots",
 		Usage:    "Maximum number of executable fileData slots for all accounts",
-		Value:    ethconfig.Defaults.FileDataPool.GlobalSlots,
-		Category: flags.FileDataCategory,
+		Value:    ethconfig.Defaults.DAPool.GlobalSlots,
+		Category: flags.DACategory,
 	}
 
 	// Performance tuning settings
@@ -1398,9 +1398,9 @@ func SetDataDir(ctx *cli.Context, cfg *node.Config) {
 	}
 }
 
-func setFileDataPool(ctx *cli.Context, cfg *filedatapool.Config) {
-	if ctx.IsSet(FileDataPoolLocalsFlag.Name) {
-		locals := strings.Split(ctx.String(FileDataPoolLocalsFlag.Name), ",")
+func setDAPool(ctx *cli.Context, cfg *dapool.Config) {
+	if ctx.IsSet(DAPoolLocalsFlag.Name) {
+		locals := strings.Split(ctx.String(DAPoolLocalsFlag.Name), ",")
 		for _, account := range locals {
 			if trimmed := strings.TrimSpace(account); !common.IsHexAddress(trimmed) {
 				Fatalf("Invalid account in --txpool.locals: %s", trimmed)
@@ -1410,20 +1410,20 @@ func setFileDataPool(ctx *cli.Context, cfg *filedatapool.Config) {
 		}
 	}
 
-	if ctx.IsSet(FileDataPoolJournalFlag.Name) {
-		cfg.Journal = ctx.String(FileDataPoolJournalFlag.Name)
+	if ctx.IsSet(DAPoolJournalFlag.Name) {
+		cfg.Journal = ctx.String(DAPoolJournalFlag.Name)
 	}
 
-	if ctx.IsSet(FileDataLifetimeFlag.Name) {
-		cfg.Lifetime = ctx.Duration(FileDataLifetimeFlag.Name)
+	if ctx.IsSet(DALifetimeFlag.Name) {
+		cfg.Lifetime = ctx.Duration(DALifetimeFlag.Name)
 	}
 
-	if ctx.IsSet(FileDataRejournalFlag.Name) {
-		cfg.Rejournal = ctx.Duration(FileDataRejournalFlag.Name)
+	if ctx.IsSet(DARejournalFlag.Name) {
+		cfg.Rejournal = ctx.Duration(DARejournalFlag.Name)
 	}
 
-	if ctx.IsSet(FileDataGlobalSlotsFlag.Name) {
-		cfg.GlobalSlots = ctx.Uint64(FileDataGlobalSlotsFlag.Name)
+	if ctx.IsSet(DAGlobalSlotsFlag.Name) {
+		cfg.GlobalSlots = ctx.Uint64(DAGlobalSlotsFlag.Name)
 	}
 
 }
@@ -1478,7 +1478,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 
 	// Set configurations from CLI flags
 	setEtherbase(ctx, cfg)
-	setFileDataPool(ctx, &cfg.FileDataPool)
+	setDAPool(ctx, &cfg.DAPool)
 
 	// Cap the cache allowance and tune the garbage collector
 	mem, err := gopsutil.VirtualMemory()

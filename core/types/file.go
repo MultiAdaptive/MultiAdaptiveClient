@@ -40,7 +40,7 @@ type DA struct {
 	OutOfTime    time.Time      `json:"OutOfTime"`
 	Proof        []byte         `json:"Proof"`
 	ClaimedValue []byte         `json:"ClaimedValue"`
-	NameSpaceID  *big.Int       `json:"NameSpaceID"`
+	NameSpaceKey  common.Hash      `json:"NameSpaceKey"`
 	Root         common.Hash    `json:"Root"`
 }
 
@@ -71,7 +71,7 @@ func (f *DA) Size() uint64 {
 	return uint64(len(data))
 }
 
-func (f *DA) WithSignature(signer FdSigner, sign []byte) (*DA, error) {
+func (f *DA) WithSignature(signer DASigner, sign []byte) (*DA, error) {
 	if len(sign) == 0 {
 		return nil, errors.New("sign is empty")
 	}

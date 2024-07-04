@@ -54,14 +54,14 @@ const (
 
 var syncChallengeTimeout = 15 * time.Second // Time allowance for a node to reply to the sync progress challenge
 
-// fileDataPool defines the methods needed from a fileData pool implementation to
+// daPool defines the methods needed from a fileData pool implementation to
 // support all the operations needed by the Ethereum chain protocols.
-type fileDataPool interface {
-	// Has returns an indicator whether fileDataPool has a fileData
+type daPool interface {
+	// Has returns an indicator whether daPool has a fileData
 	// cached with the given hash.
 	Has(hash common.Hash) bool
 
-	// Get retrieves the fileData from local fileDataPool with given
+	// Get retrieves the fileData from local daPool with given
 	// tx hash.
 	Get(hash common.Hash) (*types.DA, error)
 
@@ -69,23 +69,22 @@ type fileDataPool interface {
 
 	GetDAByCommit(commit []byte) (*types.DA, error)
 
-	SendNewFileDataEvent(fileData []*types.DA)
+	SendNewDAEvent(fileData []*types.DA)
 
 	GetSender(signData [][]byte) ([]common.Address,[]error)
 
-	RemoveFileData(das []*types.DA)
+	RemoveDA(das []*types.DA)
 
 	// Add should add the given transactions to the pool.
 	Add(fds []*types.DA, local bool, sync bool) []error
 
-	AddInToDisk(hash common.Hash,receive time.Time)
-	// SubscribenFileDatas subscribes to new fileData events. The subscriber
+	// SubscribenDAS subscribes to new fileData events. The subscriber
 	// can decide whether to receive notifications only for newly seen DA
 	// or also for reorged out ones.
-	SubscribenFileDatas(ch chan<- core.NewFileDataEvent) event.Subscription
+	SubscribenDAS(ch chan<- core.NewDAEvent) event.Subscription
 
-	// SubscribenFileDatasHash subscribes to get fileData Hash  events.
-	SubscribenFileDatasHash(ch chan<- core.FileDataHashEvent) event.Subscription
+	// SubscribenDASHash subscribes to get fileData Hash  events.
+	SubscribenDASHash(ch chan<- core.DAHashEvent) event.Subscription
 }
 
 // handlerConfig is the collection of initialization parameters to create a full
@@ -94,7 +93,7 @@ type handlerConfig struct {
 	Database ethdb.Database   // Database for direct sync insertions
 	Chain    *core.BlockChain // Blockchain to serve data from
 	//modify by echo
-	FileDataPool   fileDataPool        // FileData Pool to propagate from
+	DAPool      daPool        // DA Pool to propagate from
 	//Merger         *consensus.Merger   // The manager for eth1/2 transition
 	Network        uint64              // Network identifier to advertise
 	Sync           downloader.SyncMode // Whether to snap or full sync
@@ -118,17 +117,17 @@ type handler struct {
 	synced   atomic.Bool // Flag whether we're considered synchronised (enables transaction processing)
 
 	database     ethdb.Database
-	fileDataPool fileDataPool // FileData Pool to propagate from
+	daPool daPool // DA Pool to propagate from
 	chain        *core.BlockChain
 	maxPeers     int
 
 	noTxGossip bool
 
-	fdFetcher    *fetcher.FileDataFetcher
+	fdFetcher    *fetcher.DAFetcher
 	peers        *peerSet
 	eventMux      *event.TypeMux
-	fdsCh         chan core.NewFileDataEvent
-	fdHashCh      chan core.FileDataHashEvent
+	fdsCh         chan core.NewDAEvent
+	fdHashCh      chan core.DAHashEvent
 	fdsSub        event.Subscription
 	fdHashSub     event.Subscription
 
@@ -152,7 +151,7 @@ func newHandler(config *handlerConfig) (*handler, error) {
 		forkFilter:     forkid.NewFilter(config.Chain),
 		eventMux:       config.EventMux,
 		database:       config.Database,
-		fileDataPool:   config.FileDataPool,
+		daPool:   config.DAPool,
 		noTxGossip:     config.NoTxGossip,
 		chain:          config.Chain,
 		peers:          newPeerSet(),
@@ -186,12 +185,12 @@ func newHandler(config *handlerConfig) (*handler, error) {
 		for _, hash := range hashes {
 			log.Info("fetchFd----", "peer", peer, "hash", hash)
 		}
-		return p.RequestFileDatas(hashes)
+		return p.RequestDAs(hashes)
 	}
 	addFds := func(fds []*types.DA) []error {
-		return h.fileDataPool.Add(fds, false, false)
+		return h.daPool.Add(fds, false, false)
 	}
-	h.fdFetcher = fetcher.NewFdFetcher(h.fileDataPool.Has, addFds, fetchFd, h.removePeer)
+	h.fdFetcher = fetcher.NewFdFetcher(h.daPool.Has, addFds, fetchFd, h.removePeer)
 	h.chainSync = newChainSync(
 		context.Background(),
 		h.chain.SqlDB(),
@@ -377,12 +376,12 @@ func (h *handler) Start(maxPeers int) {
 	h.maxPeers = maxPeers
 	// broadcast DA  (only new ones, not resurrected ones)
 	h.wg.Add(2)
-	h.fdsCh = make(chan core.NewFileDataEvent, fdChanSize)
-	h.fdHashCh = make(chan core.FileDataHashEvent, fdChanSize)
-	h.fdsSub = h.fileDataPool.SubscribenFileDatas(h.fdsCh)
-	h.fdHashSub = h.fileDataPool.SubscribenFileDatasHash(h.fdHashCh)
+	h.fdsCh = make(chan core.NewDAEvent, fdChanSize)
+	h.fdHashCh = make(chan core.DAHashEvent, fdChanSize)
+	h.fdsSub = h.daPool.SubscribenDAS(h.fdsCh)
+	h.fdHashSub = h.daPool.SubscribenDASHash(h.fdHashCh)
 	go h.fdBroadcastLoop()
-	go h.fdGetFileDatasLoop()
+	go h.fdGetDAsLoop()
 
 	// start sync handlers
 	h.wg.Add(1)
@@ -395,8 +394,8 @@ func (h *handler) Start(maxPeers int) {
 
 func (h *handler) Stop() {
 	//h.txsSub.Unsubscribe()        // quits txBroadcastLoop
-	h.fdsSub.Unsubscribe()    // quits fileDataBroadcastLoop
-	h.fdHashSub.Unsubscribe() // quits getFileDataHashLoop
+	h.fdsSub.Unsubscribe()    // quits DABroadcastLoop
+	h.fdHashSub.Unsubscribe() // quits getDAHashLoop
 
 	// Quit chainSync and txsync64.
 	// After this is done, no new peers will be accepted.
@@ -413,10 +412,10 @@ func (h *handler) Stop() {
 }
 
 // TODO fix
-func (h *handler) BroadcastFileData(fds types.DAs) {
+func (h *handler) BroadcastDA(fds types.DAs) {
 	var (
-		directCount int // Number of fileData sent directly to peers (duplicates included)
-		directPeers int // Number of peers that were sent fileData directly
+		directCount int // Number of DA sent directly to peers (duplicates included)
+		directPeers int // Number of peers that were sent DA directly
 
 		// annCount    int // Number of DA announced across all peers (duplicates included)
 		// annPeers    int // Number of peers announced about DA
@@ -437,28 +436,28 @@ func (h *handler) BroadcastFileData(fds types.DAs) {
 			return
 		case fd.TxHash.Cmp(common.Hash{}) == 0 && !commitIsEmpty:
 			cmHash := common.BytesToHash(fd.Commitment.Marshal())
-			peers = h.peers.peerWithOutFileData(cmHash)
-			// Send the fileData unconditionally to a subset of our peers
+			peers = h.peers.peerWithOutDA(cmHash)
+			// Send the DA unconditionally to a subset of our peers
 			for _, peer := range peers {
 				fdset[peer] = append(fdset[peer], cmHash)
 			}
-			log.Info("BroadcastFileData---", "需要广播的fileData",cmHash)
+			log.Info("BroadcastDA---", "需要广播的fileData",cmHash)
 
 		case fd.TxHash.Cmp(common.Hash{}) != 0 && !commitIsEmpty:
 			cmHash := common.BytesToHash(fd.Commitment.Marshal())
-			peers = h.peers.peerWithOutFileData2(fd.TxHash,cmHash)
-			// Send the fileData unconditionally to a subset of our peers
+			peers = h.peers.peerWithOutDA2(fd.TxHash,cmHash)
+			// Send the DA unconditionally to a subset of our peers
 			for _, peer := range peers {
 				fdset[peer] = append(fdset[peer], cmHash)
 			}
-			log.Info("BroadcastFileData---", "需要广播的fileData", fd.TxHash.String())
+			log.Info("BroadcastDA---", "需要广播的DA", fd.TxHash.String())
 		case fd.TxHash.Cmp(common.Hash{}) != 0 && commitIsEmpty:
-			peers = h.peers.peerWithOutFileData(fd.TxHash)
-			// Send the fileData unconditionally to a subset of our peers
+			peers = h.peers.peerWithOutDA(fd.TxHash)
+			// Send the DA unconditionally to a subset of our peers
 			for _, peer := range peers {
 				fdset[peer] = append(fdset[peer], fd.TxHash)
 			}
-			log.Info("BroadcastFileData---", "需要广播的fileData",fd.TxHash)
+			log.Info("BroadcastDA---", "需要广播的DA",fd.TxHash)
 		}
 		log.Info("全量广播----", "peer count", len(peers))
 	}
@@ -466,22 +465,22 @@ func (h *handler) BroadcastFileData(fds types.DAs) {
 	for peer, hashes := range fdset {
 		directPeers++
 		directCount += len(hashes)
-		log.Info("BroadcastFileData----", "peer info", peer.Info().Enode, "peer id", peer.ID())
-		peer.AsyncSendFileData(hashes)
+		log.Info("BroadcastDA----", "peer info", peer.Info().Enode, "peer id", peer.ID())
+		peer.AsyncSendDA(hashes)
 	}
 
 	// for peer, hashes := range annos {
 	// 	annPeers++
 	// 	annCount += len(hashes)
-	// 	log.Info("BroadcastFileData----hash","peer info",peer.Info().Enode,"peer id",peer.ID())
-	// 	peer.AsyncSendPooledFileDataHashes(hashes)
+	// 	log.Info("BroadcastDA----hash","peer info",peer.Info().Enode,"peer id",peer.ID())
+	// 	peer.AsyncSendPooledDAHashes(hashes)
 	// }
 
-	log.Debug("Distributed fileData", "bcastpeers", directPeers, "bcastcount", directCount, "plainfds", len(fds))
+	log.Debug("Distributed DA", "bcastpeers", directPeers, "bcastcount", directCount, "plainfds", len(fds))
 }
 
-// GetFileDatasFileData should get fileData by txHash from remote peer.
-func (h *handler) GetFileDatasFileData(hashs []common.Hash) {
+// GetDAsshould get fileData by txHash from remote peer.
+func (h *handler) GetDAsDA(hashs []common.Hash) {
 	var (
 		annCount int // Number of DA announced across all peers (duplicates included)
 		annPeers int // Number of peers announced about DA
@@ -490,8 +489,8 @@ func (h *handler) GetFileDatasFileData(hashs []common.Hash) {
 	)
 
 	for _, hash := range hashs {
-		log.Info("GetFileDatasFileData---", "需要找的", hash.String())
-		peers := h.peers.peersToGetFileData()
+		log.Info("GetDAsDA---", "需要找的", hash.String())
+		peers := h.peers.peersToGetDA()
 		for _, peer := range peers[:] {
 			annos[peer] = append(annos[peer], hash)
 		}
@@ -499,8 +498,8 @@ func (h *handler) GetFileDatasFileData(hashs []common.Hash) {
 	for peer, hashes := range annos {
 		annPeers++
 		annCount += len(hashes)
-		log.Info("GetFileDatasFileData----hash", "peer info", peer.Info().Enode, "peer id", peer.ID())
-		peer.RequestFileDatas(hashes)
+		log.Info("GetDAsDA----hash", "peer info", peer.Info().Enode, "peer id", peer.ID())
+		peer.RequestDAs(hashes)
 	}
 }
 
@@ -510,21 +509,21 @@ func (h *handler) fdBroadcastLoop() {
 	for {
 		select {
 		case event := <-h.fdsCh:
-			h.BroadcastFileData(event.Fileds)
+			h.BroadcastDA(event.Fileds)
 		case <-h.fdsSub.Err():
 			return
 		}
 	}
 }
 
-// getFileDatasLoop get fileData by Txhash from connected peers.
-func (h *handler) fdGetFileDatasLoop() {
+// getDAsLoop get fileData by Txhash from connected peers.
+func (h *handler) fdGetDAsLoop() {
 	defer h.wg.Done()
 	for {
 		select {
 		case event := <-h.fdHashCh:
-			log.Info("fdGetFileDatasLoop----", "hash", event.Hashes[0].String())
-			h.GetFileDatasFileData(event.Hashes)
+			log.Info("fdGetDAsLoop----", "hash", event.Hashes[0].String())
+			h.GetDAsDA(event.Hashes)
 		case <-h.fdHashSub.Err():
 			return
 		}

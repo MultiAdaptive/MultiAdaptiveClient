@@ -1,4 +1,4 @@
-package filedatapool
+package dapool
 
 import (
 	"errors"
@@ -28,7 +28,7 @@ type journal struct {
 }
 
 // newFdJournal creates a new fileData journal to
-func newFdJournal(path string) *journal {
+func newDAJournal(path string) *journal {
 	return &journal{
 		path: path,
 	}
@@ -72,7 +72,7 @@ func (journal *journal) load(add func([]*types.DA) []error) error {
 		batch   types.DAs
 	)
 	for {
-		// Parse the next FileData and terminate on error
+		// Parse the next DA and terminate on error
 		fd := new(types.DA)
 		if err = stream.Decode(fd); err != nil {
 			if err != io.EOF {
@@ -91,7 +91,7 @@ func (journal *journal) load(add func([]*types.DA) []error) error {
 			batch = batch[:0]
 		}
 	}
-	log.Info("Loaded local FileData journal", "FileDatas", total, "dropped", dropped)
+	log.Info("Loaded local DA journal", "DAs", total, "dropped", dropped)
 
 	return failure
 }

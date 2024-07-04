@@ -182,15 +182,15 @@ func (ps *peerSet) peer(id string) *ethPeer {
 	return ps.peers[id]
 }
 
-// peerWithOutFileData retrieves a list of peers that do not have a given
+// peerWithOutDA retrieves a list of peers that do not have a given
 // fileData in their set of known hashes.
-func (ps *peerSet) peerWithOutFileData(hash common.Hash) []*ethPeer {
+func (ps *peerSet) peerWithOutDA(hash common.Hash) []*ethPeer {
 	ps.lock.RLock()
 	defer ps.lock.RUnlock()
 
 	list := make([]*ethPeer, 0, len(ps.peers))
 	for _, p := range ps.peers {
-		if !p.KnownFileData(hash) {
+		if !p.KnownDA(hash) {
 			list = append(list, p)
 		}
 	}
@@ -198,21 +198,21 @@ func (ps *peerSet) peerWithOutFileData(hash common.Hash) []*ethPeer {
 }
 
 // fileData in their set of known hashes.
-func (ps *peerSet) peerWithOutFileData2(txHash common.Hash,commitHash common.Hash) []*ethPeer {
+func (ps *peerSet) peerWithOutDA2(txHash common.Hash,commitHash common.Hash) []*ethPeer {
 	ps.lock.RLock()
 	defer ps.lock.RUnlock()
 
 	list := make([]*ethPeer, 0, len(ps.peers))
 	for _, p := range ps.peers {
-		if !p.KnownFileData(txHash) && !p.KnownFileData(commitHash) {
+		if !p.KnownDA(txHash) && !p.KnownDA(commitHash) {
 			list = append(list, p)
 		}
 	}
 	return list
 }
 
-// peersToGetFileData retrieves a list of peers.
-func (ps *peerSet) peersToGetFileData() []*ethPeer {
+// peersToGetDA retrieves a list of peers.
+func (ps *peerSet) peersToGetDA() []*ethPeer {
 	ps.lock.RLock()
 	defer ps.lock.RUnlock()
 

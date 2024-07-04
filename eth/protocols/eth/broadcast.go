@@ -37,10 +37,10 @@ type blockPropagation struct {
 	td    *big.Int
 }
 
-// broadcastFileData is a write loop that schedules fileData broadcasts
+// broadcastDA is a write loop that schedules fileData broadcasts
 // to the remote peer. The goal is to have an async writer that does not lock up
 // node internals and at the same time rate limits queued data.
-func (p *Peer) broadcastFileData() {
+func (p *Peer) broadcastDA() {
 	var (
 		queue  []common.Hash         // Queue of hashes to broadcast as full fileData
 		done   chan struct{}         // Non-nil if background broadcaster is running
@@ -68,8 +68,8 @@ func (p *Peer) broadcastFileData() {
 			if len(fds) > 0 {
 				done = make(chan struct{})
 				go func() {
-					log.Info("broadcastFileData---节点广播","peer",p.id)
-					if err := p.SendFileDatas(fds); err != nil {
+					log.Info("broadcastDA---节点广播","peer",p.id)
+					if err := p.SendDAs(fds); err != nil {
 						fail <- err
 						return
 					}
@@ -87,9 +87,9 @@ func (p *Peer) broadcastFileData() {
 			}
 			// New batch of fileData to be broadcast, queue them (with cap)
 			queue = append(queue, hashes...)
-			if len(queue) > maxQueuedFileData {
+			if len(queue) > maxQueuedDA {
 				// Fancy copy and resize to ensure buffer doesn't grow indefinitely
-				queue = queue[:copy(queue, queue[len(queue)-maxQueuedFileData:])]
+				queue = queue[:copy(queue, queue[len(queue)-maxQueuedDA:])]
 			}
 
 		case <-done:
@@ -104,10 +104,10 @@ func (p *Peer) broadcastFileData() {
 	}
 }
 
-// announceFileDatas is a write loop that schedules fileData broadcasts
+// announceDAs is a write loop that schedules fileData broadcasts
 // to the remote peer. The goal is to have an async writer that does not lock up
 // node internals and at the same time rate limits queued data.
-func (p *Peer) announceFileDatas() {
+func (p *Peer) announceDAs() {
 	var (
 		queue  []common.Hash         // Queue of hashes to announce as fileData stubs
 		done   chan struct{}         // Non-nil if background announcer is running
@@ -139,12 +139,12 @@ func (p *Peer) announceFileDatas() {
 				done = make(chan struct{})
 				go func() {
 					if p.version >= ETH68 {
-						if err := p.sendPooledFileDataHashes68(sending, sizes); err != nil {
+						if err := p.sendPooledDAHashes68(sending, sizes); err != nil {
 							fail <- err
 							return
 						}
 					} else {
-						if err := p.sendPooledFileDataHashes66(sending); err != nil {
+						if err := p.sendPooledDAHashes66(sending); err != nil {
 							fail <- err
 							return
 						}
@@ -163,7 +163,7 @@ func (p *Peer) announceFileDatas() {
 			}
 			// New batch of DA to be broadcast, queue them (with cap)
 			queue = append(queue, hashes...)
-			if len(queue) > maxQueuedFileData {
+			if len(queue) > maxQueuedDA {
 				// Fancy copy and resize to ensure buffer doesn't grow indefinitely
 				queue = queue[:copy(queue, queue[len(queue)-maxQueuedFdAnns:])]
 			}

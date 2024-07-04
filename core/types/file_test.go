@@ -13,7 +13,7 @@ const (
 	privateKey = "2ffb28910709e79b8bf06d22c8289fd24f86853a9f9832cd0707acc0fe554610"
 )
 
-func TestNewFileData(t *testing.T) {
+func TestNewDA(t *testing.T) {
 
 	priv, err := crypto.HexToECDSA(privateKey)
 	if err != nil {
@@ -22,7 +22,7 @@ func TestNewFileData(t *testing.T) {
 	sender := crypto.PubkeyToAddress(priv.PublicKey)
 	submitter := common.HexToAddress("251b3740a02a1c5cf5ffcdf60d42ed2a8398ddc8")
 
-	fileD := FileData{
+	fileD := DA{
 		Sender:     sender,
 		Submitter:  submitter,
 		Index:      1,
@@ -40,14 +40,14 @@ func TestNewFileData(t *testing.T) {
 
 	println("data----", &data)
 
-	var fd FileData
+	var fd DA
 
 	err = rlp.DecodeBytes(data, &fd)
 	if err != nil {
 		println("解压---err", err.Error())
 	}
 
-	fmt.Println("Decoded FileData:", fd)
+	fmt.Println("Decoded DA:", fd)
 	println("解压信息----txHash:", fd.TxHash.String())
 	println("信息---data:",string(fd.Data))
 

@@ -55,7 +55,7 @@ const (
 
 // backend encompasses the bare-minimum functionality needed for ethstats reporting
 type backend interface {
-	SubscribeNewFileDataEvent(ch chan<- core.NewFileDataEvent) event.Subscription
+	SubscribeNewDAEvent(ch chan<- core.NewDAEvent) event.Subscription
 }
 
 // Service implements an Ethereum netstats reporting daemon that pushes local
@@ -172,8 +172,8 @@ func New(node *node.Node, backend backend, url string) error {
 // Start implements node.Lifecycle, starting up the monitoring and reporting daemon.
 func (s *Service) Start() error {
 	// Subscribe to chain events to execute updates on
-	fdEventCh := make(chan core.NewFileDataEvent, fdChanSize)
-	s.fdSub = s.backend.SubscribeNewFileDataEvent(fdEventCh)
+	fdEventCh := make(chan core.NewDAEvent, fdChanSize)
+	s.fdSub = s.backend.SubscribeNewDAEvent(fdEventCh)
 	go s.loop(fdEventCh)
 
 	log.Info("Stats daemon started")
@@ -189,7 +189,7 @@ func (s *Service) Stop() error {
 
 // loop keeps trying to connect to the netstats server, reporting chain events
 // until termination.
-func (s *Service) loop(fdEventCh chan core.NewFileDataEvent) {
+func (s *Service) loop(fdEventCh chan core.NewDAEvent) {
 	// Start a goroutine that exhausts the subscriptions to avoid events piling up
 	var (
 		quitCh = make(chan struct{})

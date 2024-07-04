@@ -43,7 +43,7 @@ type NodeGroup struct {
 
 // StorageManagerMetaData contains all meta data concerning the StorageManager contract.
 var StorageManagerMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"creator\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address[]\",\"name\":\"addr\",\"type\":\"address[]\"}],\"name\":\"NameSpaceCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"key\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"address[]\",\"name\":\"addrs\",\"type\":\"address[]\"}],\"name\":\"NodeInfoStored\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_id\",\"type\":\"uint256\"}],\"name\":\"NAMESPACE\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"creator\",\"type\":\"address\"},{\"internalType\":\"address[]\",\"name\":\"addr\",\"type\":\"address[]\"}],\"internalType\":\"structNameSpace\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"NODEGROUP\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"requiredAmountOfSignatures\",\"type\":\"uint256\"},{\"internalType\":\"address[]\",\"name\":\"addrs\",\"type\":\"address[]\"}],\"internalType\":\"structNodeGroup\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"_addrs\",\"type\":\"address[]\"}],\"name\":\"createNameSpace\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"_addrs\",\"type\":\"address[]\"},{\"internalType\":\"uint256\",\"name\":\"_requiredAmountOfSignatures\",\"type\":\"uint256\"}],\"name\":\"getKeyForAddresses\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractNodeManager\",\"name\":\"_nodeManager\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"nameSpace\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"creator\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"nodeGroup\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"requiredAmountOfSignatures\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"nodeManager\",\"outputs\":[{\"internalType\":\"contractNodeManager\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"nonce\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_requiredAmountOfSignatures\",\"type\":\"uint256\"},{\"internalType\":\"address[]\",\"name\":\"_addrs\",\"type\":\"address[]\"}],\"name\":\"storeAddressMapping\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"ksHash\",\"type\":\"bytes32\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"version\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"creator\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"key\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"address[]\",\"name\":\"nodeAddresses\",\"type\":\"address[]\"}],\"name\":\"NameSpaceRegistered\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"creator\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"key\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requiredAmountOfSignatures\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address[]\",\"name\":\"nodeAddresses\",\"type\":\"address[]\"}],\"name\":\"NodeGroupRegistered\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"NAMESPACE\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"creator\",\"type\":\"address\"},{\"internalType\":\"address[]\",\"name\":\"addr\",\"type\":\"address[]\"}],\"internalType\":\"structNameSpace\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_key\",\"type\":\"bytes32\"}],\"name\":\"NODEGROUP\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"requiredAmountOfSignatures\",\"type\":\"uint256\"},{\"internalType\":\"address[]\",\"name\":\"addrs\",\"type\":\"address[]\"}],\"internalType\":\"structNodeGroup\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"_nodeAddresses\",\"type\":\"address[]\"}],\"name\":\"getNameSpaceKey\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"_nodeAddresses\",\"type\":\"address[]\"},{\"internalType\":\"uint256\",\"name\":\"_requiredAmountOfSignatures\",\"type\":\"uint256\"}],\"name\":\"getNodeGroupKey\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractNodeManager\",\"name\":\"_nodeManager\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"nameSpace\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"creator\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"nodeGroup\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"requiredAmountOfSignatures\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"nodeManager\",\"outputs\":[{\"internalType\":\"contractNodeManager\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"_nodeAddresses\",\"type\":\"address[]\"}],\"name\":\"registerNameSpace\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"nameSpaceKey\",\"type\":\"bytes32\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_requiredAmountOfSignatures\",\"type\":\"uint256\"},{\"internalType\":\"address[]\",\"name\":\"_nodeAddresses\",\"type\":\"address[]\"}],\"name\":\"registerNodeGroup\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"nodeGroupKey\",\"type\":\"bytes32\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"addresses\",\"type\":\"address[]\"}],\"name\":\"sortAddresses\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"\",\"type\":\"address[]\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"version\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
 }
 
 // StorageManagerABI is the input ABI used to generate the binding from.
@@ -192,12 +192,12 @@ func (_StorageManager *StorageManagerTransactorRaw) Transact(opts *bind.Transact
 	return _StorageManager.Contract.contract.Transact(opts, method, params...)
 }
 
-// NAMESPACE is a free data retrieval call binding the contract method 0xc1f67d88.
+// NAMESPACE is a free data retrieval call binding the contract method 0xc395aed9.
 //
-// Solidity: function NAMESPACE(uint256 _id) view returns((address,address[]))
-func (_StorageManager *StorageManagerCaller) NAMESPACE(opts *bind.CallOpts, _id *big.Int) (NameSpace, error) {
+// Solidity: function NAMESPACE(bytes32 _key) view returns((address,address[]))
+func (_StorageManager *StorageManagerCaller) NAMESPACE(opts *bind.CallOpts, _key [32]byte) (NameSpace, error) {
 	var out []interface{}
-	err := _StorageManager.contract.Call(opts, &out, "NAMESPACE", _id)
+	err := _StorageManager.contract.Call(opts, &out, "NAMESPACE", _key)
 
 	if err != nil {
 		return *new(NameSpace), err
@@ -209,18 +209,18 @@ func (_StorageManager *StorageManagerCaller) NAMESPACE(opts *bind.CallOpts, _id 
 
 }
 
-// NAMESPACE is a free data retrieval call binding the contract method 0xc1f67d88.
+// NAMESPACE is a free data retrieval call binding the contract method 0xc395aed9.
 //
-// Solidity: function NAMESPACE(uint256 _id) view returns((address,address[]))
-func (_StorageManager *StorageManagerSession) NAMESPACE(_id *big.Int) (NameSpace, error) {
-	return _StorageManager.Contract.NAMESPACE(&_StorageManager.CallOpts, _id)
+// Solidity: function NAMESPACE(bytes32 _key) view returns((address,address[]))
+func (_StorageManager *StorageManagerSession) NAMESPACE(_key [32]byte) (NameSpace, error) {
+	return _StorageManager.Contract.NAMESPACE(&_StorageManager.CallOpts, _key)
 }
 
-// NAMESPACE is a free data retrieval call binding the contract method 0xc1f67d88.
+// NAMESPACE is a free data retrieval call binding the contract method 0xc395aed9.
 //
-// Solidity: function NAMESPACE(uint256 _id) view returns((address,address[]))
-func (_StorageManager *StorageManagerCallerSession) NAMESPACE(_id *big.Int) (NameSpace, error) {
-	return _StorageManager.Contract.NAMESPACE(&_StorageManager.CallOpts, _id)
+// Solidity: function NAMESPACE(bytes32 _key) view returns((address,address[]))
+func (_StorageManager *StorageManagerCallerSession) NAMESPACE(_key [32]byte) (NameSpace, error) {
+	return _StorageManager.Contract.NAMESPACE(&_StorageManager.CallOpts, _key)
 }
 
 // NODEGROUP is a free data retrieval call binding the contract method 0x9d1dcba7.
@@ -254,12 +254,12 @@ func (_StorageManager *StorageManagerCallerSession) NODEGROUP(_key [32]byte) (No
 	return _StorageManager.Contract.NODEGROUP(&_StorageManager.CallOpts, _key)
 }
 
-// GetKeyForAddresses is a free data retrieval call binding the contract method 0x1bc97289.
+// GetNameSpaceKey is a free data retrieval call binding the contract method 0x40684b3f.
 //
-// Solidity: function getKeyForAddresses(address[] _addrs, uint256 _requiredAmountOfSignatures) view returns(bytes32)
-func (_StorageManager *StorageManagerCaller) GetKeyForAddresses(opts *bind.CallOpts, _addrs []common.Address, _requiredAmountOfSignatures *big.Int) ([32]byte, error) {
+// Solidity: function getNameSpaceKey(address[] _nodeAddresses) view returns(bytes32)
+func (_StorageManager *StorageManagerCaller) GetNameSpaceKey(opts *bind.CallOpts, _nodeAddresses []common.Address) ([32]byte, error) {
 	var out []interface{}
-	err := _StorageManager.contract.Call(opts, &out, "getKeyForAddresses", _addrs, _requiredAmountOfSignatures)
+	err := _StorageManager.contract.Call(opts, &out, "getNameSpaceKey", _nodeAddresses)
 
 	if err != nil {
 		return *new([32]byte), err
@@ -271,24 +271,55 @@ func (_StorageManager *StorageManagerCaller) GetKeyForAddresses(opts *bind.CallO
 
 }
 
-// GetKeyForAddresses is a free data retrieval call binding the contract method 0x1bc97289.
+// GetNameSpaceKey is a free data retrieval call binding the contract method 0x40684b3f.
 //
-// Solidity: function getKeyForAddresses(address[] _addrs, uint256 _requiredAmountOfSignatures) view returns(bytes32)
-func (_StorageManager *StorageManagerSession) GetKeyForAddresses(_addrs []common.Address, _requiredAmountOfSignatures *big.Int) ([32]byte, error) {
-	return _StorageManager.Contract.GetKeyForAddresses(&_StorageManager.CallOpts, _addrs, _requiredAmountOfSignatures)
+// Solidity: function getNameSpaceKey(address[] _nodeAddresses) view returns(bytes32)
+func (_StorageManager *StorageManagerSession) GetNameSpaceKey(_nodeAddresses []common.Address) ([32]byte, error) {
+	return _StorageManager.Contract.GetNameSpaceKey(&_StorageManager.CallOpts, _nodeAddresses)
 }
 
-// GetKeyForAddresses is a free data retrieval call binding the contract method 0x1bc97289.
+// GetNameSpaceKey is a free data retrieval call binding the contract method 0x40684b3f.
 //
-// Solidity: function getKeyForAddresses(address[] _addrs, uint256 _requiredAmountOfSignatures) view returns(bytes32)
-func (_StorageManager *StorageManagerCallerSession) GetKeyForAddresses(_addrs []common.Address, _requiredAmountOfSignatures *big.Int) ([32]byte, error) {
-	return _StorageManager.Contract.GetKeyForAddresses(&_StorageManager.CallOpts, _addrs, _requiredAmountOfSignatures)
+// Solidity: function getNameSpaceKey(address[] _nodeAddresses) view returns(bytes32)
+func (_StorageManager *StorageManagerCallerSession) GetNameSpaceKey(_nodeAddresses []common.Address) ([32]byte, error) {
+	return _StorageManager.Contract.GetNameSpaceKey(&_StorageManager.CallOpts, _nodeAddresses)
 }
 
-// NameSpace is a free data retrieval call binding the contract method 0xb48fbcaf.
+// GetNodeGroupKey is a free data retrieval call binding the contract method 0x2aadbf60.
 //
-// Solidity: function nameSpace(uint256 ) view returns(address creator)
-func (_StorageManager *StorageManagerCaller) NameSpace(opts *bind.CallOpts, arg0 *big.Int) (common.Address, error) {
+// Solidity: function getNodeGroupKey(address[] _nodeAddresses, uint256 _requiredAmountOfSignatures) pure returns(bytes32)
+func (_StorageManager *StorageManagerCaller) GetNodeGroupKey(opts *bind.CallOpts, _nodeAddresses []common.Address, _requiredAmountOfSignatures *big.Int) ([32]byte, error) {
+	var out []interface{}
+	err := _StorageManager.contract.Call(opts, &out, "getNodeGroupKey", _nodeAddresses, _requiredAmountOfSignatures)
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// GetNodeGroupKey is a free data retrieval call binding the contract method 0x2aadbf60.
+//
+// Solidity: function getNodeGroupKey(address[] _nodeAddresses, uint256 _requiredAmountOfSignatures) pure returns(bytes32)
+func (_StorageManager *StorageManagerSession) GetNodeGroupKey(_nodeAddresses []common.Address, _requiredAmountOfSignatures *big.Int) ([32]byte, error) {
+	return _StorageManager.Contract.GetNodeGroupKey(&_StorageManager.CallOpts, _nodeAddresses, _requiredAmountOfSignatures)
+}
+
+// GetNodeGroupKey is a free data retrieval call binding the contract method 0x2aadbf60.
+//
+// Solidity: function getNodeGroupKey(address[] _nodeAddresses, uint256 _requiredAmountOfSignatures) pure returns(bytes32)
+func (_StorageManager *StorageManagerCallerSession) GetNodeGroupKey(_nodeAddresses []common.Address, _requiredAmountOfSignatures *big.Int) ([32]byte, error) {
+	return _StorageManager.Contract.GetNodeGroupKey(&_StorageManager.CallOpts, _nodeAddresses, _requiredAmountOfSignatures)
+}
+
+// NameSpace is a free data retrieval call binding the contract method 0x0bc2dae5.
+//
+// Solidity: function nameSpace(bytes32 ) view returns(address creator)
+func (_StorageManager *StorageManagerCaller) NameSpace(opts *bind.CallOpts, arg0 [32]byte) (common.Address, error) {
 	var out []interface{}
 	err := _StorageManager.contract.Call(opts, &out, "nameSpace", arg0)
 
@@ -302,17 +333,17 @@ func (_StorageManager *StorageManagerCaller) NameSpace(opts *bind.CallOpts, arg0
 
 }
 
-// NameSpace is a free data retrieval call binding the contract method 0xb48fbcaf.
+// NameSpace is a free data retrieval call binding the contract method 0x0bc2dae5.
 //
-// Solidity: function nameSpace(uint256 ) view returns(address creator)
-func (_StorageManager *StorageManagerSession) NameSpace(arg0 *big.Int) (common.Address, error) {
+// Solidity: function nameSpace(bytes32 ) view returns(address creator)
+func (_StorageManager *StorageManagerSession) NameSpace(arg0 [32]byte) (common.Address, error) {
 	return _StorageManager.Contract.NameSpace(&_StorageManager.CallOpts, arg0)
 }
 
-// NameSpace is a free data retrieval call binding the contract method 0xb48fbcaf.
+// NameSpace is a free data retrieval call binding the contract method 0x0bc2dae5.
 //
-// Solidity: function nameSpace(uint256 ) view returns(address creator)
-func (_StorageManager *StorageManagerCallerSession) NameSpace(arg0 *big.Int) (common.Address, error) {
+// Solidity: function nameSpace(bytes32 ) view returns(address creator)
+func (_StorageManager *StorageManagerCallerSession) NameSpace(arg0 [32]byte) (common.Address, error) {
 	return _StorageManager.Contract.NameSpace(&_StorageManager.CallOpts, arg0)
 }
 
@@ -378,35 +409,35 @@ func (_StorageManager *StorageManagerCallerSession) NodeManager() (common.Addres
 	return _StorageManager.Contract.NodeManager(&_StorageManager.CallOpts)
 }
 
-// Nonce is a free data retrieval call binding the contract method 0xaffed0e0.
+// SortAddresses is a free data retrieval call binding the contract method 0x2f32ed5c.
 //
-// Solidity: function nonce() view returns(uint256)
-func (_StorageManager *StorageManagerCaller) Nonce(opts *bind.CallOpts) (*big.Int, error) {
+// Solidity: function sortAddresses(address[] addresses) pure returns(address[])
+func (_StorageManager *StorageManagerCaller) SortAddresses(opts *bind.CallOpts, addresses []common.Address) ([]common.Address, error) {
 	var out []interface{}
-	err := _StorageManager.contract.Call(opts, &out, "nonce")
+	err := _StorageManager.contract.Call(opts, &out, "sortAddresses", addresses)
 
 	if err != nil {
-		return *new(*big.Int), err
+		return *new([]common.Address), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out0 := *abi.ConvertType(out[0], new([]common.Address)).(*[]common.Address)
 
 	return out0, err
 
 }
 
-// Nonce is a free data retrieval call binding the contract method 0xaffed0e0.
+// SortAddresses is a free data retrieval call binding the contract method 0x2f32ed5c.
 //
-// Solidity: function nonce() view returns(uint256)
-func (_StorageManager *StorageManagerSession) Nonce() (*big.Int, error) {
-	return _StorageManager.Contract.Nonce(&_StorageManager.CallOpts)
+// Solidity: function sortAddresses(address[] addresses) pure returns(address[])
+func (_StorageManager *StorageManagerSession) SortAddresses(addresses []common.Address) ([]common.Address, error) {
+	return _StorageManager.Contract.SortAddresses(&_StorageManager.CallOpts, addresses)
 }
 
-// Nonce is a free data retrieval call binding the contract method 0xaffed0e0.
+// SortAddresses is a free data retrieval call binding the contract method 0x2f32ed5c.
 //
-// Solidity: function nonce() view returns(uint256)
-func (_StorageManager *StorageManagerCallerSession) Nonce() (*big.Int, error) {
-	return _StorageManager.Contract.Nonce(&_StorageManager.CallOpts)
+// Solidity: function sortAddresses(address[] addresses) pure returns(address[])
+func (_StorageManager *StorageManagerCallerSession) SortAddresses(addresses []common.Address) ([]common.Address, error) {
+	return _StorageManager.Contract.SortAddresses(&_StorageManager.CallOpts, addresses)
 }
 
 // Version is a free data retrieval call binding the contract method 0x54fd4d50.
@@ -440,27 +471,6 @@ func (_StorageManager *StorageManagerCallerSession) Version() (string, error) {
 	return _StorageManager.Contract.Version(&_StorageManager.CallOpts)
 }
 
-// CreateNameSpace is a paid mutator transaction binding the contract method 0x8430726a.
-//
-// Solidity: function createNameSpace(address[] _addrs) returns(uint256)
-func (_StorageManager *StorageManagerTransactor) CreateNameSpace(opts *bind.TransactOpts, _addrs []common.Address) (*types.Transaction, error) {
-	return _StorageManager.contract.Transact(opts, "createNameSpace", _addrs)
-}
-
-// CreateNameSpace is a paid mutator transaction binding the contract method 0x8430726a.
-//
-// Solidity: function createNameSpace(address[] _addrs) returns(uint256)
-func (_StorageManager *StorageManagerSession) CreateNameSpace(_addrs []common.Address) (*types.Transaction, error) {
-	return _StorageManager.Contract.CreateNameSpace(&_StorageManager.TransactOpts, _addrs)
-}
-
-// CreateNameSpace is a paid mutator transaction binding the contract method 0x8430726a.
-//
-// Solidity: function createNameSpace(address[] _addrs) returns(uint256)
-func (_StorageManager *StorageManagerTransactorSession) CreateNameSpace(_addrs []common.Address) (*types.Transaction, error) {
-	return _StorageManager.Contract.CreateNameSpace(&_StorageManager.TransactOpts, _addrs)
-}
-
 // Initialize is a paid mutator transaction binding the contract method 0xc4d66de8.
 //
 // Solidity: function initialize(address _nodeManager) returns()
@@ -482,25 +492,46 @@ func (_StorageManager *StorageManagerTransactorSession) Initialize(_nodeManager 
 	return _StorageManager.Contract.Initialize(&_StorageManager.TransactOpts, _nodeManager)
 }
 
-// StoreAddressMapping is a paid mutator transaction binding the contract method 0xcc2e66ca.
+// RegisterNameSpace is a paid mutator transaction binding the contract method 0x2d303103.
 //
-// Solidity: function storeAddressMapping(uint256 _requiredAmountOfSignatures, address[] _addrs) returns(bytes32 ksHash)
-func (_StorageManager *StorageManagerTransactor) StoreAddressMapping(opts *bind.TransactOpts, _requiredAmountOfSignatures *big.Int, _addrs []common.Address) (*types.Transaction, error) {
-	return _StorageManager.contract.Transact(opts, "storeAddressMapping", _requiredAmountOfSignatures, _addrs)
+// Solidity: function registerNameSpace(address[] _nodeAddresses) returns(bytes32 nameSpaceKey)
+func (_StorageManager *StorageManagerTransactor) RegisterNameSpace(opts *bind.TransactOpts, _nodeAddresses []common.Address) (*types.Transaction, error) {
+	return _StorageManager.contract.Transact(opts, "registerNameSpace", _nodeAddresses)
 }
 
-// StoreAddressMapping is a paid mutator transaction binding the contract method 0xcc2e66ca.
+// RegisterNameSpace is a paid mutator transaction binding the contract method 0x2d303103.
 //
-// Solidity: function storeAddressMapping(uint256 _requiredAmountOfSignatures, address[] _addrs) returns(bytes32 ksHash)
-func (_StorageManager *StorageManagerSession) StoreAddressMapping(_requiredAmountOfSignatures *big.Int, _addrs []common.Address) (*types.Transaction, error) {
-	return _StorageManager.Contract.StoreAddressMapping(&_StorageManager.TransactOpts, _requiredAmountOfSignatures, _addrs)
+// Solidity: function registerNameSpace(address[] _nodeAddresses) returns(bytes32 nameSpaceKey)
+func (_StorageManager *StorageManagerSession) RegisterNameSpace(_nodeAddresses []common.Address) (*types.Transaction, error) {
+	return _StorageManager.Contract.RegisterNameSpace(&_StorageManager.TransactOpts, _nodeAddresses)
 }
 
-// StoreAddressMapping is a paid mutator transaction binding the contract method 0xcc2e66ca.
+// RegisterNameSpace is a paid mutator transaction binding the contract method 0x2d303103.
 //
-// Solidity: function storeAddressMapping(uint256 _requiredAmountOfSignatures, address[] _addrs) returns(bytes32 ksHash)
-func (_StorageManager *StorageManagerTransactorSession) StoreAddressMapping(_requiredAmountOfSignatures *big.Int, _addrs []common.Address) (*types.Transaction, error) {
-	return _StorageManager.Contract.StoreAddressMapping(&_StorageManager.TransactOpts, _requiredAmountOfSignatures, _addrs)
+// Solidity: function registerNameSpace(address[] _nodeAddresses) returns(bytes32 nameSpaceKey)
+func (_StorageManager *StorageManagerTransactorSession) RegisterNameSpace(_nodeAddresses []common.Address) (*types.Transaction, error) {
+	return _StorageManager.Contract.RegisterNameSpace(&_StorageManager.TransactOpts, _nodeAddresses)
+}
+
+// RegisterNodeGroup is a paid mutator transaction binding the contract method 0x405ba914.
+//
+// Solidity: function registerNodeGroup(uint256 _requiredAmountOfSignatures, address[] _nodeAddresses) returns(bytes32 nodeGroupKey)
+func (_StorageManager *StorageManagerTransactor) RegisterNodeGroup(opts *bind.TransactOpts, _requiredAmountOfSignatures *big.Int, _nodeAddresses []common.Address) (*types.Transaction, error) {
+	return _StorageManager.contract.Transact(opts, "registerNodeGroup", _requiredAmountOfSignatures, _nodeAddresses)
+}
+
+// RegisterNodeGroup is a paid mutator transaction binding the contract method 0x405ba914.
+//
+// Solidity: function registerNodeGroup(uint256 _requiredAmountOfSignatures, address[] _nodeAddresses) returns(bytes32 nodeGroupKey)
+func (_StorageManager *StorageManagerSession) RegisterNodeGroup(_requiredAmountOfSignatures *big.Int, _nodeAddresses []common.Address) (*types.Transaction, error) {
+	return _StorageManager.Contract.RegisterNodeGroup(&_StorageManager.TransactOpts, _requiredAmountOfSignatures, _nodeAddresses)
+}
+
+// RegisterNodeGroup is a paid mutator transaction binding the contract method 0x405ba914.
+//
+// Solidity: function registerNodeGroup(uint256 _requiredAmountOfSignatures, address[] _nodeAddresses) returns(bytes32 nodeGroupKey)
+func (_StorageManager *StorageManagerTransactorSession) RegisterNodeGroup(_requiredAmountOfSignatures *big.Int, _nodeAddresses []common.Address) (*types.Transaction, error) {
+	return _StorageManager.Contract.RegisterNodeGroup(&_StorageManager.TransactOpts, _requiredAmountOfSignatures, _nodeAddresses)
 }
 
 // StorageManagerInitializedIterator is returned from FilterInitialized and is used to iterate over the raw logs and unpacked data for Initialized events raised by the StorageManager contract.
@@ -637,9 +668,9 @@ func (_StorageManager *StorageManagerFilterer) ParseInitialized(log types.Log) (
 	return event, nil
 }
 
-// StorageManagerNameSpaceCreatedIterator is returned from FilterNameSpaceCreated and is used to iterate over the raw logs and unpacked data for NameSpaceCreated events raised by the StorageManager contract.
-type StorageManagerNameSpaceCreatedIterator struct {
-	Event *StorageManagerNameSpaceCreated // Event containing the contract specifics and raw log
+// StorageManagerNameSpaceRegisteredIterator is returned from FilterNameSpaceRegistered and is used to iterate over the raw logs and unpacked data for NameSpaceRegistered events raised by the StorageManager contract.
+type StorageManagerNameSpaceRegisteredIterator struct {
+	Event *StorageManagerNameSpaceRegistered // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -653,7 +684,7 @@ type StorageManagerNameSpaceCreatedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *StorageManagerNameSpaceCreatedIterator) Next() bool {
+func (it *StorageManagerNameSpaceRegisteredIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -662,7 +693,7 @@ func (it *StorageManagerNameSpaceCreatedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(StorageManagerNameSpaceCreated)
+			it.Event = new(StorageManagerNameSpaceRegistered)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -677,7 +708,7 @@ func (it *StorageManagerNameSpaceCreatedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(StorageManagerNameSpaceCreated)
+		it.Event = new(StorageManagerNameSpaceRegistered)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -693,61 +724,61 @@ func (it *StorageManagerNameSpaceCreatedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *StorageManagerNameSpaceCreatedIterator) Error() error {
+func (it *StorageManagerNameSpaceRegisteredIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *StorageManagerNameSpaceCreatedIterator) Close() error {
+func (it *StorageManagerNameSpaceRegisteredIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// StorageManagerNameSpaceCreated represents a NameSpaceCreated event raised by the StorageManager contract.
-type StorageManagerNameSpaceCreated struct {
-	Id      *big.Int
-	Creator common.Address
-	Addr    []common.Address
-	Raw     types.Log // Blockchain specific contextual infos
+// StorageManagerNameSpaceRegistered represents a NameSpaceRegistered event raised by the StorageManager contract.
+type StorageManagerNameSpaceRegistered struct {
+	Creator       common.Address
+	Key           [32]byte
+	NodeAddresses []common.Address
+	Raw           types.Log // Blockchain specific contextual infos
 }
 
-// FilterNameSpaceCreated is a free log retrieval operation binding the contract event 0x525799b84736593cfb967a6c64dc3e091957a3d0bbbd13c3e8fb05896dc8bd43.
+// FilterNameSpaceRegistered is a free log retrieval operation binding the contract event 0xa3ff5f51192abc1eec99b424555d9835de556a73a6d962f0c085c211efde08f8.
 //
-// Solidity: event NameSpaceCreated(uint256 indexed id, address indexed creator, address[] addr)
-func (_StorageManager *StorageManagerFilterer) FilterNameSpaceCreated(opts *bind.FilterOpts, id []*big.Int, creator []common.Address) (*StorageManagerNameSpaceCreatedIterator, error) {
+// Solidity: event NameSpaceRegistered(address indexed creator, bytes32 indexed key, address[] nodeAddresses)
+func (_StorageManager *StorageManagerFilterer) FilterNameSpaceRegistered(opts *bind.FilterOpts, creator []common.Address, key [][32]byte) (*StorageManagerNameSpaceRegisteredIterator, error) {
 
-	var idRule []interface{}
-	for _, idItem := range id {
-		idRule = append(idRule, idItem)
-	}
 	var creatorRule []interface{}
 	for _, creatorItem := range creator {
 		creatorRule = append(creatorRule, creatorItem)
 	}
+	var keyRule []interface{}
+	for _, keyItem := range key {
+		keyRule = append(keyRule, keyItem)
+	}
 
-	logs, sub, err := _StorageManager.contract.FilterLogs(opts, "NameSpaceCreated", idRule, creatorRule)
+	logs, sub, err := _StorageManager.contract.FilterLogs(opts, "NameSpaceRegistered", creatorRule, keyRule)
 	if err != nil {
 		return nil, err
 	}
-	return &StorageManagerNameSpaceCreatedIterator{contract: _StorageManager.contract, event: "NameSpaceCreated", logs: logs, sub: sub}, nil
+	return &StorageManagerNameSpaceRegisteredIterator{contract: _StorageManager.contract, event: "NameSpaceRegistered", logs: logs, sub: sub}, nil
 }
 
-// WatchNameSpaceCreated is a free log subscription operation binding the contract event 0x525799b84736593cfb967a6c64dc3e091957a3d0bbbd13c3e8fb05896dc8bd43.
+// WatchNameSpaceRegistered is a free log subscription operation binding the contract event 0xa3ff5f51192abc1eec99b424555d9835de556a73a6d962f0c085c211efde08f8.
 //
-// Solidity: event NameSpaceCreated(uint256 indexed id, address indexed creator, address[] addr)
-func (_StorageManager *StorageManagerFilterer) WatchNameSpaceCreated(opts *bind.WatchOpts, sink chan<- *StorageManagerNameSpaceCreated, id []*big.Int, creator []common.Address) (event.Subscription, error) {
+// Solidity: event NameSpaceRegistered(address indexed creator, bytes32 indexed key, address[] nodeAddresses)
+func (_StorageManager *StorageManagerFilterer) WatchNameSpaceRegistered(opts *bind.WatchOpts, sink chan<- *StorageManagerNameSpaceRegistered, creator []common.Address, key [][32]byte) (event.Subscription, error) {
 
-	var idRule []interface{}
-	for _, idItem := range id {
-		idRule = append(idRule, idItem)
-	}
 	var creatorRule []interface{}
 	for _, creatorItem := range creator {
 		creatorRule = append(creatorRule, creatorItem)
 	}
+	var keyRule []interface{}
+	for _, keyItem := range key {
+		keyRule = append(keyRule, keyItem)
+	}
 
-	logs, sub, err := _StorageManager.contract.WatchLogs(opts, "NameSpaceCreated", idRule, creatorRule)
+	logs, sub, err := _StorageManager.contract.WatchLogs(opts, "NameSpaceRegistered", creatorRule, keyRule)
 	if err != nil {
 		return nil, err
 	}
@@ -757,8 +788,8 @@ func (_StorageManager *StorageManagerFilterer) WatchNameSpaceCreated(opts *bind.
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(StorageManagerNameSpaceCreated)
-				if err := _StorageManager.contract.UnpackLog(event, "NameSpaceCreated", log); err != nil {
+				event := new(StorageManagerNameSpaceRegistered)
+				if err := _StorageManager.contract.UnpackLog(event, "NameSpaceRegistered", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -779,21 +810,21 @@ func (_StorageManager *StorageManagerFilterer) WatchNameSpaceCreated(opts *bind.
 	}), nil
 }
 
-// ParseNameSpaceCreated is a log parse operation binding the contract event 0x525799b84736593cfb967a6c64dc3e091957a3d0bbbd13c3e8fb05896dc8bd43.
+// ParseNameSpaceRegistered is a log parse operation binding the contract event 0xa3ff5f51192abc1eec99b424555d9835de556a73a6d962f0c085c211efde08f8.
 //
-// Solidity: event NameSpaceCreated(uint256 indexed id, address indexed creator, address[] addr)
-func (_StorageManager *StorageManagerFilterer) ParseNameSpaceCreated(log types.Log) (*StorageManagerNameSpaceCreated, error) {
-	event := new(StorageManagerNameSpaceCreated)
-	if err := _StorageManager.contract.UnpackLog(event, "NameSpaceCreated", log); err != nil {
+// Solidity: event NameSpaceRegistered(address indexed creator, bytes32 indexed key, address[] nodeAddresses)
+func (_StorageManager *StorageManagerFilterer) ParseNameSpaceRegistered(log types.Log) (*StorageManagerNameSpaceRegistered, error) {
+	event := new(StorageManagerNameSpaceRegistered)
+	if err := _StorageManager.contract.UnpackLog(event, "NameSpaceRegistered", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// StorageManagerNodeInfoStoredIterator is returned from FilterNodeInfoStored and is used to iterate over the raw logs and unpacked data for NodeInfoStored events raised by the StorageManager contract.
-type StorageManagerNodeInfoStoredIterator struct {
-	Event *StorageManagerNodeInfoStored // Event containing the contract specifics and raw log
+// StorageManagerNodeGroupRegisteredIterator is returned from FilterNodeGroupRegistered and is used to iterate over the raw logs and unpacked data for NodeGroupRegistered events raised by the StorageManager contract.
+type StorageManagerNodeGroupRegisteredIterator struct {
+	Event *StorageManagerNodeGroupRegistered // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -807,7 +838,7 @@ type StorageManagerNodeInfoStoredIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *StorageManagerNodeInfoStoredIterator) Next() bool {
+func (it *StorageManagerNodeGroupRegisteredIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -816,7 +847,7 @@ func (it *StorageManagerNodeInfoStoredIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(StorageManagerNodeInfoStored)
+			it.Event = new(StorageManagerNodeGroupRegistered)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -831,7 +862,7 @@ func (it *StorageManagerNodeInfoStoredIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(StorageManagerNodeInfoStored)
+		it.Event = new(StorageManagerNodeGroupRegistered)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -847,61 +878,62 @@ func (it *StorageManagerNodeInfoStoredIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *StorageManagerNodeInfoStoredIterator) Error() error {
+func (it *StorageManagerNodeGroupRegisteredIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *StorageManagerNodeInfoStoredIterator) Close() error {
+func (it *StorageManagerNodeGroupRegisteredIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// StorageManagerNodeInfoStored represents a NodeInfoStored event raised by the StorageManager contract.
-type StorageManagerNodeInfoStored struct {
-	User  common.Address
-	Key   [32]byte
-	Addrs []common.Address
-	Raw   types.Log // Blockchain specific contextual infos
+// StorageManagerNodeGroupRegistered represents a NodeGroupRegistered event raised by the StorageManager contract.
+type StorageManagerNodeGroupRegistered struct {
+	Creator                    common.Address
+	Key                        [32]byte
+	RequiredAmountOfSignatures *big.Int
+	NodeAddresses              []common.Address
+	Raw                        types.Log // Blockchain specific contextual infos
 }
 
-// FilterNodeInfoStored is a free log retrieval operation binding the contract event 0x6685671d2938a50dd87b8e677e546f062f265876da9d3bd71007bb25ee5bc907.
+// FilterNodeGroupRegistered is a free log retrieval operation binding the contract event 0x743b3edc7d02714efe8b86b0641a0aae132bac4cd218903edaa2682fb22d1a76.
 //
-// Solidity: event NodeInfoStored(address indexed user, bytes32 indexed key, address[] addrs)
-func (_StorageManager *StorageManagerFilterer) FilterNodeInfoStored(opts *bind.FilterOpts, user []common.Address, key [][32]byte) (*StorageManagerNodeInfoStoredIterator, error) {
+// Solidity: event NodeGroupRegistered(address indexed creator, bytes32 indexed key, uint256 requiredAmountOfSignatures, address[] nodeAddresses)
+func (_StorageManager *StorageManagerFilterer) FilterNodeGroupRegistered(opts *bind.FilterOpts, creator []common.Address, key [][32]byte) (*StorageManagerNodeGroupRegisteredIterator, error) {
 
-	var userRule []interface{}
-	for _, userItem := range user {
-		userRule = append(userRule, userItem)
+	var creatorRule []interface{}
+	for _, creatorItem := range creator {
+		creatorRule = append(creatorRule, creatorItem)
 	}
 	var keyRule []interface{}
 	for _, keyItem := range key {
 		keyRule = append(keyRule, keyItem)
 	}
 
-	logs, sub, err := _StorageManager.contract.FilterLogs(opts, "NodeInfoStored", userRule, keyRule)
+	logs, sub, err := _StorageManager.contract.FilterLogs(opts, "NodeGroupRegistered", creatorRule, keyRule)
 	if err != nil {
 		return nil, err
 	}
-	return &StorageManagerNodeInfoStoredIterator{contract: _StorageManager.contract, event: "NodeInfoStored", logs: logs, sub: sub}, nil
+	return &StorageManagerNodeGroupRegisteredIterator{contract: _StorageManager.contract, event: "NodeGroupRegistered", logs: logs, sub: sub}, nil
 }
 
-// WatchNodeInfoStored is a free log subscription operation binding the contract event 0x6685671d2938a50dd87b8e677e546f062f265876da9d3bd71007bb25ee5bc907.
+// WatchNodeGroupRegistered is a free log subscription operation binding the contract event 0x743b3edc7d02714efe8b86b0641a0aae132bac4cd218903edaa2682fb22d1a76.
 //
-// Solidity: event NodeInfoStored(address indexed user, bytes32 indexed key, address[] addrs)
-func (_StorageManager *StorageManagerFilterer) WatchNodeInfoStored(opts *bind.WatchOpts, sink chan<- *StorageManagerNodeInfoStored, user []common.Address, key [][32]byte) (event.Subscription, error) {
+// Solidity: event NodeGroupRegistered(address indexed creator, bytes32 indexed key, uint256 requiredAmountOfSignatures, address[] nodeAddresses)
+func (_StorageManager *StorageManagerFilterer) WatchNodeGroupRegistered(opts *bind.WatchOpts, sink chan<- *StorageManagerNodeGroupRegistered, creator []common.Address, key [][32]byte) (event.Subscription, error) {
 
-	var userRule []interface{}
-	for _, userItem := range user {
-		userRule = append(userRule, userItem)
+	var creatorRule []interface{}
+	for _, creatorItem := range creator {
+		creatorRule = append(creatorRule, creatorItem)
 	}
 	var keyRule []interface{}
 	for _, keyItem := range key {
 		keyRule = append(keyRule, keyItem)
 	}
 
-	logs, sub, err := _StorageManager.contract.WatchLogs(opts, "NodeInfoStored", userRule, keyRule)
+	logs, sub, err := _StorageManager.contract.WatchLogs(opts, "NodeGroupRegistered", creatorRule, keyRule)
 	if err != nil {
 		return nil, err
 	}
@@ -911,8 +943,8 @@ func (_StorageManager *StorageManagerFilterer) WatchNodeInfoStored(opts *bind.Wa
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(StorageManagerNodeInfoStored)
-				if err := _StorageManager.contract.UnpackLog(event, "NodeInfoStored", log); err != nil {
+				event := new(StorageManagerNodeGroupRegistered)
+				if err := _StorageManager.contract.UnpackLog(event, "NodeGroupRegistered", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -933,12 +965,12 @@ func (_StorageManager *StorageManagerFilterer) WatchNodeInfoStored(opts *bind.Wa
 	}), nil
 }
 
-// ParseNodeInfoStored is a log parse operation binding the contract event 0x6685671d2938a50dd87b8e677e546f062f265876da9d3bd71007bb25ee5bc907.
+// ParseNodeGroupRegistered is a log parse operation binding the contract event 0x743b3edc7d02714efe8b86b0641a0aae132bac4cd218903edaa2682fb22d1a76.
 //
-// Solidity: event NodeInfoStored(address indexed user, bytes32 indexed key, address[] addrs)
-func (_StorageManager *StorageManagerFilterer) ParseNodeInfoStored(log types.Log) (*StorageManagerNodeInfoStored, error) {
-	event := new(StorageManagerNodeInfoStored)
-	if err := _StorageManager.contract.UnpackLog(event, "NodeInfoStored", log); err != nil {
+// Solidity: event NodeGroupRegistered(address indexed creator, bytes32 indexed key, uint256 requiredAmountOfSignatures, address[] nodeAddresses)
+func (_StorageManager *StorageManagerFilterer) ParseNodeGroupRegistered(log types.Log) (*StorageManagerNodeGroupRegistered, error) {
+	event := new(StorageManagerNodeGroupRegistered)
+	if err := _StorageManager.contract.UnpackLog(event, "NodeGroupRegistered", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

@@ -26,7 +26,7 @@ func NewSingerTool(conf *params.ChainConfig, prv *ecdsa.PrivateKey) *SingerTool 
 }
 
 func (s *SingerTool) Sign(da *DA) ([]byte, error) {
-	singer := NewEIP155FdSigner(s.config.ChainID)
+	singer := NewEIP155DASigner(s.config.ChainID)
 	h := singer.Hash(da)
 	sign, err := crypto.Sign(h.Bytes(), s.prv)
 	v := []byte{sign[64] + 27}
@@ -36,7 +36,7 @@ func (s *SingerTool) Sign(da *DA) ([]byte, error) {
 }
 
 func (s *SingerTool) Sender(da *DA) ([]common.Address, []error) {
-	singer := NewEIP155FdSigner(s.config.ChainID)
+	singer := NewEIP155DASigner(s.config.ChainID)
 	addr, err := singer.Sender(da)
 	return addr, err
 }

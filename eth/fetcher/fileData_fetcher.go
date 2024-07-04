@@ -11,7 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/core/txpool/filedatapool"
+	"github.com/ethereum/go-ethereum/core/txpool/dapool"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
@@ -104,13 +104,13 @@ type fdAnnounce struct {
 // txMetadata is a set of extra data transmitted along the announcement for better
 // fetch scheduling.
 type fdMetadata struct {
-	size uint32 // FileData size in bytes
+	size uint32 // DA size in bytes
 }
 
 // fdRequest represents an in-flight transaction retrieval request destined to
 // a specific peers.
 type fdRequest struct {
-	hashes []common.Hash            // FileData having been requested
+	hashes []common.Hash            // DA having been requested
 	stolen map[common.Hash]struct{} // Deliveries by someone else (don't re-request)
 	time   mclock.AbsTime           // Timestamp of the request
 }
@@ -121,7 +121,7 @@ type fdDrop struct {
 	peer string
 }
 
-type FileDataFetcher struct {
+type DAFetcher struct {
 	notify  chan *fdAnnounce
 	cleanup chan *fdDelivery
 	drop    chan *fdDrop
@@ -160,7 +160,7 @@ type FileDataFetcher struct {
 
 // NewFdFetcher creates a transaction fetcher to retrieve transaction
 // based on hash announcements.
-func NewFdFetcher(hasFd func(common.Hash) bool, addFds func([]*types.DA) []error, fetchFds func(string, []common.Hash) error, dropPeer func(string)) *FileDataFetcher {
+func NewFdFetcher(hasFd func(common.Hash) bool, addFds func([]*types.DA) []error, fetchFds func(string, []common.Hash) error, dropPeer func(string)) *DAFetcher {
 	return NewFdFetcherForTests(hasFd, addFds, fetchFds, dropPeer, mclock.System{}, nil)
 }
 
@@ -168,8 +168,8 @@ func NewFdFetcher(hasFd func(common.Hash) bool, addFds func([]*types.DA) []error
 // a simulated version and the internal randomness with a deterministic one.
 func NewFdFetcherForTests(
 	hasFd func(common.Hash) bool, addFds func([]*types.DA) []error, fetchFds func(string, []common.Hash) error, dropPeer func(string),
-	clock mclock.Clock, rand *mrand.Rand) *FileDataFetcher {
-	return &FileDataFetcher{
+	clock mclock.Clock, rand *mrand.Rand) *DAFetcher {
+	return &DAFetcher{
 		notify:      make(chan *fdAnnounce),
 		cleanup:     make(chan *fdDelivery),
 		drop:        make(chan *fdDrop),
@@ -193,7 +193,7 @@ func NewFdFetcherForTests(
 
 // Notify announces the fetcher of the potential availability of a new batch of
 // DA in the network.
-func (f *FileDataFetcher) Notify(peer string, types []byte, sizes []uint32, hashes []common.Hash) error {
+func (f *DAFetcher) Notify(peer string, types []byte, sizes []uint32, hashes []common.Hash) error {
 	// Keep track of all the announced DA
 	fdAnnounceInMeter.Mark(int64(len(hashes)))
 
@@ -233,11 +233,11 @@ func (f *FileDataFetcher) Notify(peer string, types []byte, sizes []uint32, hash
 }
 
 
-// Enqueue imports a batch of received FileData into the FileData pool
-// and the fetcher. This method may be called by both FileData broadcasts and
+// Enqueue imports a batch of received DA into the DA pool
+// and the fetcher. This method may be called by both DA broadcasts and
 // direct request replies. The differentiation is important so the fetcher can
-// re-schedule missing FileData as soon as possible.
-func (f *FileDataFetcher) Enqueue(peer string, fds []*types.DA, direct bool) error {
+// re-schedule missing DA as soon as possible.
+func (f *DAFetcher) Enqueue(peer string, fds []*types.DA, direct bool) error {
 	var (
 		inMeter          = fdReplyInMeter
 		knownMeter       = fdReplyKnownMeter
@@ -274,7 +274,7 @@ func (f *FileDataFetcher) Enqueue(peer string, fds []*types.DA, direct bool) err
 			switch {
 			case err == nil: // Noop, but need to handle to not count these
 				
-			case errors.Is(err, filedatapool.ErrAlreadyKnown):
+			case errors.Is(err, dapool.ErrAlreadyKnown):
 				duplicate++
 
 			default:
@@ -307,7 +307,7 @@ func (f *FileDataFetcher) Enqueue(peer string, fds []*types.DA, direct bool) err
 
 // Drop should be called when a peer disconnects. It cleans up all the internal
 // data structures of the given node.
-func (f *FileDataFetcher) Drop(peer string) error {
+func (f *DAFetcher) Drop(peer string) error {
 	select {
 	case f.drop <- &fdDrop{peer: peer}:
 		return nil
@@ -318,17 +318,17 @@ func (f *FileDataFetcher) Drop(peer string) error {
 
 // Start boots up the announcement based synchroniser, accepting and processing
 // hash notifications and block fetches until termination requested.
-func (f *FileDataFetcher) Start() {
+func (f *DAFetcher) Start() {
 	go f.loop()
 }
 
 // Stop terminates the announcement based synchroniser, canceling all pending
 // operations.
-func (f *FileDataFetcher) Stop() {
+func (f *DAFetcher) Stop() {
 	close(f.quit)
 }
 
-func (f *FileDataFetcher) loop() {
+func (f *DAFetcher) loop() {
 	var (
 		waitTimer    = new(mclock.Timer)
 		timeoutTimer = new(mclock.Timer)
@@ -427,7 +427,7 @@ func (f *FileDataFetcher) loop() {
 			// If this peer is new and announced something already queued, maybe
 			// request DA from them
 			if oldPeer && len(f.announces[ann.origin]) > 0 {
-				log.Info("FileDataFetcher---loop--去要了")
+				log.Info("DAFetcher---loop--去要了")
 				f.scheduleFetches(timeoutTimer, timeoutTrigger, map[string]struct{}{ann.origin: {}})
 			}
 
@@ -687,7 +687,7 @@ func (f *FileDataFetcher) loop() {
 // The method has a granularity of 'gatherSlack', since there's not much point in
 // spinning over all the transactions just to maybe find one that should trigger
 // a few ms earlier.
-func (f *FileDataFetcher) rescheduleWait(timer *mclock.Timer, trigger chan struct{}) {
+func (f *DAFetcher) rescheduleWait(timer *mclock.Timer, trigger chan struct{}) {
 	if *timer != nil {
 		(*timer).Stop()
 	}
@@ -721,7 +721,7 @@ func (f *FileDataFetcher) rescheduleWait(timer *mclock.Timer, trigger chan struc
 // pending requests and timed out requests separately. Without double tracking, if
 // we simply didn't reschedule the timer on all-timeout then the timer would never
 // be set again since len(request) > 0 => something's running.
-func (f *FileDataFetcher) rescheduleTimeout(timer *mclock.Timer, trigger chan struct{}) {
+func (f *DAFetcher) rescheduleTimeout(timer *mclock.Timer, trigger chan struct{}) {
 	if *timer != nil {
 		(*timer).Stop()
 	}
@@ -746,7 +746,7 @@ func (f *FileDataFetcher) rescheduleTimeout(timer *mclock.Timer, trigger chan st
 }
 
 // scheduleFetches starts a batch of retrievals for all available idle peers.
-func (f *FileDataFetcher) scheduleFetches(timer *mclock.Timer, timeout chan struct{}, whitelist map[string]struct{}) {
+func (f *DAFetcher) scheduleFetches(timer *mclock.Timer, timeout chan struct{}, whitelist map[string]struct{}) {
 	// Gather the set of peers we want to retrieve from (default to all)
 	actives := whitelist
 	if actives == nil {
@@ -825,7 +825,7 @@ func (f *FileDataFetcher) scheduleFetches(timer *mclock.Timer, timeout chan stru
 
 // forEachPeer does a range loop over a map of peers in production, but during
 // testing it does a deterministic sorted random to allow reproducing issues.
-func (f *FileDataFetcher) forEachPeer(peers map[string]struct{}, do func(peer string)) {
+func (f *DAFetcher) forEachPeer(peers map[string]struct{}, do func(peer string)) {
 	// If we're running production, use whatever Go's map gives us
 	if f.rand == nil {
 		for peer := range peers {
@@ -859,7 +859,7 @@ func rotateStrings(slice []string, n int) {
 // forEachAnnounce does a range loop over a map of announcements in production,
 // but during testing it does a deterministic sorted random to allow reproducing
 // issues.
-func (f *FileDataFetcher) forEachAnnounce(announces map[common.Hash]*fdMetadata, do func(hash common.Hash, meta *fdMetadata) bool) {
+func (f *DAFetcher) forEachAnnounce(announces map[common.Hash]*fdMetadata, do func(hash common.Hash, meta *fdMetadata) bool) {
 	// If we're running production, use whatever Go's map gives us
 	if f.rand == nil {
 		for hash, meta := range announces {

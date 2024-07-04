@@ -104,7 +104,7 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 		return nil,err
 	}else {
 		signData,err := b.eth.singer.Sign(fd)
-		b.eth.fdPool.Add([]*types.DA{fd},true,false)
+		b.eth.daPool.Add([]*types.DA{fd},true,false)
 		return signData,err
 	}
 }
@@ -129,7 +129,7 @@ func (b *EthAPIBackend) SendBTCDAByParams(commitment ,data []byte,nodeGroupKey [
 			log.Info("SendBTCDAByParams------SigWithSchnorr","err",err.Error())
 			return nil,err
 		}
-		b.eth.fdPool.Add([]*types.DA{da},true,false)
+		b.eth.daPool.Add([]*types.DA{da},true,false)
 		return sign,nil
 	}
 }
@@ -147,7 +147,7 @@ func (b *EthAPIBackend) SendBatchDA(datas [][]byte) ([][]byte,[]error) {
 				continue
 			}else {
 				da.ReceiveAt = time.Now()
-				b.eth.fdPool.Add([]*types.DA{&da},true,false)
+				b.eth.daPool.Add([]*types.DA{&da},true,false)
 				sign,err :=  b.eth.singer.Sign(&da)
 				if err != nil {
 					errlist[index] = err
@@ -162,7 +162,7 @@ func (b *EthAPIBackend) SendBatchDA(datas [][]byte) ([][]byte,[]error) {
 }
 
 func (b *EthAPIBackend) GetDAByHash(hash common.Hash) (*types.DA,error) {
-	fd,err := b.eth.fdPool.Get(hash)
+	fd,err := b.eth.daPool.Get(hash)
 	log.Info("EthAPIBackend-----GetDAByHash", "txHash", hash.String())
 	if fd != nil {
 		return fd,nil
@@ -174,7 +174,7 @@ func (b *EthAPIBackend) GetBatchDAsByHashes(hashes []common.Hash) ([]*types.DA,[
 	das := make([]*types.DA,len(hashes))
 	errs := make([]error,len(hashes))
 	for index,hash := range hashes {
-		da,err := b.eth.fdPool.Get(hash)
+		da,err := b.eth.daPool.Get(hash)
 		log.Info("EthAPIBackend-----GetDAByHash", "txHash", hash.String())
 		if da != nil {
 			das[index] = da
@@ -186,7 +186,7 @@ func (b *EthAPIBackend) GetBatchDAsByHashes(hashes []common.Hash) ([]*types.DA,[
 }
 
 func (b *EthAPIBackend) GetDAByCommitment(comimt []byte) (*types.DA, error) {
-	fd,err := b.eth.fdPool.GetDAByCommit(comimt)
+	fd,err := b.eth.daPool.GetDAByCommit(comimt)
 	log.Info("EthAPIBackend-----GetDAByCommitment", "comimt", common.Bytes2Hex(comimt))
 	if fd != nil {
 		return fd, nil
@@ -199,7 +199,7 @@ func (b *EthAPIBackend) GetBatchDAsByCommitments(commitments [][]byte) ([]*types
 	errs := make([]error,len(commitments))
 	for index,commitment := range commitments {
 		chash := common.BytesToHash(commitment)
-		da,err := b.eth.fdPool.Get(chash)
+		da,err := b.eth.daPool.Get(chash)
 		log.Info("EthAPIBackend-----GetDAByCommitment", "commitmentHash", chash.String())
 		if da != nil {
 			das[index] = da
@@ -210,10 +210,10 @@ func (b *EthAPIBackend) GetBatchDAsByCommitments(commitments [][]byte) ([]*types
 	return das,errs
 }
 
-func (b *EthAPIBackend) GetPoolFileData(hash common.Hash) *types.DA {
-	fd,err := b.eth.fdPool.Get(hash)
+func (b *EthAPIBackend) GetPoolDA(hash common.Hash) *types.DA {
+	fd,err := b.eth.daPool.Get(hash)
 	if err != nil {
-		log.Info("GetPoolFileData---get", "err", err.Error())
+		log.Info("GetPoolDA---get", "err", err.Error())
 	}
 	return fd
 }
@@ -232,8 +232,8 @@ func (b *EthAPIBackend) GetTransaction(ctx context.Context, txHash common.Hash) 
 	return tx, blockHash, blockNumber, index, nil
 }
 
-func (b *EthAPIBackend) SubscribeNewFileDataEvent(ch chan<- core.NewFileDataEvent) event.Subscription {
-	return b.eth.fdPool.SubscribenFileDatas(ch)
+func (b *EthAPIBackend) SubscribeNewDAEvent(ch chan<- core.NewDAEvent) event.Subscription {
+	return b.eth.daPool.SubscribenDAS(ch)
 }
 
 func (b *EthAPIBackend) ChainDb() ethdb.Database {

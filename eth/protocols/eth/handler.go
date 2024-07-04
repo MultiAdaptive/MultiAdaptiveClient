@@ -52,9 +52,9 @@ const (
 	
 	maxReceiptsServe = 1024
 
-	// maxFileDatasServe is the maximum number of block DA to serve. This
+	// maxDAsServe is the maximum number of block DA to serve. This
 	// number is mostly there to limit the number of disk lookups.
-	maxFileDatasServe = 60
+	maxDAsServe = 60
 
 	// fileDataSoftResponseLimit is the target maximum size of replies to data retrievals.
 	fileDataSoftResponseLimit = 30 * 1024 * 1024
@@ -71,7 +71,7 @@ type Backend interface {
 	Chain() *core.BlockChain
 
 	// TxPool retrieves the transaction pool object to serve data.
-	FildDataPool() FileDataPool
+	FildDataPool() DAPool
 
 	// AcceptTxs retrieves whether transaction processing is enabled on the node
 	// or if inbound transactions should simply be dropped.
@@ -93,8 +93,8 @@ type Backend interface {
 }
 
 
-// FileDataPool defines the methods needed by the protocol handler to serve fileData.
-type FileDataPool interface {
+// DAPool defines the methods needed by the protocol handler to serve fileData.
+type DAPool interface {
 	// Get retrieves the fileData from the local fileDatapool with the given hash.
 	Get(hash common.Hash) (*types.DA,error)
 	GetDA(hash common.Hash) (*types.DA,error)
@@ -180,21 +180,21 @@ type Decoder interface {
 }
 
 var eth67 = map[uint64]msgHandler{
-	FileDataMsg:				   				 handleFileDatas,
-	ResFileDatasMsg:							 handleResFileDatas,
- 	ReqFileDatasMsg:							 handleReqFileDatas,
-	GetPooledFileDatasMsg:         handleGetPooledFileDatas,
-	NewPooledFileDataHashesMsg:    handleNewPooledFileDataHashes67,
-	PooledFileDatasMsg:			  		 handlePooledFileDatas,
+	DAMsg:				   				 handleDAs,
+	ResDAsMsg:							 handleResDAs,
+ 	ReqDAsMsg:							 handleReqDAs,
+	GetPooledDAsMsg:         handleGetPooledDAs,
+	NewPooledDAHashesMsg:    handleNewPooledDAHashes67,
+	PooledDAsMsg:			  		 handlePooledDAs,
 }
 
 var eth68 = map[uint64]msgHandler{
-	FileDataMsg:			 handleFileDatas,
-	ReqFileDatasMsg:			 handleReqFileDatas,
- 	ResFileDatasMsg:			 handleResFileDatas,
-	GetPooledFileDatasMsg:         handleGetPooledFileDatas,
-	NewPooledFileDataHashesMsg:    handleNewPooledFileDataHashes68,
-	PooledFileDatasMsg:		 handlePooledFileDatas,
+	DAMsg:			 handleDAs,
+	ReqDAsMsg:			 handleReqDAs,
+ 	ResDAsMsg:			 handleResDAs,
+	GetPooledDAsMsg:         handleGetPooledDAs,
+	NewPooledDAHashesMsg:    handleNewPooledDAHashes68,
+	PooledDAsMsg:		 handlePooledDAs,
 }
 
 // handleMessage is invoked whenever an inbound message is received from a remote

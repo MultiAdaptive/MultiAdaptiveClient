@@ -2,7 +2,6 @@ package db
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 	"time"
 )
 
@@ -13,7 +12,7 @@ type CommitDetail struct {
 	Commit   []byte
 	TxHash   common.Hash
 	SigData  [][]byte
-	NameSpaceId *big.Int
+	NameSpaceKey common.Hash
 	SignAddress []string
 	Time     time.Time
 	OutOfTime time.Time

@@ -37,6 +37,14 @@ type Client struct {
 	c *rpc.Client
 }
 
+func (ec *Client) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error) {
+	return big.NewInt(0),nil
+}
+
+func (ec *Client) StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error) {
+	return []byte{},nil
+}
+
 // Dial connects a client to the given URL.
 func Dial(rawurl string) (*Client, error) {
 	return DialContext(context.Background(), rawurl)
@@ -266,33 +274,6 @@ func (ec *Client) TransactionByHash(ctx context.Context, hash common.Hash) (tx *
 	return json.tx, json.BlockNumber == nil, nil
 }
 
-// TransactionSender returns the sender address of the given transaction. The transaction
-// must be known to the remote node and included in the blockchain at the given block and
-// index. The sender is the one derived by the protocol at the time of inclusion.
-//
-// There is a fast-path for transactions retrieved by TransactionByHash and
-// TransactionInBlock. Getting their sender address can be done without an RPC interaction.
-func (ec *Client) TransactionSender(ctx context.Context, tx *types.Transaction, block common.Hash, index uint) (common.Address, error) {
-	// Try to load the address from the cache.
-	sender, err := types.Sender(&senderFromServer{blockhash: block}, tx)
-	if err == nil {
-		return sender, nil
-	}
-
-	// It was not found in cache, ask the server.
-	var meta struct {
-		Hash common.Hash
-		From common.Address
-	}
-	if err = ec.c.CallContext(ctx, &meta, "eth_getTransactionByBlockHashAndIndex", block, hexutil.Uint64(index)); err != nil {
-		return common.Address{}, err
-	}
-	if meta.Hash == (common.Hash{}) || meta.Hash != tx.Hash() {
-		return common.Address{}, errors.New("wrong inclusion block/index")
-	}
-	return meta.From, nil
-}
-
 // TransactionCount returns the total number of transactions in the given block.
 func (ec *Client) TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error) {
 	var num hexutil.Uint
@@ -300,39 +281,43 @@ func (ec *Client) TransactionCount(ctx context.Context, blockHash common.Hash) (
 	return uint(num), err
 }
 
-
+// SendDAByParams returns the signature by user given da params in eth.
 func (ec *Client) SendDAByParams(ctx context.Context, sender common.Address,index,length uint64,commitment,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64) ([]byte, error) {
 	var result []byte
 	err := ec.c.CallContext(ctx, &result, "eth_sendDAByParams", sender, index, length, commitment, data, nodeGroupKey,proof,claimedValue,outTimeStamp)
 	return result, err
 }
 
+// SendBTCDAByParams returns the signature by user given DA params in btc
 func (ec *Client) SendBTCDAByParams(ctx context.Context,commitment ,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte, error) {
 	var result []byte
 	err := ec.c.CallContext(ctx, &result, "eth_sendBTCDAByParams", commitment, data, nodeGroupKey, proof,claimedValue,revealTxBytes,commitTxBytes,inscriptionScript)
 	return result, err
 }
-
+// SendBatchDAs returns the signatures by user given a batch of DAs  in eth.
 func (ec *Client) SendBatchDAs(ctx context.Context, datas [][]byte) ([][]byte, error) {
 	var res rpc.SignatureResult
 	err := ec.c.CallContext(ctx, res, "eth_sendBatchDAs", datas)
 	return res.Signs, err
 }
 
+//GetDAByHash returns the DA by given a hash whatever that hash is TxHash or commitment Hash
 func (ec *Client) GetDAByHash(ctx context.Context, hash common.Hash) (RPCDA, error) {
 	var fd RPCDA
-	log.Info("client---GetFileDataByHash---iscalling---")
+	log.Info("client---GetDAByHash---iscalling---")
 	err := ec.c.CallContext(ctx, &fd, "eth_getDAByHash", hash)
 	return fd, err
 }
 
-func (ec *Client) GetBatchDAsByHashes(ctx context.Context, hashes rpc.TxHashes) (RPCDAs, error) {
-	var res RPCDAs
-	log.Info("client---GetBatchDAsByHashes---iscalling---")
-	err := ec.c.CallContext(ctx, &res, "eth_getBatchDAByHashes", hashes.TxHashes)
-	return res, err
-}
 
+//func (ec *Client) GetBatchDAsByHashes(ctx context.Context, hashes rpc.TxHashes) (RPCDAs, error) {
+//	var res RPCDAs
+//	log.Info("client---GetBatchDAsByHashes---iscalling---")
+//	err := ec.c.CallContext(ctx, &res, "eth_getBatchDAByHashes", hashes.TxHashes)
+//	return res, err
+//}
+
+//GetDAByCommitment return a DA by given a commitment that commitment should be a string format
 func (ec *Client) GetDAByCommitment(ctx context.Context, commitment string) (RPCDA, error) {
 	var fd RPCDA
 	log.Info("client---GetDAByCommitment---iscalling---")
@@ -378,39 +363,6 @@ func (ec *Client) TransactionReceipt(ctx context.Context, txHash common.Hash) (*
 	return r, err
 }
 
-//// SyncProgress retrieves the current progress of the sync algorithm. If there's
-//// no sync currently running, it returns nil.
-//func (ec *Client) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, error) {
-//	var raw json.RawMessage
-//	if err := ec.c.CallContext(ctx, &raw, "eth_syncing"); err != nil {
-//		return nil, err
-//	}
-//	// Handle the possible response types
-//	var syncing bool
-//	if err := json.Unmarshal(raw, &syncing); err == nil {
-//		return nil, nil // Not syncing (always false)
-//	}
-//	var p *rpcProgress
-//	if err := json.Unmarshal(raw, &p); err != nil {
-//		return nil, err
-//	}
-//	return p.toSyncProgress(), nil
-//}
-
-// SubscribeNewHead subscribes to notifications about the current blockchain head
-// on the given channel.
-func (ec *Client) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error) {
-	sub, err := ec.c.EthSubscribe(ctx, ch, "newHeads")
-	if err != nil {
-		// Defensively prefer returning nil interface explicitly on error-path, instead
-		// of letting default golang behavior wrap it with non-nil interface that stores
-		// nil concrete type value.
-		return nil, err
-	}
-	return sub, nil
-}
-
-// State Access
 
 // NetworkID returns the network ID for this client.
 func (ec *Client) NetworkID(ctx context.Context) (*big.Int, error) {
@@ -425,21 +377,7 @@ func (ec *Client) NetworkID(ctx context.Context) (*big.Int, error) {
 	return version, nil
 }
 
-// BalanceAt returns the wei balance of the given account.
-// The block number can be nil, in which case the balance is taken from the latest known block.
-func (ec *Client) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error) {
-	var result hexutil.Big
-	err := ec.c.CallContext(ctx, &result, "eth_getBalance", account, toBlockNumArg(blockNumber))
-	return (*big.Int)(&result), err
-}
 
-// StorageAt returns the value of key in the contract storage of the given account.
-// The block number can be nil, in which case the value is taken from the latest known block.
-func (ec *Client) StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error) {
-	var result hexutil.Bytes
-	err := ec.c.CallContext(ctx, &result, "eth_getStorageAt", account, key, toBlockNumArg(blockNumber))
-	return result, err
-}
 
 // CodeAt returns the contract code of the given account.
 // The block number can be nil, in which case the code is taken from the latest known block.

@@ -24,7 +24,7 @@ func TestEIP155FdSigning(t *testing.T) {
 
 	println("senderAddr----", senAddr.Hex())
 
-	signer := NewEIP155FdSigner(big.NewInt(18))
+	signer := NewEIP155DASigner(big.NewInt(18))
 
 	key1, _ := crypto.GenerateKey()
 	subAddr := crypto.PubkeyToAddress(key1.PublicKey)
@@ -37,7 +37,7 @@ func TestEIP155FdSigning(t *testing.T) {
 	data := bytes.Repeat([]byte(str), 1024)
 	txHash := common.BytesToHash([]byte("2"))
 
-	fd, err := SignFd(NewFileData(senAddr, subAddr, uint64(index), uint64(length), uint64(gasPrice), commit, data, []byte{}, txHash), signer, key)
+	fd, err := SignFd(NewDA(senAddr, subAddr, uint64(index), uint64(length), uint64(gasPrice), commit, data, []byte{}, txHash), signer, key)
 	if err != nil {
 		t.Errorf("err-----1 %x", err.Error())
 	}
@@ -52,11 +52,11 @@ func TestEIP155FdSigning(t *testing.T) {
 	}
 }
 
-func TestHomesteadFdSigner(t *testing.T) {
+func TestHomesteadDASigner(t *testing.T) {
 	key, _ := crypto.GenerateKey()
 	subAddr := crypto.PubkeyToAddress(key.PublicKey)
-	signer := HomesteadFdSigner{}
-	//NewEIP155FdSigner(big.NewInt(18))
+	signer := HomesteadDASigner{}
+	//NewEIP155DASigner(big.NewInt(18))
 
 	key1, _ := crypto.GenerateKey()
 	senAddr := crypto.PubkeyToAddress(key1.PublicKey)
@@ -69,7 +69,7 @@ func TestHomesteadFdSigner(t *testing.T) {
 	data := bytes.Repeat([]byte(str), 1024)
 	txHash := common.BytesToHash([]byte("2"))
 
-	fd, err := SignFd(NewFileData(senAddr, subAddr, uint64(index), uint64(length), uint64(gasPrice), commit, data, []byte{}, txHash), signer, key)
+	fd, err := SignFd(NewDA(senAddr, subAddr, uint64(index), uint64(length), uint64(gasPrice), commit, data, []byte{}, txHash), signer, key)
 	if err != nil {
 		t.Errorf("err-----1 %x", err.Error())
 	}

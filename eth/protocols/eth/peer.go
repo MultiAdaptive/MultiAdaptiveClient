@@ -46,9 +46,9 @@ const (
 	// older broadcasts.
 	maxQueuedTxs = 4096
 
-	// maxQueuedFileData is the maximum number of fileData to queue up before dropping
+	// maxQueuedDA is the maximum number of fileData to queue up before dropping
 	// older broadcasts.
-	maxQueuedFileData = 4096
+	maxQueuedDA = 4096
 
 	// maxQueuedTxAnns is the maximum number of transaction announcements to queue up
 	// before dropping older announcements.
@@ -97,7 +97,7 @@ type Peer struct {
 	//txBroadcast chan []common.Hash // Channel used to queue transaction propagation requests
 	//txAnnounce  chan []common.Hash // Channel used to queue transaction announcement requests
 
-	fdpool      FileDataPool       // fileData pool used by the broadcasters for liveness checks
+	fdpool      DAPool       // fileData pool used by the broadcasters for liveness checks
 	knownFds    *knownCache        // Set of fileData hashes known to be known by this peer
 	fdBroadcast chan []common.Hash // Channel used to queue fileData propagation requests
 	fdAnnounce  chan []common.Hash // Channel used to queue fileData announcement requests
@@ -112,7 +112,7 @@ type Peer struct {
 
 // NewPeer create a wrapper for a network connection and negotiated  protocol
 // version.
-func NewPeer(version uint, p *p2p.Peer, rw p2p.MsgReadWriter, fdpool FileDataPool) *Peer {
+func NewPeer(version uint, p *p2p.Peer, rw p2p.MsgReadWriter, fdpool DAPool) *Peer {
 	peer := &Peer{
 		id:              p.ID().String(),
 		Peer:            p,
@@ -138,8 +138,8 @@ func NewPeer(version uint, p *p2p.Peer, rw p2p.MsgReadWriter, fdpool FileDataPoo
 	//go peer.broadcastBlocks()
 	//go peer.broadcastTransactions()
 	//go peer.announceTransactions()
-	go peer.broadcastFileData()
-	go peer.announceFileDatas()
+	go peer.broadcastDA()
+	go peer.announceDAs()
 	go peer.dispatcher()
 
 	return peer
@@ -181,22 +181,22 @@ func (p *Peer) SetHead(hash common.Hash, td *big.Int) {
 }
 
 
-// KnownFileData returns whether peer is known to already have a fileData.
-func (p *Peer) KnownFileData(hash common.Hash) bool {
+// KnownDA returns whether peer is known to already have a fileData.
+func (p *Peer) KnownDA(hash common.Hash) bool {
 	return p.knownFds.Contains(hash)
 }
 
 
-// markFileData marks a fileData as known for the peer, ensuring that it
+// markDA marks a fileData as known for the peer, ensuring that it
 // will never be propagated to this particular peer.
-func (p *Peer) markFileData(hash common.Hash) {
+func (p *Peer) markDA(hash common.Hash) {
 	p.knownFds.Add(hash)
 }
 
 
-// SendFileDatas sends fileData to the peer and includes the hashes
+// SendDAs sends fileData to the peer and includes the hashes
 // in its fileData hash set for future reference.
-func (p *Peer) SendFileDatas(fds []*types.DA) error {
+func (p *Peer) SendDAs(fds []*types.DA) error {
 	var txHash common.Hash
 	var commitIsEmpty bool
 	for _, fd := range fds {
@@ -218,14 +218,14 @@ func (p *Peer) SendFileDatas(fds []*types.DA) error {
 			p.knownFds.Add(fd.TxHash)
 		}
 	}
-	log.Info("SendFileDatas----", "FileDataMsg", FileDataMsg, "fds length", len(fds), "peer id", p.ID(), "txHash", txHash.String())
-	return p2p.Send(p.rw, FileDataMsg, fds)
+	log.Info("SendDAs----", "DAMsg", DAMsg, "fds length", len(fds), "peer id", p.ID(), "txHash", txHash.String())
+	return p2p.Send(p.rw, DAMsg, fds)
 }
 
-// AsyncSendFileData queues a list of fileData (by txHash hash) to eventually
+// AsyncSendDA queues a list of fileData (by txHash hash) to eventually
 // propagate to a remote peer. The number of pending sends are capped (new ones
 // will force old sends to be dropped)
-func (p *Peer) AsyncSendFileData(hashes []common.Hash) {
+func (p *Peer) AsyncSendDA(hashes []common.Hash) {
 	select {
 	case p.fdBroadcast <- hashes:
 		// Mark all the fileData as known, but ensure we don't overflow our limits
@@ -235,37 +235,37 @@ func (p *Peer) AsyncSendFileData(hashes []common.Hash) {
 	}
 }
 
-// sendPooledFileDataHashes66 sends fileData hashes to the peer and includes
+// sendPooledDAHashes66 sends fileData hashes to the peer and includes
 // them in its transaction hash set for future reference.
 //
 // This method is a helper used by the async fileData announcer. Don't call it
 // directly as the queueing (memory) and transmission (bandwidth) costs should
 // not be managed directly.
-func (p *Peer) sendPooledFileDataHashes66(hashes []common.Hash) error {
+func (p *Peer) sendPooledDAHashes66(hashes []common.Hash) error {
 	// Mark all the DA as known, but ensure we don't overflow our limits
 	p.knownFds.Add(hashes...)
-	log.Info("sendPooledFileDataHashes66---广播交易哈希", "Hash", hashes[0].String())
-	return p2p.Send(p.rw, NewPooledFileDataHashesMsg, NewPooledFileDataHashesPacket67(hashes))
+	log.Info("sendPooledDAHashes66---广播交易哈希", "Hash", hashes[0].String())
+	return p2p.Send(p.rw, NewPooledDAHashesMsg, NewPooledDAHashesPacket67(hashes))
 }
 
-// sendPooledFileDataHashes68 sends fileData hashes (tagged with their type
+// sendPooledDAHashes68 sends fileData hashes (tagged with their type
 // and size) to the peer and includes them in its fileData hash set for future
 // reference.
 //
 // This method is a helper used by the async fileData announcer. Don't call it
 // directly as the queueing (memory) and fileDatamission (bandwidth) costs should
 // not be managed directly.
-func (p *Peer) sendPooledFileDataHashes68(hashes []common.Hash, sizes []uint32) error {
+func (p *Peer) sendPooledDAHashes68(hashes []common.Hash, sizes []uint32) error {
 	// Mark all the DA as known, but ensure we don't overflow our limits
 	p.knownFds.Add(hashes...)
-	log.Info("sendPooledFileDataHashes68---广播交易哈希", "txHash", hashes[0].String())
-	return p2p.Send(p.rw, NewPooledFileDataHashesMsg, NewPooledFileDataHashesPacket68{Sizes: sizes, Hashes: hashes})
+	log.Info("sendPooledDAHashes68---广播交易哈希", "txHash", hashes[0].String())
+	return p2p.Send(p.rw, NewPooledDAHashesMsg, NewPooledDAHashesPacket68{Sizes: sizes, Hashes: hashes})
 }
 
-// AsyncSendPooledFileDataHashes queues a list of DA hashes to eventually
+// AsyncSendPooledDAHashes queues a list of DA hashes to eventually
 // announce to a remote peer.  The number of pending sends are capped (new ones
 // will force old sends to be dropped)
-func (p *Peer) AsyncSendPooledFileDataHashes(hashes []common.Hash) {
+func (p *Peer) AsyncSendPooledDAHashes(hashes []common.Hash) {
 	select {
 	case p.fdAnnounce <- hashes:
 		// Mark all the DA as known, but ensure we don't overflow our limits
@@ -275,14 +275,14 @@ func (p *Peer) AsyncSendPooledFileDataHashes(hashes []common.Hash) {
 	}
 }
 
-// ReplyPooledFileDatasRLP is the response to RequestDAs.
-func (p *Peer) ReplyPooledFileDatasRLP(id uint64, hashes []common.Hash, fds []rlp.RawValue) error {
+// ReplyPooledDAsRLP is the response to RequestDAs.
+func (p *Peer) ReplyPooledDAsRLP(id uint64, hashes []common.Hash, fds []rlp.RawValue) error {
 	// Mark all the fileData as known, but ensure we don't overflow our limits
 	p.knownFds.Add(hashes...)
-	// Not packed into PooledFileDataResponse to avoid RLP decoding
-	return p2p.Send(p.rw, PooledFileDatasMsg, &PooledFileDataRLPPacket{
+	// Not packed into PooledDAResponse to avoid RLP decoding
+	return p2p.Send(p.rw, PooledDAsMsg, &PooledDARLPPacket{
 		RequestId:                 id,
-		PooledFileDataRLPResponse: fds,
+		PooledDARLPResponse: fds,
 	})
 }
 
@@ -311,16 +311,16 @@ func (p *Peer) ReplyReceiptsRLP(id uint64, receipts []rlp.RawValue) error {
 	})
 }
 
-func (p *Peer) ReplyFileDatasMarshal(id uint64, DA []*BantchFileData) []error {
+func (p *Peer) ReplyDAsMarshal(id uint64, DA []*BantchDA) []error {
 	errs := make([]error, 0)	
 	for _,bfd := range DA {
 			data,err := rlp.EncodeToBytes(bfd)
 			if err != nil {
-					log.Error("ReplyFileDatasMarshal---encode","err",err.Error())
+					log.Error("ReplyDAsMarshal---encode","err",err.Error())
 			}
-			err = p2p.Send(p.rw, ResFileDatasMsg, &FileDatasResponseRLPPacket{
+			err = p2p.Send(p.rw, ResDAsMsg, &DAsResponseRLPPacket{
 				RequestId:           id,
-				FileDatasResponse:   data,
+				DAsResponse:   data,
 			}) 
 			errs = append(errs, err)
 	}
@@ -464,31 +464,31 @@ func (p *Peer) RequestTxs(hashes []common.Hash) error {
 	})
 }
 
-// RequestFileDatas fetches a batch of DA from a remote node.
-func (p *Peer) RequestFileDatas(hashes []common.Hash) error {
+// RequestDAs fetches a batch of DA from a remote node.
+func (p *Peer) RequestDAs(hashes []common.Hash) error {
 	p.Log().Debug("Fetching batch of DA", "count", len(hashes))
 	id := rand.Uint64()
-	log.Info("RequestFileDatas----", "hash", hashes[0].String())
-	requestTracker.Track(p.id, p.version, GetPooledFileDatasMsg, PooledFileDatasMsg, id)
-	return p2p.Send(p.rw, GetPooledFileDatasMsg, &GetPooledFileDataPacket{
+	log.Info("RequestDAs----", "hash", hashes[0].String())
+	requestTracker.Track(p.id, p.version, GetPooledDAsMsg, PooledDAsMsg, id)
+	return p2p.Send(p.rw, GetPooledDAsMsg, &GetPooledDAPacket{
 		RequestId:                 id,
-		GetPooledFileDatasRequest: hashes,
+		GetPooledDAsRequest: hashes,
 	})
 }
 
-// StartRequestFileDatas implements downloader.Peer.
-func (p *Peer) StartRequestFileDatas(hashes []common.Hash,sink chan *Response) (*Request, error) {
+// StartRequestDAs implements downloader.Peer.
+func (p *Peer) StartRequestDAs(hashes []common.Hash,sink chan *Response) (*Request, error) {
 	p.Log().Debug("Fetching batch of fileData", "count", len(hashes))
 	id := rand.Uint64()
 
 	req := &Request{
 		id:   id,
 		sink: sink,
-		code: ReqFileDatasMsg,
-		want: ResFileDatasMsg,
-		data: &GetFileDatasPacket{
+		code: ReqDAsMsg,
+		want: ResDAsMsg,
+		data: &GetDAsPacket{
 			RequestId:          id,
-			GetFileDatasRequest: hashes,
+			GetDAsRequest: hashes,
 		},
 	}
 	if err := p.dispatchRequest(req); err != nil {

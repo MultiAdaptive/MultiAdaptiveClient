@@ -280,7 +280,7 @@ func (cs *chainSyncer) doBitcoinSync() error {
 	//	for _, transactionBrief := range transactionBriefs {
 	//		//new commit get from memory pool
 	//		commitment := transactionBrief.Commitment
-	//		da, err := cs.handler.fileDataPool.GetDAByCommit(commitment)
+	//		da, err := cs.handler.daPool.GetDAByCommit(commitment)
 	//		if err != nil || da == nil {
 	//			continue
 	//		}
@@ -295,7 +295,7 @@ func (cs *chainSyncer) doBitcoinSync() error {
 	//		da.SignData = signData
 	//		da.TxHash = common.HexToHash(tx)
 	//		da.ReceiveAt = time.Now()
-	//		cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
+	//		cs.handler.daPool.Add([]*types.DA{da}, true, false)
 	//		daDatas = append(daDatas, da)
 	//	}
 	//}
@@ -307,7 +307,7 @@ func (cs *chainSyncer) doBitcoinSync() error {
 			for _, transactionBrief := range transactionBriefs {
 				//new commit get from memory pool
 				commitment := transactionBrief.Commitment
-				da, err := cs.handler.fileDataPool.GetDAByCommit(commitment)
+				da, err := cs.handler.daPool.GetDAByCommit(commitment)
 				if err != nil || da == nil {
 					continue
 				}
@@ -322,7 +322,7 @@ func (cs *chainSyncer) doBitcoinSync() error {
 				da.SignData = signData
 				da.TxHash = common.HexToHash(tx)
 				da.ReceiveAt = time.Now()
-				cs.handler.fileDataPool.Add([]*types.DA{da}, true, false)
+				cs.handler.daPool.Add([]*types.DA{da}, true, false)
 				daDatas = append(daDatas, da)
 			}
 		}
@@ -337,9 +337,9 @@ func (cs *chainSyncer) doBitcoinSync() error {
 			parentHashData = ""
 		}
 		parentHash := common.HexToHash(parentHashData)
-		cs.handler.fileDataPool.SendNewFileDataEvent(daDatas)
+		cs.handler.daPool.SendNewDAEvent(daDatas)
 		_ = db.SaveBatchCommitment(cs.db, daDatas, parentHash)
-		cs.handler.fileDataPool.RemoveFileData(daDatas)
+		cs.handler.daPool.RemoveDA(daDatas)
 	}
 	cs.forced = false
 	return nil
@@ -567,7 +567,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		}
 		detailFinal, ok := commitCache.Get(logDetail.TxHash.Hex())
 		if ok && err == nil {
-			detailFinal.NameSpaceId = daDetail.NameSpaceId
+			detailFinal.NameSpaceKey = daDetail.NameSpaceKey
 			detailFinal.Nonce = daDetail.Nonce.Uint64()
 			var digst kzg.Digest
 			digst.X.BigInt(daDetail.Commitment.X)
@@ -577,7 +577,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			detailFinal.OutOfTime = time.Unix(daDetail.Timestamp.Int64(),0)
 			detailFinal.SigData = daDetail.Signatures
 			detailFinal.BlockNum = logDetail.BlockNumber
-			addrList, err := cs.handler.fileDataPool.GetSender(daDetail.Signatures)
+			addrList, err := cs.handler.daPool.GetSender(daDetail.Signatures)
 			for _, errDetail := range err {
 				if errDetail != nil {
 					log.Info("GetSender----", "err", errDetail.Error())
@@ -603,13 +603,13 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			outOfData := outTime.Before(time.Now())
 			log.Info("outOfData------","outOfData",outOfData)
 			if !outOfData {
-				da, err := cs.handler.fileDataPool.GetDAByCommit(daDetail.Commit)
+				da, err := cs.handler.daPool.GetDAByCommit(daDetail.Commit)
 				if err != nil {
 					log.Info("processBlocks-----", "err", err.Error())
 					continue
 				}
 				if err == nil && da != nil {
-					da.NameSpaceID = daDetail.NameSpaceId
+					da.NameSpaceKey = daDetail.NameSpaceKey
 					da.TxHash = common.HexToHash(txHash)
 					da.Nonce = daDetail.Nonce
 					da.ReceiveAt = daDetail.Time
@@ -619,7 +619,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 					da.Root = daDetail.Root
 					da.ReceiveAt = time.Now()
 					da.OutOfTime = daDetail.OutOfTime
-					cs.handler.fileDataPool.Add([]*types.DA{da}, false, false)
+					cs.handler.daPool.Add([]*types.DA{da}, false, false)
 					daDatas = append(daDatas, da)
 				}
 			}
@@ -631,7 +631,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		storageIns, _ := contract.NewStorageManager(storageAddr, cs.ethClient)
 		num := cs.chain.CurrentBlock()
 		for _, da := range daDatas {
-			if da.NameSpaceID.Uint64() != 0 && cs.nodeType == "s" {
+			if  bytes.Compare(da.NameSpaceKey.Bytes(),common.Hash{}.Bytes()) != 0 && cs.nodeType == "s" {
 				opts := &bind.CallOpts{
 					Pending:     false,
 					From:        cs.address,
@@ -639,7 +639,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 					Context:     context.Background(),
 				}
 
-				ns, _ := storageIns.NAMESPACE(opts, da.NameSpaceID)
+				ns, _ := storageIns.NAMESPACE(opts, da.NameSpaceKey)
 				flag := addressIncluded(ns.Addr, cs.address)
 				if flag {
 					db.SaveDACommit(cs.db, da, true)
@@ -654,8 +654,8 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 	}
 
 	if len(daDatas) != 0 {
-		cs.handler.fileDataPool.SendNewFileDataEvent(daDatas)
-		cs.handler.fileDataPool.RemoveFileData(daDatas)
+		cs.handler.daPool.SendNewDAEvent(daDatas)
+		cs.handler.daPool.RemoveDA(daDatas)
 	}
 
 	if len(blocks) >= 1 {

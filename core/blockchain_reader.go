@@ -117,8 +117,8 @@ func (bc *BlockChain) GetBlockByNumber(number uint64) *types.Block {
 }
 
 
-// GetFileDatasByHash retrieves the DA in a given block.
-func (bc *BlockChain) GetFileDatasByHash(hash common.Hash) []*types.DA {
+// GetDAsByHash retrieves the DA in a given block.
+func (bc *BlockChain) GetDAsByHash(hash common.Hash) []*types.DA {
 	number := rawdb.ReadHeaderNumber(bc.db, hash)
 	if number == nil {
 		return nil
@@ -127,7 +127,7 @@ func (bc *BlockChain) GetFileDatasByHash(hash common.Hash) []*types.DA {
 	//if header == nil {
 	//	return nil
 	//}
-	fds := rawdb.ReadFileDatas(bc.db,hash,*number)
+	fds := rawdb.ReadDAs(bc.db,hash,*number)
 	return fds
 }
 

@@ -691,11 +691,11 @@ func DeleteReceipts(db ethdb.KeyValueWriter, hash common.Hash, number uint64) {
 	}
 }
 
-// ReadFileDatas retrieves all the DA belonging to a block, including
+// ReadDAs retrieves all the DA belonging to a block, including
 // its corresponding metadata fields. If it is unable to populate these metadata
 // fields then nil is returned.
 //
-func ReadFileDatas(db ethdb.Reader, hash common.Hash, number uint64) []*types.DA {
+func ReadDAs(db ethdb.Reader, hash common.Hash, number uint64) []*types.DA {
 	data,err := db.Get(blockBodyKey(number,hash))
 	if err != nil || len(data) == 0 {
 		return nil
@@ -710,16 +710,16 @@ func ReadFileDatas(db ethdb.Reader, hash common.Hash, number uint64) []*types.DA
 }
 
 
-// WriteFileDatas stores all the DA belonging to a block.
-func WriteFileDatas(db ethdb.KeyValueWriter, hash common.Hash, number uint64,DA []*types.DA) {
+// WriteDAs stores all the DA belonging to a block.
+func WriteDAs(db ethdb.KeyValueWriter, hash common.Hash, number uint64,DA []*types.DA) {
 	 data,err := json.Marshal(DA)
 	 if err != nil {
-			log.Error("WriteFileDatas--json marshal failed","err",err.Error())
+			log.Error("WriteDAs--json marshal failed","err",err.Error())
 	 }
 
-	 err = db.Put(blockFileDatasKey(number,hash),data)
+	 err = db.Put(blockDAsKey(number,hash),data)
 	 if err != nil {
-			log.Error("WriteFileDatas--desk save failed","err",err.Error())
+			log.Error("WriteDAs--desk save failed","err",err.Error())
 	 }
 }
 

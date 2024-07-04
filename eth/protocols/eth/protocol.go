@@ -63,12 +63,12 @@ const (
 	PooledTransactionsMsg         = 0x0a
 	GetReceiptsMsg                = 0x0f
 	ReceiptsMsg                   = 0x10
-	FileDataMsg          		  		= 0x0c
-	ReqFileDatasMsg								= 0x12
-	ResFileDatasMsg               = 0x11
-	PooledFileDatasMsg            = 0x0b
-	GetPooledFileDatasMsg         = 0x0d
-	NewPooledFileDataHashesMsg    = 0x0e
+	DAMsg          		  		= 0x0c
+	ReqDAsMsg								= 0x12
+	ResDAsMsg               = 0x11
+	PooledDAsMsg            = 0x0b
+	GetPooledDAsMsg         = 0x0d
+	NewPooledDAHashesMsg    = 0x0e
 )
 
 var (
@@ -329,65 +329,65 @@ type PooledTransactionsRLPPacket struct {
 	PooledTransactionsRLPResponse
 }
 
-// FileDataPacket is the network packet fo broadcasting new DA.
-type FileDataPacket []*types.DA
+// DAPacket is the network packet fo broadcasting new DA.
+type DAPacket []*types.DA
 
-// GetPooledFileDatasRequest represents a fileData query.
-type GetPooledFileDatasRequest []common.Hash
+// GetPooledDAsRequest represents a fileData query.
+type GetPooledDAsRequest []common.Hash
 
-// GetFileDatasRequest represents a block DA query.
-type GetFileDatasRequest []common.Hash
+// GetDAsRequest represents a block DA query.
+type GetDAsRequest []common.Hash
 
-// GetFileDatasPacket represents a block DA query with request ID wrapping.
-type GetFileDatasPacket struct {
+// GetDAsPacket represents a block DA query with request ID wrapping.
+type GetDAsPacket struct {
 	RequestId uint64
-	GetFileDatasRequest
+	GetDAsRequest
 }
 
-// FileDatasResponse 
-type FileDatasResponse []byte
+// DAsResponse
+type DAsResponse []byte
 
-type FileDatasResponseRLPPacket struct {
+type DAsResponseRLPPacket struct {
 	RequestId uint64
-	FileDatasResponse
+	DAsResponse
 }
 
-// GetPooledFileDataPacket represents a fileData query with request ID wrapping.
-type GetPooledFileDataPacket struct {
+// GetPooledDAPacket represents a fileData query with request ID wrapping.
+type GetPooledDAPacket struct {
 	RequestId uint64
-	GetPooledFileDatasRequest
+	GetPooledDAsRequest
 }
 
-// PooledFileDataResponse is the network packet for transaction distribution.
-type PooledFileDataResponse []*types.DA
+// PooledDAResponse is the network packet for transaction distribution.
+type PooledDAResponse []*types.DA
 
 // PooledTransactionsPacket is the network packet for transaction distribution
 // with request ID wrapping.
-type PooledFileDataPacket struct {
+type PooledDAPacket struct {
 	RequestId uint64
-	PooledFileDataResponse
+	PooledDAResponse
 }
 
-// NewPooledFileDataHashesPacket67 represents a fileData announcement packet on eth/67.
-type NewPooledFileDataHashesPacket67 []common.Hash
+// NewPooledDAHashesPacket67 represents a fileData announcement packet on eth/67.
+type NewPooledDAHashesPacket67 []common.Hash
 
-// NewPooledFileDataHashesPacket68 represents a fileData announcement packet on eth/68 and newer.
-type NewPooledFileDataHashesPacket68 struct {
+// NewPooledDAHashesPacket68 represents a fileData announcement packet on eth/68 and newer.
+type NewPooledDAHashesPacket68 struct {
 	Sizes  []uint32
 	Hashes []common.Hash
 }
 
-// PooledFileDataRLPResponse is the network packet for fileData distribution, used
+// PooledDARLPResponse is the network packet for fileData distribution, used
 // in the cases we already have them in rlp-encoded form
-type PooledFileDataRLPResponse []rlp.RawValue 
+type PooledDARLPResponse []rlp.RawValue
 
-type PooledFileDataStatusResponse []uint
+type PooledDAStatusResponse []uint
 
-// PooledFileDataRLPPacket is PooledFileDataRLPResponse with request ID wrapping.
-type PooledFileDataRLPPacket struct {
+// PooledDARLPPacket is PooledDARLPResponse with request ID wrapping.
+type PooledDARLPPacket struct {
 	RequestId uint64
-	PooledFileDataRLPResponse
-	//PooledFileDataStatusResponse
+	PooledDARLPResponse
+	//PooledDAStatusResponse
 }
 
 func (*StatusPacket) Name() string { return "Status" }
@@ -431,24 +431,24 @@ func (*GetReceiptsRequest) Kind() byte   { return GetReceiptsMsg }
 func (*ReceiptsResponse) Name() string { return "Receipts" }
 func (*ReceiptsResponse) Kind() byte   { return ReceiptsMsg }
 
-func (*FileDataPacket) Name() string { return "FileData" }
-func (*FileDataPacket) Kind() byte   { return FileDataMsg }
+func (*DAPacket) Name() string { return "DA" }
+func (*DAPacket) Kind() byte   { return DAMsg }
 
-func (*NewPooledFileDataHashesPacket67) Name() string { return "NewPooledFileDataHashesPacket67" }
-func (*NewPooledFileDataHashesPacket67) Kind() byte { return NewPooledFileDataHashesMsg }
+func (*NewPooledDAHashesPacket67) Name() string { return "NewPooledDAHashesPacket67" }
+func (*NewPooledDAHashesPacket67) Kind() byte { return NewPooledDAHashesMsg }
  
-func (*NewPooledFileDataHashesPacket68) Name() string { return "NewPooledFileDataHashesPacket68" }
-func (*NewPooledFileDataHashesPacket68) Kind() byte { return NewPooledFileDataHashesMsg }
+func (*NewPooledDAHashesPacket68) Name() string { return "NewPooledDAHashesPacket68" }
+func (*NewPooledDAHashesPacket68) Kind() byte { return NewPooledDAHashesMsg }
 
-func (*GetPooledFileDatasRequest) Name() string { return "GetPooledFileDatas" }
-func (*GetPooledFileDatasRequest) Kind() byte   { return PooledFileDatasMsg }
+func (*GetPooledDAsRequest) Name() string { return "GetPooledDAs" }
+func (*GetPooledDAsRequest) Kind() byte   { return PooledDAsMsg }
 
-func (*PooledFileDataResponse) Name() string { return "PooledFileDataResponse" }
-func (*PooledFileDataResponse) Kind() byte 	 { return PooledFileDatasMsg }
+func (*PooledDAResponse) Name() string { return "PooledDAResponse" }
+func (*PooledDAResponse) Kind() byte 	 { return PooledDAsMsg }
 
-func (*GetFileDatasRequest) Name() string { return "ReqFileDatasMsg" }
-func (*GetFileDatasRequest) Kind() byte		{ return ReqFileDatasMsg }
+func (*GetDAsRequest) Name() string { return "ReqDAsMsg" }
+func (*GetDAsRequest) Kind() byte		{ return ReqDAsMsg }
 
-func (*FileDatasResponse) Name() string { return "ResFileDatasMsg" }
-func (*FileDatasResponse) Kind() byte   { return ResFileDatasMsg } 
+func (*DAsResponse) Name() string { return "ResDAsMsg" }
+func (*DAsResponse) Kind() byte   { return ResDAsMsg }
 

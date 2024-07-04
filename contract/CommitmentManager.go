@@ -29,8 +29,8 @@ var (
 	_ = abi.ConvertType
 )
 
-// CommitmentManagerDaDetails is an auto generated low-level Go binding around an user-defined struct.
-type CommitmentManagerDaDetails struct {
+// CommitmentManagerDADetails is an auto generated low-level Go binding around an user-defined struct.
+type CommitmentManagerDADetails struct {
 	Timestamp      *big.Int
 	HashSignatures [32]byte
 }
@@ -43,7 +43,7 @@ type PairingG1Point struct {
 
 // CommitmentManagerMetaData contains all meta data concerning the CommitmentManager contract.
 var CommitmentManagerMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"indexed\":false,\"internalType\":\"structPairing.G1Point\",\"name\":\"commitment\",\"type\":\"tuple\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"nonce\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"len\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"nodeGroupKey\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"nameSpaceId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes[]\",\"name\":\"signatures\",\"type\":\"bytes[]\"}],\"name\":\"SendDACommitment\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_nonce\",\"type\":\"uint256\"}],\"name\":\"COMMITMENTS\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"hashSignatures\",\"type\":\"bytes32\"}],\"internalType\":\"structCommitmentManager.DaDetails\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_user\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_index\",\"type\":\"uint256\"}],\"name\":\"COMMITMENTS\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"hashSignatures\",\"type\":\"bytes32\"}],\"internalType\":\"structCommitmentManager.DaDetails\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_length\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_timeout\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_nameSpaceId\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"_nodeGroupKey\",\"type\":\"bytes32\"},{\"internalType\":\"bytes[]\",\"name\":\"_signatures\",\"type\":\"bytes[]\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structPairing.G1Point\",\"name\":\"_commitment\",\"type\":\"tuple\"}],\"name\":\"SubmitCommitment\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"commitments\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"daDetails\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"hashSignatures\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_nameSpaceId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_index\",\"type\":\"uint256\"}],\"name\":\"getNameSpaceCommitment\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structPairing.G1Point\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_user\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_index\",\"type\":\"uint256\"}],\"name\":\"getUserCommitment\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structPairing.G1Point\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"indices\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractNodeManager\",\"name\":\"_nodeManager\",\"type\":\"address\"},{\"internalType\":\"contractStorageManager\",\"name\":\"_storageManagement\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"nameSpaceCommitments\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"nameSpaceIndex\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"nodeManager\",\"outputs\":[{\"internalType\":\"contractNodeManager\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"nonce\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"storageManagement\",\"outputs\":[{\"internalType\":\"contractStorageManager\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"userCommitments\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"version\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdraw\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"indexed\":false,\"internalType\":\"structPairing.G1Point\",\"name\":\"commitment\",\"type\":\"tuple\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"nonce\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"len\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"nodeGroupKey\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"nameSpaceKey\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bytes[]\",\"name\":\"signatures\",\"type\":\"bytes[]\"}],\"name\":\"SendDACommitment\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_length\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_timeout\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"_nameSpaceKey\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"_nodeGroupKey\",\"type\":\"bytes32\"},{\"internalType\":\"bytes[]\",\"name\":\"_signatures\",\"type\":\"bytes[]\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structPairing.G1Point\",\"name\":\"_commitment\",\"type\":\"tuple\"}],\"name\":\"SubmitCommitment\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"commitments\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"daDetails\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"hashSignatures\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_nonce\",\"type\":\"uint256\"}],\"name\":\"getDADetailsByNonce\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"hashSignatures\",\"type\":\"bytes32\"}],\"internalType\":\"structCommitmentManager.DADetails\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_user\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_index\",\"type\":\"uint256\"}],\"name\":\"getDADetailsByUserAndIndex\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"hashSignatures\",\"type\":\"bytes32\"}],\"internalType\":\"structCommitmentManager.DADetails\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_nameSpaceKey\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"_index\",\"type\":\"uint256\"}],\"name\":\"getNameSpaceCommitment\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structPairing.G1Point\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_user\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_index\",\"type\":\"uint256\"}],\"name\":\"getUserCommitment\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structPairing.G1Point\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"indices\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractNodeManager\",\"name\":\"_nodeManager\",\"type\":\"address\"},{\"internalType\":\"contractStorageManager\",\"name\":\"_storageManagement\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"nameSpaceCommitments\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"nameSpaceIndex\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"nodeManager\",\"outputs\":[{\"internalType\":\"contractNodeManager\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"nonce\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"storageManagement\",\"outputs\":[{\"internalType\":\"contractStorageManager\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"userCommitments\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"version\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdraw\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // CommitmentManagerABI is the input ABI used to generate the binding from.
@@ -192,68 +192,6 @@ func (_CommitmentManager *CommitmentManagerTransactorRaw) Transact(opts *bind.Tr
 	return _CommitmentManager.Contract.contract.Transact(opts, method, params...)
 }
 
-// COMMITMENTS is a free data retrieval call binding the contract method 0xe6e4b404.
-//
-// Solidity: function COMMITMENTS(uint256 _nonce) view returns((uint256,bytes32))
-func (_CommitmentManager *CommitmentManagerCaller) COMMITMENTS(opts *bind.CallOpts, _nonce *big.Int) (CommitmentManagerDaDetails, error) {
-	var out []interface{}
-	err := _CommitmentManager.contract.Call(opts, &out, "COMMITMENTS", _nonce)
-
-	if err != nil {
-		return *new(CommitmentManagerDaDetails), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(CommitmentManagerDaDetails)).(*CommitmentManagerDaDetails)
-
-	return out0, err
-
-}
-
-// COMMITMENTS is a free data retrieval call binding the contract method 0xe6e4b404.
-//
-// Solidity: function COMMITMENTS(uint256 _nonce) view returns((uint256,bytes32))
-func (_CommitmentManager *CommitmentManagerSession) COMMITMENTS(_nonce *big.Int) (CommitmentManagerDaDetails, error) {
-	return _CommitmentManager.Contract.COMMITMENTS(&_CommitmentManager.CallOpts, _nonce)
-}
-
-// COMMITMENTS is a free data retrieval call binding the contract method 0xe6e4b404.
-//
-// Solidity: function COMMITMENTS(uint256 _nonce) view returns((uint256,bytes32))
-func (_CommitmentManager *CommitmentManagerCallerSession) COMMITMENTS(_nonce *big.Int) (CommitmentManagerDaDetails, error) {
-	return _CommitmentManager.Contract.COMMITMENTS(&_CommitmentManager.CallOpts, _nonce)
-}
-
-// COMMITMENTS0 is a free data retrieval call binding the contract method 0xea9b6adf.
-//
-// Solidity: function COMMITMENTS(address _user, uint256 _index) view returns((uint256,bytes32))
-func (_CommitmentManager *CommitmentManagerCaller) COMMITMENTS0(opts *bind.CallOpts, _user common.Address, _index *big.Int) (CommitmentManagerDaDetails, error) {
-	var out []interface{}
-	err := _CommitmentManager.contract.Call(opts, &out, "COMMITMENTS0", _user, _index)
-
-	if err != nil {
-		return *new(CommitmentManagerDaDetails), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(CommitmentManagerDaDetails)).(*CommitmentManagerDaDetails)
-
-	return out0, err
-
-}
-
-// COMMITMENTS0 is a free data retrieval call binding the contract method 0xea9b6adf.
-//
-// Solidity: function COMMITMENTS(address _user, uint256 _index) view returns((uint256,bytes32))
-func (_CommitmentManager *CommitmentManagerSession) COMMITMENTS0(_user common.Address, _index *big.Int) (CommitmentManagerDaDetails, error) {
-	return _CommitmentManager.Contract.COMMITMENTS0(&_CommitmentManager.CallOpts, _user, _index)
-}
-
-// COMMITMENTS0 is a free data retrieval call binding the contract method 0xea9b6adf.
-//
-// Solidity: function COMMITMENTS(address _user, uint256 _index) view returns((uint256,bytes32))
-func (_CommitmentManager *CommitmentManagerCallerSession) COMMITMENTS0(_user common.Address, _index *big.Int) (CommitmentManagerDaDetails, error) {
-	return _CommitmentManager.Contract.COMMITMENTS0(&_CommitmentManager.CallOpts, _user, _index)
-}
-
 // Commitments is a free data retrieval call binding the contract method 0x49ce8997.
 //
 // Solidity: function commitments(uint256 ) view returns(uint256 X, uint256 Y)
@@ -344,12 +282,74 @@ func (_CommitmentManager *CommitmentManagerCallerSession) DaDetails(arg0 [32]byt
 	return _CommitmentManager.Contract.DaDetails(&_CommitmentManager.CallOpts, arg0)
 }
 
-// GetNameSpaceCommitment is a free data retrieval call binding the contract method 0xcfa38f21.
+// GetDADetailsByNonce is a free data retrieval call binding the contract method 0x99b659f1.
 //
-// Solidity: function getNameSpaceCommitment(uint256 _nameSpaceId, uint256 _index) view returns((uint256,uint256))
-func (_CommitmentManager *CommitmentManagerCaller) GetNameSpaceCommitment(opts *bind.CallOpts, _nameSpaceId *big.Int, _index *big.Int) (PairingG1Point, error) {
+// Solidity: function getDADetailsByNonce(uint256 _nonce) view returns((uint256,bytes32))
+func (_CommitmentManager *CommitmentManagerCaller) GetDADetailsByNonce(opts *bind.CallOpts, _nonce *big.Int) (CommitmentManagerDADetails, error) {
 	var out []interface{}
-	err := _CommitmentManager.contract.Call(opts, &out, "getNameSpaceCommitment", _nameSpaceId, _index)
+	err := _CommitmentManager.contract.Call(opts, &out, "getDADetailsByNonce", _nonce)
+
+	if err != nil {
+		return *new(CommitmentManagerDADetails), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(CommitmentManagerDADetails)).(*CommitmentManagerDADetails)
+
+	return out0, err
+
+}
+
+// GetDADetailsByNonce is a free data retrieval call binding the contract method 0x99b659f1.
+//
+// Solidity: function getDADetailsByNonce(uint256 _nonce) view returns((uint256,bytes32))
+func (_CommitmentManager *CommitmentManagerSession) GetDADetailsByNonce(_nonce *big.Int) (CommitmentManagerDADetails, error) {
+	return _CommitmentManager.Contract.GetDADetailsByNonce(&_CommitmentManager.CallOpts, _nonce)
+}
+
+// GetDADetailsByNonce is a free data retrieval call binding the contract method 0x99b659f1.
+//
+// Solidity: function getDADetailsByNonce(uint256 _nonce) view returns((uint256,bytes32))
+func (_CommitmentManager *CommitmentManagerCallerSession) GetDADetailsByNonce(_nonce *big.Int) (CommitmentManagerDADetails, error) {
+	return _CommitmentManager.Contract.GetDADetailsByNonce(&_CommitmentManager.CallOpts, _nonce)
+}
+
+// GetDADetailsByUserAndIndex is a free data retrieval call binding the contract method 0xb5caba68.
+//
+// Solidity: function getDADetailsByUserAndIndex(address _user, uint256 _index) view returns((uint256,bytes32))
+func (_CommitmentManager *CommitmentManagerCaller) GetDADetailsByUserAndIndex(opts *bind.CallOpts, _user common.Address, _index *big.Int) (CommitmentManagerDADetails, error) {
+	var out []interface{}
+	err := _CommitmentManager.contract.Call(opts, &out, "getDADetailsByUserAndIndex", _user, _index)
+
+	if err != nil {
+		return *new(CommitmentManagerDADetails), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(CommitmentManagerDADetails)).(*CommitmentManagerDADetails)
+
+	return out0, err
+
+}
+
+// GetDADetailsByUserAndIndex is a free data retrieval call binding the contract method 0xb5caba68.
+//
+// Solidity: function getDADetailsByUserAndIndex(address _user, uint256 _index) view returns((uint256,bytes32))
+func (_CommitmentManager *CommitmentManagerSession) GetDADetailsByUserAndIndex(_user common.Address, _index *big.Int) (CommitmentManagerDADetails, error) {
+	return _CommitmentManager.Contract.GetDADetailsByUserAndIndex(&_CommitmentManager.CallOpts, _user, _index)
+}
+
+// GetDADetailsByUserAndIndex is a free data retrieval call binding the contract method 0xb5caba68.
+//
+// Solidity: function getDADetailsByUserAndIndex(address _user, uint256 _index) view returns((uint256,bytes32))
+func (_CommitmentManager *CommitmentManagerCallerSession) GetDADetailsByUserAndIndex(_user common.Address, _index *big.Int) (CommitmentManagerDADetails, error) {
+	return _CommitmentManager.Contract.GetDADetailsByUserAndIndex(&_CommitmentManager.CallOpts, _user, _index)
+}
+
+// GetNameSpaceCommitment is a free data retrieval call binding the contract method 0x22bb340e.
+//
+// Solidity: function getNameSpaceCommitment(bytes32 _nameSpaceKey, uint256 _index) view returns((uint256,uint256))
+func (_CommitmentManager *CommitmentManagerCaller) GetNameSpaceCommitment(opts *bind.CallOpts, _nameSpaceKey [32]byte, _index *big.Int) (PairingG1Point, error) {
+	var out []interface{}
+	err := _CommitmentManager.contract.Call(opts, &out, "getNameSpaceCommitment", _nameSpaceKey, _index)
 
 	if err != nil {
 		return *new(PairingG1Point), err
@@ -361,18 +361,18 @@ func (_CommitmentManager *CommitmentManagerCaller) GetNameSpaceCommitment(opts *
 
 }
 
-// GetNameSpaceCommitment is a free data retrieval call binding the contract method 0xcfa38f21.
+// GetNameSpaceCommitment is a free data retrieval call binding the contract method 0x22bb340e.
 //
-// Solidity: function getNameSpaceCommitment(uint256 _nameSpaceId, uint256 _index) view returns((uint256,uint256))
-func (_CommitmentManager *CommitmentManagerSession) GetNameSpaceCommitment(_nameSpaceId *big.Int, _index *big.Int) (PairingG1Point, error) {
-	return _CommitmentManager.Contract.GetNameSpaceCommitment(&_CommitmentManager.CallOpts, _nameSpaceId, _index)
+// Solidity: function getNameSpaceCommitment(bytes32 _nameSpaceKey, uint256 _index) view returns((uint256,uint256))
+func (_CommitmentManager *CommitmentManagerSession) GetNameSpaceCommitment(_nameSpaceKey [32]byte, _index *big.Int) (PairingG1Point, error) {
+	return _CommitmentManager.Contract.GetNameSpaceCommitment(&_CommitmentManager.CallOpts, _nameSpaceKey, _index)
 }
 
-// GetNameSpaceCommitment is a free data retrieval call binding the contract method 0xcfa38f21.
+// GetNameSpaceCommitment is a free data retrieval call binding the contract method 0x22bb340e.
 //
-// Solidity: function getNameSpaceCommitment(uint256 _nameSpaceId, uint256 _index) view returns((uint256,uint256))
-func (_CommitmentManager *CommitmentManagerCallerSession) GetNameSpaceCommitment(_nameSpaceId *big.Int, _index *big.Int) (PairingG1Point, error) {
-	return _CommitmentManager.Contract.GetNameSpaceCommitment(&_CommitmentManager.CallOpts, _nameSpaceId, _index)
+// Solidity: function getNameSpaceCommitment(bytes32 _nameSpaceKey, uint256 _index) view returns((uint256,uint256))
+func (_CommitmentManager *CommitmentManagerCallerSession) GetNameSpaceCommitment(_nameSpaceKey [32]byte, _index *big.Int) (PairingG1Point, error) {
+	return _CommitmentManager.Contract.GetNameSpaceCommitment(&_CommitmentManager.CallOpts, _nameSpaceKey, _index)
 }
 
 // GetUserCommitment is a free data retrieval call binding the contract method 0xfb75e675.
@@ -437,10 +437,10 @@ func (_CommitmentManager *CommitmentManagerCallerSession) Indices(arg0 common.Ad
 	return _CommitmentManager.Contract.Indices(&_CommitmentManager.CallOpts, arg0)
 }
 
-// NameSpaceCommitments is a free data retrieval call binding the contract method 0x24d67819.
+// NameSpaceCommitments is a free data retrieval call binding the contract method 0x2119885b.
 //
-// Solidity: function nameSpaceCommitments(uint256 , uint256 ) view returns(uint256 X, uint256 Y)
-func (_CommitmentManager *CommitmentManagerCaller) NameSpaceCommitments(opts *bind.CallOpts, arg0 *big.Int, arg1 *big.Int) (struct {
+// Solidity: function nameSpaceCommitments(bytes32 , uint256 ) view returns(uint256 X, uint256 Y)
+func (_CommitmentManager *CommitmentManagerCaller) NameSpaceCommitments(opts *bind.CallOpts, arg0 [32]byte, arg1 *big.Int) (struct {
 	X *big.Int
 	Y *big.Int
 }, error) {
@@ -462,30 +462,30 @@ func (_CommitmentManager *CommitmentManagerCaller) NameSpaceCommitments(opts *bi
 
 }
 
-// NameSpaceCommitments is a free data retrieval call binding the contract method 0x24d67819.
+// NameSpaceCommitments is a free data retrieval call binding the contract method 0x2119885b.
 //
-// Solidity: function nameSpaceCommitments(uint256 , uint256 ) view returns(uint256 X, uint256 Y)
-func (_CommitmentManager *CommitmentManagerSession) NameSpaceCommitments(arg0 *big.Int, arg1 *big.Int) (struct {
+// Solidity: function nameSpaceCommitments(bytes32 , uint256 ) view returns(uint256 X, uint256 Y)
+func (_CommitmentManager *CommitmentManagerSession) NameSpaceCommitments(arg0 [32]byte, arg1 *big.Int) (struct {
 	X *big.Int
 	Y *big.Int
 }, error) {
 	return _CommitmentManager.Contract.NameSpaceCommitments(&_CommitmentManager.CallOpts, arg0, arg1)
 }
 
-// NameSpaceCommitments is a free data retrieval call binding the contract method 0x24d67819.
+// NameSpaceCommitments is a free data retrieval call binding the contract method 0x2119885b.
 //
-// Solidity: function nameSpaceCommitments(uint256 , uint256 ) view returns(uint256 X, uint256 Y)
-func (_CommitmentManager *CommitmentManagerCallerSession) NameSpaceCommitments(arg0 *big.Int, arg1 *big.Int) (struct {
+// Solidity: function nameSpaceCommitments(bytes32 , uint256 ) view returns(uint256 X, uint256 Y)
+func (_CommitmentManager *CommitmentManagerCallerSession) NameSpaceCommitments(arg0 [32]byte, arg1 *big.Int) (struct {
 	X *big.Int
 	Y *big.Int
 }, error) {
 	return _CommitmentManager.Contract.NameSpaceCommitments(&_CommitmentManager.CallOpts, arg0, arg1)
 }
 
-// NameSpaceIndex is a free data retrieval call binding the contract method 0x551a486d.
+// NameSpaceIndex is a free data retrieval call binding the contract method 0xcdb2d8a8.
 //
-// Solidity: function nameSpaceIndex(uint256 ) view returns(uint256)
-func (_CommitmentManager *CommitmentManagerCaller) NameSpaceIndex(opts *bind.CallOpts, arg0 *big.Int) (*big.Int, error) {
+// Solidity: function nameSpaceIndex(bytes32 ) view returns(uint256)
+func (_CommitmentManager *CommitmentManagerCaller) NameSpaceIndex(opts *bind.CallOpts, arg0 [32]byte) (*big.Int, error) {
 	var out []interface{}
 	err := _CommitmentManager.contract.Call(opts, &out, "nameSpaceIndex", arg0)
 
@@ -499,17 +499,17 @@ func (_CommitmentManager *CommitmentManagerCaller) NameSpaceIndex(opts *bind.Cal
 
 }
 
-// NameSpaceIndex is a free data retrieval call binding the contract method 0x551a486d.
+// NameSpaceIndex is a free data retrieval call binding the contract method 0xcdb2d8a8.
 //
-// Solidity: function nameSpaceIndex(uint256 ) view returns(uint256)
-func (_CommitmentManager *CommitmentManagerSession) NameSpaceIndex(arg0 *big.Int) (*big.Int, error) {
+// Solidity: function nameSpaceIndex(bytes32 ) view returns(uint256)
+func (_CommitmentManager *CommitmentManagerSession) NameSpaceIndex(arg0 [32]byte) (*big.Int, error) {
 	return _CommitmentManager.Contract.NameSpaceIndex(&_CommitmentManager.CallOpts, arg0)
 }
 
-// NameSpaceIndex is a free data retrieval call binding the contract method 0x551a486d.
+// NameSpaceIndex is a free data retrieval call binding the contract method 0xcdb2d8a8.
 //
-// Solidity: function nameSpaceIndex(uint256 ) view returns(uint256)
-func (_CommitmentManager *CommitmentManagerCallerSession) NameSpaceIndex(arg0 *big.Int) (*big.Int, error) {
+// Solidity: function nameSpaceIndex(bytes32 ) view returns(uint256)
+func (_CommitmentManager *CommitmentManagerCallerSession) NameSpaceIndex(arg0 [32]byte) (*big.Int, error) {
 	return _CommitmentManager.Contract.NameSpaceIndex(&_CommitmentManager.CallOpts, arg0)
 }
 
@@ -713,25 +713,25 @@ func (_CommitmentManager *CommitmentManagerCallerSession) Version() (string, err
 	return _CommitmentManager.Contract.Version(&_CommitmentManager.CallOpts)
 }
 
-// SubmitCommitment is a paid mutator transaction binding the contract method 0x3b8fe05f.
+// SubmitCommitment is a paid mutator transaction binding the contract method 0xe47611d7.
 //
-// Solidity: function SubmitCommitment(uint256 _length, uint256 _timeout, uint256 _nameSpaceId, bytes32 _nodeGroupKey, bytes[] _signatures, (uint256,uint256) _commitment) payable returns()
-func (_CommitmentManager *CommitmentManagerTransactor) SubmitCommitment(opts *bind.TransactOpts, _length *big.Int, _timeout *big.Int, _nameSpaceId *big.Int, _nodeGroupKey [32]byte, _signatures [][]byte, _commitment PairingG1Point) (*types.Transaction, error) {
-	return _CommitmentManager.contract.Transact(opts, "SubmitCommitment", _length, _timeout, _nameSpaceId, _nodeGroupKey, _signatures, _commitment)
+// Solidity: function SubmitCommitment(uint256 _length, uint256 _timeout, bytes32 _nameSpaceKey, bytes32 _nodeGroupKey, bytes[] _signatures, (uint256,uint256) _commitment) payable returns()
+func (_CommitmentManager *CommitmentManagerTransactor) SubmitCommitment(opts *bind.TransactOpts, _length *big.Int, _timeout *big.Int, _nameSpaceKey [32]byte, _nodeGroupKey [32]byte, _signatures [][]byte, _commitment PairingG1Point) (*types.Transaction, error) {
+	return _CommitmentManager.contract.Transact(opts, "SubmitCommitment", _length, _timeout, _nameSpaceKey, _nodeGroupKey, _signatures, _commitment)
 }
 
-// SubmitCommitment is a paid mutator transaction binding the contract method 0x3b8fe05f.
+// SubmitCommitment is a paid mutator transaction binding the contract method 0xe47611d7.
 //
-// Solidity: function SubmitCommitment(uint256 _length, uint256 _timeout, uint256 _nameSpaceId, bytes32 _nodeGroupKey, bytes[] _signatures, (uint256,uint256) _commitment) payable returns()
-func (_CommitmentManager *CommitmentManagerSession) SubmitCommitment(_length *big.Int, _timeout *big.Int, _nameSpaceId *big.Int, _nodeGroupKey [32]byte, _signatures [][]byte, _commitment PairingG1Point) (*types.Transaction, error) {
-	return _CommitmentManager.Contract.SubmitCommitment(&_CommitmentManager.TransactOpts, _length, _timeout, _nameSpaceId, _nodeGroupKey, _signatures, _commitment)
+// Solidity: function SubmitCommitment(uint256 _length, uint256 _timeout, bytes32 _nameSpaceKey, bytes32 _nodeGroupKey, bytes[] _signatures, (uint256,uint256) _commitment) payable returns()
+func (_CommitmentManager *CommitmentManagerSession) SubmitCommitment(_length *big.Int, _timeout *big.Int, _nameSpaceKey [32]byte, _nodeGroupKey [32]byte, _signatures [][]byte, _commitment PairingG1Point) (*types.Transaction, error) {
+	return _CommitmentManager.Contract.SubmitCommitment(&_CommitmentManager.TransactOpts, _length, _timeout, _nameSpaceKey, _nodeGroupKey, _signatures, _commitment)
 }
 
-// SubmitCommitment is a paid mutator transaction binding the contract method 0x3b8fe05f.
+// SubmitCommitment is a paid mutator transaction binding the contract method 0xe47611d7.
 //
-// Solidity: function SubmitCommitment(uint256 _length, uint256 _timeout, uint256 _nameSpaceId, bytes32 _nodeGroupKey, bytes[] _signatures, (uint256,uint256) _commitment) payable returns()
-func (_CommitmentManager *CommitmentManagerTransactorSession) SubmitCommitment(_length *big.Int, _timeout *big.Int, _nameSpaceId *big.Int, _nodeGroupKey [32]byte, _signatures [][]byte, _commitment PairingG1Point) (*types.Transaction, error) {
-	return _CommitmentManager.Contract.SubmitCommitment(&_CommitmentManager.TransactOpts, _length, _timeout, _nameSpaceId, _nodeGroupKey, _signatures, _commitment)
+// Solidity: function SubmitCommitment(uint256 _length, uint256 _timeout, bytes32 _nameSpaceKey, bytes32 _nodeGroupKey, bytes[] _signatures, (uint256,uint256) _commitment) payable returns()
+func (_CommitmentManager *CommitmentManagerTransactorSession) SubmitCommitment(_length *big.Int, _timeout *big.Int, _nameSpaceKey [32]byte, _nodeGroupKey [32]byte, _signatures [][]byte, _commitment PairingG1Point) (*types.Transaction, error) {
+	return _CommitmentManager.Contract.SubmitCommitment(&_CommitmentManager.TransactOpts, _length, _timeout, _nameSpaceKey, _nodeGroupKey, _signatures, _commitment)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0x485cc955.
@@ -1174,20 +1174,20 @@ func (it *CommitmentManagerSendDACommitmentIterator) Close() error {
 
 // CommitmentManagerSendDACommitment represents a SendDACommitment event raised by the CommitmentManager contract.
 type CommitmentManagerSendDACommitment struct {
-	Commitment  PairingG1Point
-	Timestamp   *big.Int
-	Nonce       *big.Int
-	Index       *big.Int
-	Len         *big.Int
-	DasKey      [32]byte
-	NameSpaceId *big.Int
-	Signatures  [][]byte
-	Raw         types.Log // Blockchain specific contextual infos
+	Commitment   PairingG1Point
+	Timestamp    *big.Int
+	Nonce        *big.Int
+	Index        *big.Int
+	Len          *big.Int
+	NodeGroupKey [32]byte
+	NameSpaceKey [32]byte
+	Signatures   [][]byte
+	Raw          types.Log // Blockchain specific contextual infos
 }
 
-// FilterSendDACommitment is a free log retrieval operation binding the contract event 0x7c6f794457613ffa4b876e788203ac008ee5d5271b727d73955e54776e1c035b.
+// FilterSendDACommitment is a free log retrieval operation binding the contract event 0x9057e36780b94e7894f43d35979c11e9190d633cbc49e719ab96ad04f4eef3b4.
 //
-// Solidity: event SendDACommitment((uint256,uint256) commitment, uint256 timestamp, uint256 nonce, uint256 index, uint256 len, bytes32 nodeGroupKey, uint256 nameSpaceId, bytes[] signatures)
+// Solidity: event SendDACommitment((uint256,uint256) commitment, uint256 timestamp, uint256 nonce, uint256 index, uint256 len, bytes32 nodeGroupKey, bytes32 nameSpaceKey, bytes[] signatures)
 func (_CommitmentManager *CommitmentManagerFilterer) FilterSendDACommitment(opts *bind.FilterOpts) (*CommitmentManagerSendDACommitmentIterator, error) {
 
 	logs, sub, err := _CommitmentManager.contract.FilterLogs(opts, "SendDACommitment")
@@ -1197,9 +1197,9 @@ func (_CommitmentManager *CommitmentManagerFilterer) FilterSendDACommitment(opts
 	return &CommitmentManagerSendDACommitmentIterator{contract: _CommitmentManager.contract, event: "SendDACommitment", logs: logs, sub: sub}, nil
 }
 
-// WatchSendDACommitment is a free log subscription operation binding the contract event 0x7c6f794457613ffa4b876e788203ac008ee5d5271b727d73955e54776e1c035b.
+// WatchSendDACommitment is a free log subscription operation binding the contract event 0x9057e36780b94e7894f43d35979c11e9190d633cbc49e719ab96ad04f4eef3b4.
 //
-// Solidity: event SendDACommitment((uint256,uint256) commitment, uint256 timestamp, uint256 nonce, uint256 index, uint256 len, bytes32 nodeGroupKey, uint256 nameSpaceId, bytes[] signatures)
+// Solidity: event SendDACommitment((uint256,uint256) commitment, uint256 timestamp, uint256 nonce, uint256 index, uint256 len, bytes32 nodeGroupKey, bytes32 nameSpaceKey, bytes[] signatures)
 func (_CommitmentManager *CommitmentManagerFilterer) WatchSendDACommitment(opts *bind.WatchOpts, sink chan<- *CommitmentManagerSendDACommitment) (event.Subscription, error) {
 
 	logs, sub, err := _CommitmentManager.contract.WatchLogs(opts, "SendDACommitment")
@@ -1234,9 +1234,9 @@ func (_CommitmentManager *CommitmentManagerFilterer) WatchSendDACommitment(opts 
 	}), nil
 }
 
-// ParseSendDACommitment is a log parse operation binding the contract event 0x7c6f794457613ffa4b876e788203ac008ee5d5271b727d73955e54776e1c035b.
+// ParseSendDACommitment is a log parse operation binding the contract event 0x9057e36780b94e7894f43d35979c11e9190d633cbc49e719ab96ad04f4eef3b4.
 //
-// Solidity: event SendDACommitment((uint256,uint256) commitment, uint256 timestamp, uint256 nonce, uint256 index, uint256 len, bytes32 nodeGroupKey, uint256 nameSpaceId, bytes[] signatures)
+// Solidity: event SendDACommitment((uint256,uint256) commitment, uint256 timestamp, uint256 nonce, uint256 index, uint256 len, bytes32 nodeGroupKey, bytes32 nameSpaceKey, bytes[] signatures)
 func (_CommitmentManager *CommitmentManagerFilterer) ParseSendDACommitment(log types.Log) (*CommitmentManagerSendDACommitment, error) {
 	event := new(CommitmentManagerSendDACommitment)
 	if err := _CommitmentManager.contract.UnpackLog(event, "SendDACommitment", log); err != nil {

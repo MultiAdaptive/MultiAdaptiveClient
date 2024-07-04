@@ -22,7 +22,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/txpool/filedatapool"
+	"github.com/ethereum/go-ethereum/core/txpool/dapool"
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/params"
 )
@@ -41,7 +41,7 @@ var Defaults = Config{
 	NodeType:           "b",
 	ChainName:          "ethereum",
 	FilterLogCacheSize: 32,
-	FileDataPool:       filedatapool.DefaultConfig,
+	DAPool:       dapool.DefaultConfig,
 	L1ScanUrl:          "",
 	L1ScanHost:         "",
 	L1ScanUser:         "",
@@ -122,8 +122,8 @@ type Config struct {
 
 	Etherbase common.Address
 
-	// FileData pool options
-	FileDataPool filedatapool.Config
+	// DA pool options
+	DAPool dapool.Config
 
 	// Miscellaneous options
 	DocRoot string `toml:"-"`

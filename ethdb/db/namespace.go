@@ -10,7 +10,7 @@ import (
 
 type NameSpace struct {
 	gorm.Model
-	NameSpaceID  int64
+	NameSpaceKey  int64
 	Creater      string
 	StorageList  string
 }
@@ -22,7 +22,7 @@ func AddNameSpace(db *gorm.DB, ns *types.NameSpace,nsId *big.Int) error {
 	}
 	strList := strings.Join(stlist,JoinString)
 	nsW := NameSpace{
-		NameSpaceID: nsId.Int64(),
+		NameSpaceKey: nsId.Int64(),
 		Creater: ns.Creater.Hex(),
 		StorageList: strList,
 	}

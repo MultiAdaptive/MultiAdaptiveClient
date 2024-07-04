@@ -618,7 +618,7 @@ func (s *BlockChainAPI) rpcMarshalBlock(ctx context.Context, b *types.Block, inc
 	return fields, nil
 }
 
-// RPCFileData represents a fileData that will serialize to the RPC representation of a fileData
+// RPCDA represents a fileData that will serialize to the RPC representation of a fileData
 type RPCDA struct {
 	Sender     common.Address `json:"sender"`
 	Length     hexutil.Uint64 `json:"length"`
@@ -860,12 +860,12 @@ func (f *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitm
 }
 
 func (f *DAAPI) SendBTCDAByParams(commitment ,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error) {
-	log.Info("FileDataAPI----", "SendBTCDAParams---called--", common.Bytes2Hex(commitment))
+	log.Info("DAAPI----", "SendBTCDAParams---called--", common.Bytes2Hex(commitment))
 	return f.b.SendBTCDAByParams(commitment ,data,nodeGroupKey,proof,claimedValue,revealTxBytes, commitTxBytes, inscriptionScript)
 }
 
 func (f *DAAPI) GetDAByHash(hash common.Hash) (*RPCDA, error) {
-	log.Info("FileDataAPI----", "GetFileDataByHash---called--", hash.String())
+	log.Info("DAAPI----", "GetDAByHash---called--", hash.String())
 	fd,err := f.b.GetDAByHash(hash)
 	if err != nil || fd == nil{
 		return nil, err
@@ -888,7 +888,7 @@ func (f *DAAPI) GetBatchDAsByHashes(hashes []common.Hash) *RPCDAs {
 }
 
 func (f *DAAPI) GetDAByCommitment(comimt string) (*RPCDA, error) {
-	log.Info("FileDataAPI----", "GetFileDataByCommitment---called--comimt", comimt)
+	log.Info("DAAPI----", "GetDAByCommitment---called--comimt", comimt)
 	data := common.Hex2Bytes(comimt)
 	fd, err := f.b.GetDAByCommitment(data)
 	if err != nil {

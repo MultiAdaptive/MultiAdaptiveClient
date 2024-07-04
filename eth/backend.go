@@ -28,7 +28,7 @@ import (
 	//"github.com/ethereum/go-ethereum/core/bloombits"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state/pruner"
-	"github.com/ethereum/go-ethereum/core/txpool/filedatapool"
+	"github.com/ethereum/go-ethereum/core/txpool/dapool"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
@@ -62,7 +62,7 @@ type Config = ethconfig.Config
 type Ethereum struct {
 	config *ethconfig.Config
 	// Handlers
-	fdPool               *filedatapool.FilePool
+	daPool               *dapool.DAPool
 	sqlDb                *gorm.DB
 	blockchain           *core.BlockChain
 	handler              *handler
@@ -194,14 +194,14 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	log.Info("Initialising Ethereum protocol", "network", config.NetworkId, "dbversion", dbVer)
 
 	//added by echo
-	if config.FileDataPool.Journal != "" {
-		config.FileDataPool.Journal = stack.ResolvePath(config.FileDataPool.Journal)
+	if config.DAPool.Journal != "" {
+		config.DAPool.Journal = stack.ResolvePath(config.DAPool.Journal)
 	}
-	fileDataPool := filedatapool.New(config.FileDataPool,eth.blockchain,config.NodeType)
+	daPool := dapool.New(config.DAPool,eth.blockchain,config.NodeType)
 	if err != nil {
 		return nil, err
 	}
-	eth.fdPool = fileDataPool
+	eth.daPool = daPool
 	var localAddress common.Address
 	if config.ChainName == "ethereum" || config.ChainName == "eth" {
 		keyStores, err := ioutil.ReadDir(stack.KeyStoreDir())
@@ -232,7 +232,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if eth.handler, err = newHandler(&handlerConfig{
 		Database:       chainDb,
 		Chain:          eth.blockchain,
-		FileDataPool:   eth.fdPool,
+		DAPool:         eth.daPool,
 		Network:        config.NetworkId,
 		Sync:           config.SyncMode,
 		L1ScanUrl:      eth.config.L1ScanUrl,
@@ -336,8 +336,8 @@ func (s *Ethereum) AccountManager() *accounts.Manager { return s.accountManager 
 func (s *Ethereum) BlockChain() *core.BlockChain      { return s.blockchain }
 
 // func (s *Ethereum) DB() ethdb.Database 				   { return s.blockchain.Db()}
-func (s *Ethereum) FilePool() *filedatapool.FilePool { return s.fdPool }
-func (s *Ethereum) EventMux() *event.TypeMux         { return s.eventMux }
+func (s *Ethereum) DAPool() *dapool.DAPool  { return s.daPool }
+func (s *Ethereum) EventMux() *event.TypeMux { return s.eventMux }
 func (s *Ethereum) ChainDb() ethdb.Database          { return s.chainDb }
 func (s *Ethereum) IsListening() bool                { return true } // Always listening
 func (s *Ethereum) Synced() bool                     { return s.handler.synced.Load() }
@@ -387,7 +387,7 @@ func (s *Ethereum) Stop() error {
 	log.Info("db is closed")
 	// Then stop everything else.
 	//close(s.closeBloomHandler)
-	s.fdPool.Close()
+	s.daPool.Close()
 	s.blockchain.Stop()
 
 	if s.historicalRPCService != nil {

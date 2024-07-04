@@ -162,8 +162,8 @@ type Signer interface {
 	// Sender returns the sender address of the transaction.
 	Sender(tx *Transaction) (common.Address, error)
 
-	// // SignatureFileData returns the FileData signature is correct
-	// SignatureFileData(fd *FileData) error
+	// // SignatureDA returns the DA signature is correct
+	// SignatureDA(fd *DA) error
 
 	// SignatureValues returns the raw R, S, V values corresponding to the
 	// given signature.

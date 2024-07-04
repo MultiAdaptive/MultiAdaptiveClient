@@ -32,8 +32,8 @@ import (
 type ethHandler handler
 
 // FildDataPool implements eth.Backend.
-func (h *ethHandler) FildDataPool() eth.FileDataPool {
-	return h.fileDataPool
+func (h *ethHandler) FildDataPool() eth.DAPool {
+	return h.daPool
 }
 
 func (h *ethHandler) Chain() *core.BlockChain { return h.chain }
@@ -74,28 +74,28 @@ func (h *ethHandler) Handle(peer *eth.Peer, packet eth.Packet) error {
 	// Consume any broadcasts and announces, forwarding the rest to the downloader
 	switch packet := packet.(type) {
 
-	case *eth.FileDataPacket:
+	case *eth.DAPacket:
 		return h.fdFetcher.Enqueue(peer.ID(), *packet, true)
 	
-	case *eth.NewPooledFileDataHashesPacket67:
+	case *eth.NewPooledDAHashesPacket67:
 		return h.fdFetcher.Notify(peer.ID(), nil, nil, *packet)
 
-	case *eth.NewPooledFileDataHashesPacket68:	
+	case *eth.NewPooledDAHashesPacket68:
 		return h.fdFetcher.Notify(peer.ID(), nil, packet.Sizes, packet.Hashes)
 
-	case *eth.PooledFileDataResponse:	
+	case *eth.PooledDAResponse:
 		return h.fdFetcher.Enqueue(peer.ID(), *packet, true)
 
-	case *eth.FileDatasResponse:
-		log.Info("handle-----receive FileDatasResponse")	
-		var btfd eth.BantchFileData
+	case *eth.DAsResponse:
+		log.Info("handle-----receive DAsResponse")
+		var btfd eth.BantchDA
 	  err := rlp.DecodeBytes(*packet,&btfd)
 		if err != nil {
-			log.Error("handle---FileDatasResponse msg decode","err",err.Error())
+			log.Error("handle---DAsResponse msg decode","err",err.Error())
 		}
 		//decode to fileData
-		fds := make([]*types.DA, len(btfd.FileDatas))
-		for indx,data := range btfd.FileDatas {
+		fds := make([]*types.DA, len(btfd.DAs))
+		for indx,data := range btfd.DAs {
 			var fd types.DA
 			err = rlp.DecodeBytes(data,&fd)
 			if err == nil {

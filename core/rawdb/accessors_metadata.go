@@ -199,13 +199,13 @@ func ReadCommitToHash(db ethdb.KeyValueReader,comm []byte) ([]byte,error) {
 	return data,err
 }
 
-func WriteFileDataDetail(db ethdb.KeyValueWriter,data []byte,txHash common.Hash) {
+func WriteDADetail(db ethdb.KeyValueWriter,data []byte,txHash common.Hash) {
 	if err := db.Put(fdLookupKey(txHash),data); err != nil {
 		log.Error("Failed to store the fileData ")
 	}
 }
 
-func ReadFileDataDetail(db ethdb.KeyValueReader,txHash common.Hash) ([]byte,error) {
+func ReadDADetail(db ethdb.KeyValueReader,txHash common.Hash) ([]byte,error) {
 	data,err := db.Get(fdLookupKey(txHash))
 	return data,err
 }
