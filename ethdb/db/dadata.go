@@ -21,7 +21,7 @@ const JoinString = ","
 // 创建commitment表格模型
 type DA struct {
 	ID              int64  `gorm:"column:f_id;primaryKey;autoIncrement:true;comment:ID" json:"id"`                                      // ID
-	Nonce           int64  `gorm:"column:f_nonce;not null;comment:发送号;index:idx_das_nonce" json:"nonce"`                                // 发送号
+	Nonce           int64  `gorm:"column:f_nonce;not null;comment:序号;index:idx_das_nonce" json:"nonce"`                                // 发送号
 	Sender          string `gorm:"column:f_sender;not null;comment:发送者;index:idx_das_sender" json:"sender"`                             // 发送者
 	Index           int64  `gorm:"column:f_index;not null;comment:序号;index:idx_das_index" json:"index"`                                 // 序号
 	Length          int64  `gorm:"column:f_length;not null;comment:长度" json:"length"`                                                   // 长度
