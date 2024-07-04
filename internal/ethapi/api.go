@@ -660,10 +660,6 @@ func NewRPCDAs(length int) *RPCDAs {
 	}
 }
 
-type RPCSignResult struct {
-	SigData   []byte   `json:"SigData"`
-	TimeStamp int64   `json:"TimeStamp"`
-}
 
 type RPCTxHashes struct {
 	TxHashes []common.Hash `json:"txhashes"`
@@ -858,13 +854,9 @@ func NewDAAPI(b Backend) *DAAPI {
 	return &DAAPI{b, signer}
 }
 
-func (f *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte) (*RPCSignResult,error) {
-	sign,timeStap,err := f.b.SendDAByParams(sender,index,length,commitment,data,dasKey,proof,claimedValue)
-	rest := &RPCSignResult{
-		SigData: sign,
-		TimeStamp: timeStap,
-	}
-	return rest,err
+func (f *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64) ([]byte,error) {
+	sign,err := f.b.SendDAByParams(sender,index,length,commitment,data,dasKey,proof,claimedValue,outTimeStamp)
+	return sign,err
 }
 
 func (f *DAAPI) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error) {

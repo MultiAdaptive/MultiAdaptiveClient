@@ -231,11 +231,6 @@ type RPCDAs struct {
 	Errs []error  `json:"errs"`
 }
 
-type RPCSignResult struct {
-	SigData   []byte   `json:"SigData"`
-	TimeStamp int64   `json:"TimeStamp"`
-}
-
 type rpcTransaction struct {
 	tx *types.Transaction
 	txExtraInfo
@@ -306,9 +301,9 @@ func (ec *Client) TransactionCount(ctx context.Context, blockHash common.Hash) (
 }
 
 
-func (ec *Client) SendDAByParams(ctx context.Context, sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte) (RPCSignResult, error) {
-	var result RPCSignResult
-	err := ec.c.CallContext(ctx, &result, "eth_sendDAByParams", sender, index, length, commitment, data, dasKey,proof,claimedValue)
+func (ec *Client) SendDAByParams(ctx context.Context, sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64) ([]byte, error) {
+	var result []byte
+	err := ec.c.CallContext(ctx, &result, "eth_sendDAByParams", sender, index, length, commitment, data, dasKey,proof,claimedValue,outTimeStamp)
 	return result, err
 }
 

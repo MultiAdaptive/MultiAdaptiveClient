@@ -93,21 +93,19 @@ func (b *EthAPIBackend) BlockByNumberOrHash(ctx context.Context, blockNrOrHash r
 	return nil, errors.New("invalid arguments; neither block nor hash specified")
 }
 
-func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte) ([]byte,int64,error) {
+func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64) ([]byte,error) {
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
 	fd := types.NewDA(sender, index, length, digest, data, dasKey, proof, claimedValue)
-	outData := time.Now().Add(23*time.Hour)
-	hourStart := time.Date(outData.Year(), outData.Month(), outData.Day(), outData.Hour(), 0, 0, 0, outData.Location())
-	fd.OutOfTime = hourStart
+	t := time.Unix(outTimeStamp,0)
+	fd.OutOfTime = t
 	flag,err := b.eth.singer.VerifyEth(fd)
 	if err != nil || flag == false {
-		return nil,0 ,err
+		return nil,err
 	}else {
 		signData,err := b.eth.singer.Sign(fd)
 		b.eth.fdPool.Add([]*types.DA{fd},true,false)
-		outOfTimeByte := fd.OutOfTime.Unix()
-		return signData,outOfTimeByte,err
+		return signData,err
 	}
 }
 
