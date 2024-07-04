@@ -508,9 +508,10 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 						trans = append(trans, tx)
 						txData := tx.Data()
 						if len(txData) != 0 {
-							commitment := slice(txData)
+							//由于txData变化导致的commit位置发生变化没有修改
+							//commitment := slice(txData)
 							commitCache.Set(tx.Hash().String(), &db.CommitDetail{
-								Commit:   commitment,
+								//Commit:   commitment,
 								BlockNum: bc.NumberU64(),
 								TxHash:   tx.Hash(),
 								Time:     time.Unix(int64(bc.Time()),0 ),
@@ -568,6 +569,10 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		if ok && err == nil {
 			detailFinal.NameSpaceId = daDetail.NameSpaceId
 			detailFinal.Nonce = daDetail.Nonce.Uint64()
+			var digst kzg.Digest
+			digst.X.BigInt(daDetail.Commitment.X)
+			digst.Y.BigInt(daDetail.Commitment.Y)
+			detailFinal.Commit = digst.Marshal()
 			detailFinal.Index = daDetail.Index.Uint64()
 			detailFinal.OutOfTime = time.Unix(daDetail.Timestamp.Int64(),0)
 			detailFinal.SigData = daDetail.Signatures

@@ -44,14 +44,14 @@ type DA struct {
 	Root         common.Hash    `json:"Root"`
 }
 
-func NewDA(sender common.Address, index, length uint64, commitment kzg.Digest, data []byte, dasKey [32]byte, proof []byte, claimedValue []byte) *DA {
+func NewDA(sender common.Address, index, length uint64, commitment kzg.Digest, data []byte, nodeGroupKey [32]byte, proof []byte, claimedValue []byte) *DA {
 	return &DA{
 		Sender:       sender,
 		Index:        index,
 		Length:       length,
 		Commitment:   commitment,
 		Data:         data,
-		DasKey:       dasKey,
+		DasKey:       nodeGroupKey,
 		Proof:        proof,
 		ClaimedValue: claimedValue,
 	}

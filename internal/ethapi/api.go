@@ -854,14 +854,14 @@ func NewDAAPI(b Backend) *DAAPI {
 	return &DAAPI{b, signer}
 }
 
-func (f *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64) ([]byte,error) {
-	sign,err := f.b.SendDAByParams(sender,index,length,commitment,data,dasKey,proof,claimedValue,outTimeStamp)
+func (f *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64) ([]byte,error) {
+	sign,err := f.b.SendDAByParams(sender,index,length,commitment,data,nodeGroupKey,proof,claimedValue,outTimeStamp)
 	return sign,err
 }
 
-func (f *DAAPI) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error) {
+func (f *DAAPI) SendBTCDAByParams(commitment ,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error) {
 	log.Info("FileDataAPI----", "SendBTCDAParams---called--", common.Bytes2Hex(commitment))
-	return f.b.SendBTCDAByParams(commitment ,data,dasKey,proof,claimedValue,revealTxBytes, commitTxBytes, inscriptionScript)
+	return f.b.SendBTCDAByParams(commitment ,data,nodeGroupKey,proof,claimedValue,revealTxBytes, commitTxBytes, inscriptionScript)
 }
 
 func (f *DAAPI) GetDAByHash(hash common.Hash) (*RPCDA, error) {

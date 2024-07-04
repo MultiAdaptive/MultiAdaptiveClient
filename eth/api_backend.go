@@ -93,10 +93,10 @@ func (b *EthAPIBackend) BlockByNumberOrHash(ctx context.Context, blockNrOrHash r
 	return nil, errors.New("invalid arguments; neither block nor hash specified")
 }
 
-func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64) ([]byte,error) {
+func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64) ([]byte,error) {
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
-	fd := types.NewDA(sender, index, length, digest, data, dasKey, proof, claimedValue)
+	fd := types.NewDA(sender, index, length, digest, data, nodeGroupKey, proof, claimedValue)
 	t := time.Unix(outTimeStamp,0)
 	fd.OutOfTime = t
 	flag,err := b.eth.singer.VerifyEth(fd)
@@ -109,13 +109,13 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 	}
 }
 
-func (b *EthAPIBackend) SendBTCDAByParams(commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error)  {
+func (b *EthAPIBackend) SendBTCDAByParams(commitment ,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error)  {
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
 	da := new(types.DA)
 	da.Commitment = digest
 	da.Proof = proof
-	da.DasKey = dasKey
+	da.DasKey = nodeGroupKey
 	da.Data = data
 	da.ClaimedValue = claimedValue
 	flag,err := b.eth.singer.VerifyBtc(da)

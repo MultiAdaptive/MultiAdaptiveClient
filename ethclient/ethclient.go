@@ -301,15 +301,15 @@ func (ec *Client) TransactionCount(ctx context.Context, blockHash common.Hash) (
 }
 
 
-func (ec *Client) SendDAByParams(ctx context.Context, sender common.Address,index,length uint64,commitment,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64) ([]byte, error) {
+func (ec *Client) SendDAByParams(ctx context.Context, sender common.Address,index,length uint64,commitment,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64) ([]byte, error) {
 	var result []byte
-	err := ec.c.CallContext(ctx, &result, "eth_sendDAByParams", sender, index, length, commitment, data, dasKey,proof,claimedValue,outTimeStamp)
+	err := ec.c.CallContext(ctx, &result, "eth_sendDAByParams", sender, index, length, commitment, data, nodeGroupKey,proof,claimedValue,outTimeStamp)
 	return result, err
 }
 
-func (ec *Client) SendBTCDAByParams(ctx context.Context,commitment ,data []byte,dasKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte, error) {
+func (ec *Client) SendBTCDAByParams(ctx context.Context,commitment ,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte, error) {
 	var result []byte
-	err := ec.c.CallContext(ctx, &result, "eth_sendBTCDAByParams", commitment, data, dasKey, proof,claimedValue,revealTxBytes,commitTxBytes,inscriptionScript)
+	err := ec.c.CallContext(ctx, &result, "eth_sendBTCDAByParams", commitment, data, nodeGroupKey, proof,claimedValue,revealTxBytes,commitTxBytes,inscriptionScript)
 	return result, err
 }
 
