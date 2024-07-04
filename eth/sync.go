@@ -509,9 +509,9 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 						txData := tx.Data()
 						if len(txData) != 0 {
 							//由于txData变化导致的commit位置发生变化没有修改
-							//commitment := slice(txData)
+							commitment := slice(txData)
 							commitCache.Set(tx.Hash().String(), &db.CommitDetail{
-								//Commit:   commitment,
+								Commit:   commitment,
 								BlockNum: bc.NumberU64(),
 								TxHash:   tx.Hash(),
 								Time:     time.Unix(int64(bc.Time()),0 ),
@@ -569,10 +569,12 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		if ok && err == nil {
 			detailFinal.NameSpaceKey = daDetail.NameSpaceKey
 			detailFinal.Nonce = daDetail.Nonce.Uint64()
-			var digst kzg.Digest
-			digst.X.BigInt(daDetail.Commitment.X)
-			digst.Y.BigInt(daDetail.Commitment.Y)
-			detailFinal.Commit = digst.Marshal()
+			//var digst kzg.Digest
+			//digst.X.BigInt(daDetail.Commitment.X)
+			//digst.Y.BigInt(daDetail.Commitment.Y)
+			//detailFinal.Commit = digst.Marshal()
+			//cmHash := common.BytesToHash(digst.Marshal())
+			//log.Info("processBlocks-----commit","cmHash",cmHash.Hex())
 			detailFinal.Index = daDetail.Index.Uint64()
 			detailFinal.OutOfTime = time.Unix(daDetail.Timestamp.Int64(),0)
 			detailFinal.SigData = daDetail.Signatures
@@ -677,8 +679,8 @@ func addressIncluded(list []common.Address, targe common.Address) bool {
 
 func slice(data []byte) []byte {
 	digst := new(kzg.Digest)
-	digst.X.SetBytes(data[132 : 132+32])
-	digst.Y.SetBytes(data[132+32 : 132+64])
+	digst.X.SetBytes(data[132 + 32: 132+32+32])
+	digst.Y.SetBytes(data[132+32+32 : 132+64+32])
 	return digst.Marshal()
 }
 
