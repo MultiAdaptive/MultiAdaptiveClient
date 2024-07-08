@@ -40,7 +40,6 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		Preimages                               bool
 		FilterLogCacheSize                      int
 		DocRoot                                 string `toml:"-"`
-		RPCGasCap                               uint64
 	}
 	var enc Config
 	enc.Genesis = c.Genesis
@@ -70,7 +69,6 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.Preimages = c.Preimages
 	enc.FilterLogCacheSize = c.FilterLogCacheSize
 	enc.DocRoot = c.DocRoot
-	enc.RPCGasCap = c.RPCGasCap
 	return &enc, nil
 }
 
@@ -107,7 +105,6 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		FilterLogCacheSize                      *int
 		EnablePreimageRecording                 *bool
 		DocRoot                                 *string `toml:"-"`
-		RPCGasCap                               *uint64
 	}
 	var dec Config
 	if err := unmarshal(&dec); err != nil {
@@ -195,8 +192,6 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.DocRoot != nil {
 		c.DocRoot = *dec.DocRoot
 	}
-	if dec.RPCGasCap != nil {
-		c.RPCGasCap = *dec.RPCGasCap
-	}
+
 	return nil
 }

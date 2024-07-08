@@ -46,7 +46,7 @@ var Defaults = Config{
 	L1ScanHost:         "",
 	L1ScanUser:         "",
 	L1ScanPassword:     "",
-	RPCGasCap:          50000000,
+	//RPCGasCap:          50000000,
 }
 
 //go:generate go run github.com/fjl/gencodec -type Config -formats toml -out gen_config.go
@@ -129,6 +129,6 @@ type Config struct {
 	DocRoot string `toml:"-"`
 
 	// RPCGasCap is the global gas cap for eth-call variants.
-	RPCGasCap uint64
+	//RPCGasCap uint64
 
 }

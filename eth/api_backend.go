@@ -256,10 +256,6 @@ func (b *EthAPIBackend) UnprotectedAllowed() bool {
 	return b.allowUnprotectedTxs
 }
 
-func (b *EthAPIBackend) RPCGasCap() uint64 {
-	return b.eth.config.RPCGasCap
-}
-
 
 func (b *EthAPIBackend) HistoricalRPCService() *rpc.Client {
 	return b.eth.historicalRPCService

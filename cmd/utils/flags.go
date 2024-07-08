@@ -482,14 +482,6 @@ var (
 		Category: flags.AccountCategory,
 	}
 
-	// API options.
-	RPCGlobalGasCapFlag = &cli.Uint64Flag{
-		Name:     "rpc.gascap",
-		Usage:    "Sets a cap on gas that can be used in eth_call/estimateGas (0=infinite)",
-		Value:    ethconfig.Defaults.RPCGasCap,
-		Category: flags.APICategory,
-	}
-
 	// Authenticated RPC HTTP settings
 	AuthListenFlag = &cli.StringFlag{
 		Name:     "authrpc.addr",
@@ -640,11 +632,7 @@ var (
 		Usage:    "Comma separated list of JavaScript files to preload into the console",
 		Category: flags.APICategory,
 	}
-	AllowUnprotectedTxs = &cli.BoolFlag{
-		Name:     "rpc.allow-unprotected-txs",
-		Usage:    "Allow for unprotected (non EIP155 signed) transactions to be submitted via RPC",
-		Category: flags.APICategory,
-	}
+
 	BatchRequestLimit = &cli.IntFlag{
 		Name:     "rpc.batch-request-limit",
 		Usage:    "Maximum number of requests in a batch",
@@ -1074,9 +1062,6 @@ func setHTTP(ctx *cli.Context, cfg *node.Config) {
 
 	if ctx.IsSet(HTTPPathPrefixFlag.Name) {
 		cfg.HTTPPathPrefix = ctx.String(HTTPPathPrefixFlag.Name)
-	}
-	if ctx.IsSet(AllowUnprotectedTxs.Name) {
-		cfg.AllowUnprotectedTxs = ctx.Bool(AllowUnprotectedTxs.Name)
 	}
 
 	if ctx.IsSet(BatchRequestLimit.Name) {
@@ -1571,15 +1556,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	}
 	if ctx.IsSet(DocRootFlag.Name) {
 		cfg.DocRoot = ctx.String(DocRootFlag.Name)
-	}
-
-	if ctx.IsSet(RPCGlobalGasCapFlag.Name) {
-		cfg.RPCGasCap = ctx.Uint64(RPCGlobalGasCapFlag.Name)
-	}
-	if cfg.RPCGasCap != 0 {
-		log.Info("Set global gas cap", "cap", cfg.RPCGasCap)
-	} else {
-		log.Info("Global gas cap disabled")
 	}
 
 	if ctx.IsSet(NoDiscoverFlag.Name) {
