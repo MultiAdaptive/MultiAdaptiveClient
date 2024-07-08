@@ -229,7 +229,7 @@ def:
             Upstream test of broken behavior; in Optimism, a zero signature is valid (pre-bedrock for deposit-txs),
             and the chain ID formula on signature data must not be used, or an underflow happens.
           globs:
-            - "internal/ethapi/testdata/eth_getBlockByNumber-tag-pending-fullTx.json"
+            - "internal/ethapi/testdata/mta_getBlockByNumber-tag-pending-fullTx.json"
     - title: "Geth extras"
       description: Extend the tools available in geth to improve external testing and tooling.
       sub:

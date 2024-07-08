@@ -103,7 +103,7 @@ type Message struct {
 
 	// When SkipAccountChecks is true, the message nonce is not checked against the
 	// account nonce in state. It also disables checking that the sender is an EOA.
-	// This field will be set to true for operations like RPC eth_call.
+	// This field will be set to true for operations like RPC mta_call.
 	SkipAccountChecks bool
 
 	IsSystemTx    bool // IsSystemTx indicates the message, if also a deposit, does not emit gas usage.

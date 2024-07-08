@@ -512,121 +512,121 @@ web3._extend({
 	methods: [
 		new web3._extend.Method({
 			name: 'chainId',
-			call: 'eth_chainId',
+			call: 'mta_chainId',
 			params: 0
 		}),
 		new web3._extend.Method({
 			name: 'sign',
-			call: 'eth_sign',
+			call: 'mta_sign',
 			params: 2,
 			inputFormatter: [web3._extend.formatters.inputAddressFormatter, null]
 		}),
 		new web3._extend.Method({
 			name: 'resend',
-			call: 'eth_resend',
+			call: 'mta_resend',
 			params: 3,
 			inputFormatter: [web3._extend.formatters.inputTransactionFormatter, web3._extend.utils.fromDecimal, web3._extend.utils.fromDecimal]
 		}),
 		new web3._extend.Method({
 			name: 'signTransaction',
-			call: 'eth_signTransaction',
+			call: 'mta_signTransaction',
 			params: 1,
 			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'estimateGas',
-			call: 'eth_estimateGas',
+			call: 'mta_estimateGas',
 			params: 3,
 			inputFormatter: [web3._extend.formatters.inputCallFormatter, web3._extend.formatters.inputBlockNumberFormatter, null],
 			outputFormatter: web3._extend.utils.toDecimal
 		}),
 		new web3._extend.Method({
 			name: 'submitTransaction',
-			call: 'eth_submitTransaction',
+			call: 'mta_submitTransaction',
 			params: 1,
 			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'fillTransaction',
-			call: 'eth_fillTransaction',
+			call: 'mta_fillTransaction',
 			params: 1,
 			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'getHeaderByNumber',
-			call: 'eth_getHeaderByNumber',
+			call: 'mta_getHeaderByNumber',
 			params: 1,
 			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'getHeaderByHash',
-			call: 'eth_getHeaderByHash',
+			call: 'mta_getHeaderByHash',
 			params: 1
 		}),
 		new web3._extend.Method({
 			name: 'getBlockByNumber',
-			call: 'eth_getBlockByNumber',
+			call: 'mta_getBlockByNumber',
 			params: 2,
 			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter, function (val) { return !!val; }]
 		}),
 		new web3._extend.Method({
 			name: 'getBlockByHash',
-			call: 'eth_getBlockByHash',
+			call: 'mta_getBlockByHash',
 			params: 2,
 			inputFormatter: [null, function (val) { return !!val; }]
 		}),
 		new web3._extend.Method({
 			name: 'getRawTransaction',
-			call: 'eth_getRawTransactionByHash',
+			call: 'mta_getRawTransactionByHash',
 			params: 1
 		}),
 		new web3._extend.Method({
 			name: 'getRawTransactionFromBlock',
 			call: function(args) {
-				return (web3._extend.utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'eth_getRawTransactionByBlockHashAndIndex' : 'eth_getRawTransactionByBlockNumberAndIndex';
+				return (web3._extend.utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'mta_getRawTransactionByBlockHashAndIndex' : 'eth_getRawTransactionByBlockNumberAndIndex';
 			},
 			params: 2,
 			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter, web3._extend.utils.toHex]
 		}),
 		new web3._extend.Method({
 			name: 'getProof',
-			call: 'eth_getProof',
+			call: 'mta_getProof',
 			params: 3,
 			inputFormatter: [web3._extend.formatters.inputAddressFormatter, null, web3._extend.formatters.inputBlockNumberFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'createAccessList',
-			call: 'eth_createAccessList',
+			call: 'mta_createAccessList',
 			params: 2,
 			inputFormatter: [null, web3._extend.formatters.inputBlockNumberFormatter],
 		}),
 		new web3._extend.Method({
 			name: 'feeHistory',
-			call: 'eth_feeHistory',
+			call: 'mta_feeHistory',
 			params: 3,
 			inputFormatter: [null, web3._extend.formatters.inputBlockNumberFormatter, null]
 		}),
 		new web3._extend.Method({
 			name: 'getLogs',
-			call: 'eth_getLogs',
+			call: 'mta_getLogs',
 			params: 1,
 		}),
 		new web3._extend.Method({
 			name: 'call',
-			call: 'eth_call',
+			call: 'mta_call',
 			params: 4,
 			inputFormatter: [web3._extend.formatters.inputCallFormatter, web3._extend.formatters.inputDefaultBlockNumberFormatter, null, null],
 		}),
 		new web3._extend.Method({
 			name: 'getBlockReceipts',
-			call: 'eth_getBlockReceipts',
+			call: 'mta_getBlockReceipts',
 			params: 1,
 		}),
 	],
 	properties: [
 		new web3._extend.Property({
 			name: 'pendingTransactions',
-			getter: 'eth_pendingTransactions',
+			getter: 'mta_pendingTransactions',
 			outputFormatter: function(txs) {
 				var formatted = [];
 				for (var i = 0; i < txs.length; i++) {
@@ -638,7 +638,7 @@ web3._extend({
 		}),
 		new web3._extend.Property({
 			name: 'maxPriorityFeePerGas',
-			getter: 'eth_maxPriorityFeePerGas',
+			getter: 'mta_maxPriorityFeePerGas',
 			outputFormatter: web3._extend.utils.toBigNumber
 		}),
 	]
