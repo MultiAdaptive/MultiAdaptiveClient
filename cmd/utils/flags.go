@@ -939,9 +939,6 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 			urls = params.GoerliBootnodes
 		}
 	}
-	for _, url := range urls {
-		log.Info("setBootstrapNodes----", url)
-	}
 	cfg.BootstrapNodes = mustParseBootnodes(urls)
 }
 
