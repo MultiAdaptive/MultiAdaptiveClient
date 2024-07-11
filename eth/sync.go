@@ -23,7 +23,6 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contract"
@@ -276,31 +275,6 @@ func (cs *chainSyncer) doBitcoinSync() error {
 	}
 
 	daDatas := make([]*types.DA, 0)
-
-	//for tx, transactionBriefs := range transaction2TransactionBriefs {
-	//	for _, transactionBrief := range transactionBriefs {
-	//		//new commit get from memory pool
-	//		commitment := transactionBrief.Commitment
-	//		da, err := cs.handler.daPool.GetDAByCommit(commitment)
-	//		if err != nil || da == nil {
-	//			continue
-	//		}
-	//
-	//		signData := make([][]byte, 0)
-	//		for _, signature := range transactionBrief.Signatures {
-	//			signData = append(signData, common.Hex2Bytes(signature))
-	//		}
-	//
-	//		da.SignerAddr = transactionBrief.Addresses
-	//		da.BlockNum = uint64(transactionBrief.BlockNum)
-	//		da.SignData = signData
-	//		da.TxHash = common.HexToHash(tx)
-	//		da.ReceiveAt = time.Now()
-	//		cs.handler.daPool.Add([]*types.DA{da}, true, false)
-	//		daDatas = append(daDatas, da)
-	//	}
-	//}
-
 	for _, tx := range transaction2TransactionBriefs.Keys() {
 		value := transaction2TransactionBriefs.Get(tx)
 		transactionBriefs,ok := value.([]TransactionBrief)
@@ -380,121 +354,85 @@ func (cs *chainSyncer) doEthereumSync() error {
 	cs.forced = true
 	//当前高度为零 可以直接从genesis开始同步
 	if currentHeader == 0 {
-		addr := common.HexToAddress(cs.chain.Config().L1Conf.CommitmentManagerProxy)
-		topic := common.HexToHash("0x9057e36780b94e7894f43d35979c11e9190d633cbc49e719ab96ad04f4eef3b4")
-		startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
-		queryLog := ethereum.FilterQuery{
-			FromBlock: new(big.Int).SetUint64(startNum),
-			ToBlock: new(big.Int).SetUint64(l1Num),
-			Addresses: []common.Address{
-				addr,
-			},
-			Topics: [][]common.Hash{{
-				topic,
-			}},
-		}
-		logs, err := cs.ethClient.FilterLogs(cs.ctx,queryLog)
-		contractAddr := common.HexToAddress(cs.chain.Config().L1Conf.CommitmentManagerProxy)
-		instance, _ := contract.NewCommitmentManager(contractAddr, cs.ethClient)
-		if err == nil {
-			commitCache := db.NewOrderedMap()
-			for _,logDetail := range logs{
-				daDetail, err := instance.ParseSendDACommitment(logDetail)
-				if err == nil {
-					var digst kzg.Digest
-					digst.X.BigInt(daDetail.Commitment.X)
-					digst.Y.BigInt(daDetail.Commitment.Y)
-
-					//TODO :  fix this quick sync
-					commitCache.Set(logDetail.TxHash.Hex(),&db.CommitDetail{
-						Nonce: daDetail.Nonce.Uint64(),
-						NameSpaceKey: daDetail.NameSpaceKey,
-						Index: daDetail.Index.Uint64(),
-						Commit: digst.Marshal(),
-						TxHash: logDetail.TxHash,
-						SigData: daDetail.Signatures,
-						BlockNum: logDetail.BlockNumber,
-						OutOfTime: time.Unix(daDetail.Timestamp.Int64(),0),
-						//OutOfTime:daDetail.,
-					})
-				}
-			}
-		}
-
-		latsetBlock,err := cs.ethClient.BlockByNumber(cs.ctx,new(big.Int).SetUint64(l1Num))
-		if err == nil {
-			cs.chain.SetCurrentBlock(latsetBlock)
-		}
-
-		//if err == nil{
+		//addr := common.HexToAddress(cs.chain.Config().L1Conf.CommitmentManagerProxy)
+		//topic := common.HexToHash("0x9057e36780b94e7894f43d35979c11e9190d633cbc49e719ab96ad04f4eef3b4")
+		//startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
+		//queryLog := ethereum.FilterQuery{
+		//	FromBlock: new(big.Int).SetUint64(startNum),
+		//	ToBlock: new(big.Int).SetUint64(l1Num),
+		//	Addresses: []common.Address{
+		//		addr,
+		//	},
+		//	Topics: [][]common.Hash{{
+		//		topic,
+		//	}},
+		//}
+		//logs, err := cs.ethClient.FilterLogs(cs.ctx,queryLog)
+		//contractAddr := common.HexToAddress(cs.chain.Config().L1Conf.CommitmentManagerProxy)
+		//instance, _ := contract.NewCommitmentManager(contractAddr, cs.ethClient)
+		//if err == nil {
+		//	commitCache := db.NewOrderedMap()
 		//	for _,logDetail := range logs{
 		//		daDetail, err := instance.ParseSendDACommitment(logDetail)
 		//		if err == nil {
-		//			detailFinal.NameSpaceKey = daDetail.NameSpaceKey
-		//			detailFinal.Nonce = daDetail.Nonce.Uint64()
-		//			//var digst kzg.Digest
-		//			//digst.X.BigInt(daDetail.Commitment.X)
-		//			//digst.Y.BigInt(daDetail.Commitment.Y)
-		//			//detailFinal.Commit = digst.Marshal()
-		//			//cmHash := common.BytesToHash(digst.Marshal())
-		//			//log.Info("processBlocks-----commit","cmHash",cmHash.Hex())
-		//			detailFinal.Index = daDetail.Index.Uint64()
-		//			detailFinal.OutOfTime = time.Unix(daDetail.Timestamp.Int64(),0)
-		//			detailFinal.SigData = daDetail.Signatures
-		//			detailFinal.BlockNum = logDetail.BlockNumber
-		//			addrList, err := cs.handler.daPool.GetSender(daDetail.Signatures)
-		//			for _, errDetail := range err {
-		//				if errDetail != nil {
-		//					log.Info("GetSender----", "err", errDetail.Error())
-		//				}
-		//			}
-		//			list := make([]string,len(addrList))
-		//			for i,addr := range addrList{
-		//				list[i] = addr.Hex()
-		//			}
-		//			detailFinal.SignAddress = list
+		//			var digst kzg.Digest
+		//			digst.X.BigInt(daDetail.Commitment.X)
+		//			digst.Y.BigInt(daDetail.Commitment.Y)
 		//
+		//			//TODO :  fix this quick sync
+		//			commitCache.Set(logDetail.TxHash.Hex(),&db.CommitDetail{
+		//				Nonce: daDetail.Nonce.Uint64(),
+		//				NameSpaceKey: daDetail.NameSpaceKey,
+		//				Index: daDetail.Index.Uint64(),
+		//				Commit: digst.Marshal(),
+		//				TxHash: logDetail.TxHash,
+		//				SigData: daDetail.Signatures,
+		//				BlockNum: logDetail.BlockNumber,
+		//				OutOfTime: time.Unix(daDetail.Timestamp.Int64(),0),
+		//				//OutOfTime:daDetail.,
+		//			})
 		//		}
-		//	}
-		//
-		//
-		//
-		//}
-
-		//requireTime := time.NewTimer(QuickReqTime)
-		//startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
-		//var shouldBreak bool
-		//for i := startNum; true; i += SyncChunkSize {
-		//	log.Info("chainSyncer---", "i----", i)
-		//	blocks := make([]*types.Block, 0)
-		//	for j := i; j < i+SyncChunkSize; j++ {
-		//		if j >= l1Num {
-		//			shouldBreak = true
-		//			log.Info("doSync-----shouldBreak----", "j", j, "l1Num", l1Num)
-		//			break
-		//		}
-		//		toBlockNum := j
-		//		select {
-		//		case <-requireTime.C:
-		//			block, err := cs.ethClient.BlockByNumber(cs.ctx, new(big.Int).SetUint64(toBlockNum))
-		//			if err == nil {
-		//				blocks = append(blocks, block)
-		//				requireTime.Reset(QuickReqTime)
-		//			} else {
-		//				cs.forced = false
-		//				return err
-		//			}
-		//		case <-cs.ctx.Done():
-		//			log.Info("chainSyncer-----", "chainSyncer stop")
-		//			return nil
-		//		}
-		//	}
-		//	cs.processBlocks(blocks)
-		//	if shouldBreak {
-		//		cs.forced = false
-		//		break
 		//	}
 		//}
+		//
+		//latsetBlock,err := cs.ethClient.BlockByNumber(cs.ctx,new(big.Int).SetUint64(l1Num))
+		//if err == nil {
+		//	cs.chain.SetCurrentBlock(latsetBlock)
+		//}
+		requireTime := time.NewTimer(QuickReqTime)
+		startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
+		var shouldBreak bool
+		for i := startNum; true; i += SyncChunkSize {
+			log.Info("chainSyncer---", "i----", i)
+			blocks := make([]*types.Block, 0)
+			for j := i; j < i+SyncChunkSize; j++ {
+				if j >= l1Num {
+					shouldBreak = true
+					log.Info("doSync-----shouldBreak----", "j", j, "l1Num", l1Num)
+					break
+				}
+				toBlockNum := j
+				select {
+				case <-requireTime.C:
+					block, err := cs.ethClient.BlockByNumber(cs.ctx, new(big.Int).SetUint64(toBlockNum))
+					if err == nil {
+						blocks = append(blocks, block)
+						requireTime.Reset(QuickReqTime)
+					} else {
+						cs.forced = false
+						return err
+					}
+				case <-cs.ctx.Done():
+					log.Info("chainSyncer-----", "chainSyncer stop")
+					return nil
+				}
+			}
+			cs.processBlocks(blocks)
+			if shouldBreak {
+				cs.forced = false
+				break
+			}
+		}
 	} else {
 		log.Info("chainSyncer---start---", "currentHeader", currentHeader)
 		//当前数据库有数据需要检查是否回滚

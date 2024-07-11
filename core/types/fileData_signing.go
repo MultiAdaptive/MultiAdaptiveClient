@@ -254,11 +254,13 @@ func (fs FrontierDASigner) Sender(fd *DA) ([]common.Address, []error) {
 	recoverAddr := make([]common.Address,len(fd.SignData))
 	errors := make([]error,len(fd.SignData))
 	for i,signData := range fd.SignData{
-		r, s, v := sliteSignature(signData)
-		v = v.Mul(v,new(big.Int).SetUint64(27))
-		addr,err := recoverPlain(fs.Hash(fd), r, s, v, false)
-		errors[i] = err
-		recoverAddr[i] = addr
+		if len(signData) > 0 {
+			r, s, v := sliteSignature(signData)
+			v = v.Mul(v,new(big.Int).SetUint64(27))
+			addr,err := recoverPlain(fs.Hash(fd), r, s, v, false)
+			errors[i] = err
+			recoverAddr[i] = addr
+		}
 	}
 	return recoverAddr,errors
 }
