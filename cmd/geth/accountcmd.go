@@ -18,6 +18,7 @@ package main
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -239,7 +240,19 @@ func getPrivateKey(ctx *cli.Context) error {
 	if len(am.Wallets()) >0 {
 		wallet := am.Wallets()[0]
 		account := wallet.Accounts()[0]
-		password := utils.MakePasswordList(ctx)[0]
+		path := ctx.Path(utils.PasswordFileFlag.Name)
+		if path == "" {
+			err := errors.New("without --password flag set")
+			utils.Fatalf("account PrivateKey err",err)
+			return nil
+		}
+		text, err := os.ReadFile(path)
+		if err != nil {
+			utils.Fatalf("Failed to read password file: %v", err)
+			return err
+		}
+		lines := strings.Split(string(text), "\n")
+		password := lines[0]
 		keystorePath := strings.Split(account.URL.String(),"keystore://")[1]
 		keyJson, _ := ioutil.ReadFile(keystorePath)
 		key, _ := keystore.DecryptKey(keyJson, password)

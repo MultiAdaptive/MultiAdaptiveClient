@@ -1202,8 +1202,6 @@ func setEtherbase(ctx *cli.Context, cfg *ethconfig.Config) {
 func MakePasswordList(ctx *cli.Context) []string {
 	path := ctx.Path(PasswordFileFlag.Name)
 	if path == "" {
-		err := errors.New("without --password flag set")
-		Fatalf("MakePasswordList error: %v", err)
 		return nil
 	}
 	text, err := os.ReadFile(path)
