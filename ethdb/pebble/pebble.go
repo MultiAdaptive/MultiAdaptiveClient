@@ -144,7 +144,7 @@ func New(file string, cache int, handles int, namespace string, readonly bool, e
 	logger := log.New("database", file)
 	logger.Info("Allocated cache and file handles", "cache", common.StorageSize(cache*1024*1024), "handles", handles)
 
-	// The max memtable size is limited by the uint32 offsets stored in
+	// The max meethble size is limited by the uint32 offsets stored in
 	// internal/arenaskl.node, DeferredBatchOp, and flushableBatchEntry.
 	//
 	// - MaxUint32 on 64-bit platforms;
@@ -182,7 +182,7 @@ func New(file string, cache int, handles int, namespace string, readonly bool, e
 
 		// MemTableStopWritesThreshold places a hard limit on the size
 		// of the existent MemTables(including the frozen one).
-		// Note, this must be the number of tables not the size of all memtables
+		// Note, this must be the number of tables not the size of all meethbles
 		// according to https://github.com/cockroachdb/pebble/blob/master/options.go#L738-L742
 		// and to https://github.com/cockroachdb/pebble/blob/master/db.go#L1892-L1903.
 		MemTableStopWritesThreshold: memTableLimit,

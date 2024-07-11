@@ -75,7 +75,7 @@ func subscribeBlocks(client *rpc.Client, subch chan Block) {
 	// The connection is established now.
 	// Update the channel with the current block.
 	var lastBlock Block
-	err = client.CallContext(ctx, &lastBlock, "mta_getBlockByNumber", "latest", false)
+	err = client.CallContext(ctx, &lastBlock, "eth_getBlockByNumber", "latest", false)
 	if err != nil {
 		fmt.Println("can't get latest block:", err)
 		return

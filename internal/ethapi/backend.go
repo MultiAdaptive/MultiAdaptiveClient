@@ -74,7 +74,7 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Namespace: "eth",
 			Service:   NewTransactionAPI(apiBackend, nonceLock),
 		}, {
-			Namespace: "eth",
+			Namespace: "mta",
 			Service:   NewDAAPI(apiBackend),
 		}, {
 			Namespace: "debug",
