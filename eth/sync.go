@@ -321,7 +321,6 @@ func (cs *chainSyncer) doBitcoinSync() error {
 }
 
 func (cs *chainSyncer) doEthereumSync() error {
-	log.Info("doEthereumSync-----")
 	if cs.forced == true {
 		return errors.New("chainSyncer is syncing")
 	}
