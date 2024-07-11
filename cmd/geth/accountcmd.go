@@ -17,8 +17,11 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -96,6 +99,18 @@ Make sure you backup your keys regularly.`,
 				},
 				Description: `
 Print a short summary of all accounts`,
+			},
+			{
+				Name:   "private",
+				Usage:  "Print a private key of the first account in keystore",
+				Action: getPrivateKey,
+				Flags: []cli.Flag{
+					utils.DataDirFlag,
+					utils.KeyStoreDirFlag,
+					utils.PasswordFileFlag,
+				},
+				Description: `
+Print a private key of the first account in keystore`,
 			},
 			{
 				Name:   "new",
@@ -214,6 +229,22 @@ func accountList(ctx *cli.Context) error {
 			fmt.Printf("Account #%d: {%x} %s\n", index, account.Address, &account.URL)
 			index++
 		}
+	}
+
+	return nil
+}
+
+func getPrivateKey(ctx *cli.Context) error {
+	am := makeAccountManager(ctx)
+	if len(am.Wallets()) >0 {
+		wallet := am.Wallets()[0]
+		account := wallet.Accounts()[0]
+		password := utils.MakePasswordList(ctx)[0]
+		keystorePath := strings.Split(account.URL.String(),"keystore://")[1]
+		keyJson, _ := ioutil.ReadFile(keystorePath)
+		key, _ := keystore.DecryptKey(keyJson, password)
+		pristr := hex.EncodeToString(crypto.FromECDSA(key.PrivateKey))
+		fmt.Printf("Account Address : {%x}  PrivateKey: %s\n", account.Address, pristr)
 	}
 
 	return nil
