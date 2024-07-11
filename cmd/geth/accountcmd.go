@@ -244,7 +244,7 @@ func getPrivateKey(ctx *cli.Context) error {
 		keyJson, _ := ioutil.ReadFile(keystorePath)
 		key, _ := keystore.DecryptKey(keyJson, password)
 		pristr := hex.EncodeToString(crypto.FromECDSA(key.PrivateKey))
-		fmt.Printf("Account Address : {%x}  PrivateKey: %s\n", account.Address, pristr)
+		fmt.Printf("Account Address : {%x}  PrivateKey: [%s]\n", account.Address, pristr)
 	}
 
 	return nil
