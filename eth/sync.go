@@ -23,6 +23,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contract"
@@ -353,85 +354,41 @@ func (cs *chainSyncer) doEthereumSync() error {
 	cs.forced = true
 	//当前高度为零 可以直接从genesis开始同步
 	if currentHeader == 0 {
-		//addr := common.HexToAddress(cs.chain.Config().L1Conf.CommitmentManagerProxy)
-		//topic := common.HexToHash("0x9057e36780b94e7894f43d35979c11e9190d633cbc49e719ab96ad04f4eef3b4")
-		//startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
-		//queryLog := ethereum.FilterQuery{
-		//	FromBlock: new(big.Int).SetUint64(startNum),
-		//	ToBlock: new(big.Int).SetUint64(l1Num),
-		//	Addresses: []common.Address{
-		//		addr,
-		//	},
-		//	Topics: [][]common.Hash{{
-		//		topic,
-		//	}},
-		//}
-		//logs, err := cs.ethClient.FilterLogs(cs.ctx,queryLog)
-		//contractAddr := common.HexToAddress(cs.chain.Config().L1Conf.CommitmentManagerProxy)
-		//instance, _ := contract.NewCommitmentManager(contractAddr, cs.ethClient)
-		//if err == nil {
-		//	commitCache := db.NewOrderedMap()
-		//	for _,logDetail := range logs{
-		//		daDetail, err := instance.ParseSendDACommitment(logDetail)
-		//		if err == nil {
-		//			var digst kzg.Digest
-		//			digst.X.BigInt(daDetail.Commitment.X)
-		//			digst.Y.BigInt(daDetail.Commitment.Y)
-		//
-		//			//TODO :  fix this quick sync
-		//			commitCache.Set(logDetail.TxHash.Hex(),&db.CommitDetail{
-		//				Nonce: daDetail.Nonce.Uint64(),
-		//				NameSpaceKey: daDetail.NameSpaceKey,
-		//				Index: daDetail.Index.Uint64(),
-		//				Commit: digst.Marshal(),
-		//				TxHash: logDetail.TxHash,
-		//				SigData: daDetail.Signatures,
-		//				BlockNum: logDetail.BlockNumber,
-		//				OutOfTime: time.Unix(daDetail.Timestamp.Int64(),0),
-		//				//OutOfTime:daDetail.,
-		//			})
-		//		}
-		//	}
-		//}
-		//
-		//latsetBlock,err := cs.ethClient.BlockByNumber(cs.ctx,new(big.Int).SetUint64(l1Num))
-		//if err == nil {
-		//	cs.chain.SetCurrentBlock(latsetBlock)
-		//}
-		requireTime := time.NewTimer(QuickReqTime)
+		addr := common.HexToAddress(cs.chain.Config().L1Conf.CommitmentManagerProxy)
+		topic := common.HexToHash("0x9057e36780b94e7894f43d35979c11e9190d633cbc49e719ab96ad04f4eef3b4")
 		startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
-		var shouldBreak bool
-		for i := startNum; true; i += SyncChunkSize {
-			log.Info("chainSyncer---", "i----", i)
-			blocks := make([]*types.Block, 0)
-			for j := i; j < i+SyncChunkSize; j++ {
-				if j >= l1Num {
-					shouldBreak = true
-					log.Info("doSync-----shouldBreak----", "j", j, "l1Num", l1Num)
-					break
-				}
-				toBlockNum := j
-				select {
-				case <-requireTime.C:
-					block, err := cs.ethClient.BlockByNumber(cs.ctx, new(big.Int).SetUint64(toBlockNum))
+		scanTimes := (l1Num - startNum) / 100
+		for i := 0; i < int(scanTimes); i ++ {
+			i := i
+			fromBlockNum := startNum +(uint64(i) * 100)
+			toBlockNum := startNum +(uint64(i+1) * 100)
+			queryLog := ethereum.FilterQuery{
+				FromBlock: new(big.Int).SetUint64(fromBlockNum),
+				ToBlock: new(big.Int).SetUint64(toBlockNum),
+				Addresses: []common.Address{
+					addr,
+				},
+				Topics: [][]common.Hash{{
+					topic,
+				}},
+			}
+			logs, err := cs.ethClient.FilterLogs(cs.ctx,queryLog)
+			blocks := make([]*types.Block,0)
+			if err == nil {
+				for _,logDetail := range logs{
 					if err == nil {
-						blocks = append(blocks, block)
-						requireTime.Reset(QuickReqTime)
-					} else {
-						cs.forced = false
-						return err
+						time.Sleep(QuickReqTime)
+						block,err := cs.ethClient.BlockByNumber(cs.ctx,new(big.Int).SetUint64(logDetail.BlockNumber))
+						log.Info("doSync--------","block num",block.NumberU64())
+						if err == nil {
+							blocks = append(blocks,block)
+						}
 					}
-				case <-cs.ctx.Done():
-					log.Info("chainSyncer-----", "chainSyncer stop")
-					return nil
 				}
 			}
 			cs.processBlocks(blocks)
-			if shouldBreak {
-				cs.forced = false
-				break
-			}
 		}
+		cs.forced = false
 	} else {
 		log.Info("chainSyncer---start---", "currentHeader", currentHeader)
 		//当前数据库有数据需要检查是否回滚
@@ -575,12 +532,6 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 		if ok && err == nil {
 			detailFinal.NameSpaceKey = daDetail.NameSpaceKey
 			detailFinal.Nonce = daDetail.Nonce.Uint64()
-			//var digst kzg.Digest
-			//digst.X.BigInt(daDetail.Commitment.X)
-			//digst.Y.BigInt(daDetail.Commitment.Y)
-			//detailFinal.Commit = digst.Marshal()
-			//cmHash := common.BytesToHash(digst.Marshal())
-			//log.Info("processBlocks-----commit","cmHash",cmHash.Hex())
 			detailFinal.Index = daDetail.Index.Uint64()
 			detailFinal.OutOfTime = time.Unix(daDetail.Timestamp.Int64(),0)
 			detailFinal.SigData = daDetail.Signatures
@@ -624,7 +575,6 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 					da.SignData = daDetail.SigData
 					da.BlockNum = daDetail.BlockNum
 					da.SignerAddr = daDetail.SignAddress
-					da.Root = daDetail.Root
 					da.ReceiveAt = time.Now()
 					da.OutOfTime = daDetail.OutOfTime
 					cs.handler.daPool.Add([]*types.DA{da}, false, false)
@@ -646,7 +596,6 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 					BlockNumber: num.Number,
 					Context:     context.Background(),
 				}
-
 				ns, _ := storageIns.NAMESPACE(opts, da.NameSpaceKey)
 				flag := addressIncluded(ns.Addr, cs.address)
 				if flag {

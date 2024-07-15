@@ -201,6 +201,8 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if err != nil {
 		return nil, err
 	}
+	daPool.SetClient(eth.config.L1ScanUrl)
+
 	eth.daPool = daPool
 	var localAddress common.Address
 	if config.ChainName == "ethereum" || config.ChainName == "eth" {

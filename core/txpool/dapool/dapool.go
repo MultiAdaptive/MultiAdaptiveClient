@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethdb/db"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
@@ -44,8 +45,9 @@ var (
 
 var (
 	HashListKey = []byte("HashListKey")  //disk hash and disk time
-
 )
+
+const WaitTime = 500
 
 type Config struct {
 	Journal   string           // Journal of local file to survive node restarts
@@ -100,6 +102,7 @@ func newHashCollect() *HashCollect{
 type DAPool struct {
 	config          Config
 	chainconfig     *params.ChainConfig
+	client           *ethclient.Client
 	chain            BlockChain
 	DAFeed            event.Feed
 	DAHashFeed        event.Feed
@@ -141,6 +144,13 @@ func New(config Config, chain BlockChain,nodeType string) *DAPool {
 
 	dp.Init(chain.CurrentBlock())
 	return dp
+}
+
+func (dp *DAPool) SetClient(url string) {
+	client,err := ethclient.Dial(url)
+	if err == nil {
+		dp.client = client
+	}
 }
 
 func (dp *DAPool) Init(head *types.Header) error {
@@ -313,7 +323,7 @@ Lable:
 			dp.DAHashFeed.Send(core.DAHashEvent{Hashes: []common.Hash{cmHash}})
 			log.Info("本地节点没有从需要从远端要---进来了么")
 		}
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(WaitTime * time.Millisecond)
 		getTimes++
 		if getTimes <= 1 {
 			goto Lable
@@ -321,6 +331,29 @@ Lable:
 	}
 	return da,nil
 }
+
+//func (dp *DAPool)filerLogWaitTime()  {
+//	contract := dp.chain.Config().L1Conf.CommitmentManagerProxy
+//	query := ethereum.FilterQuery{
+//		FromBlock: big.NewInt(int64(dp.chain.Config().L1Conf.GenesisBlockNumber)), // 起始区块编号
+//		ToBlock:   nil,               // 终止区块为nil表示最新区块
+//		Addresses: []common.Address{
+//			common.HexToAddress(contract), // 合约地址
+//		},
+//		Topics: [][]common.Hash{{common.HexToHash("0xdb9b4525c3dab3bc5b454e2926d7b929a1286fe72cea980f1f8b782cd6f044ce")}},
+//	}
+//
+//	instance, _  := contract2.NewCommitmentManager(common.HexToAddress(contract),dp.client)
+//	logs, _ := dp.client.FilterLogs(context.Background(), query)
+//	for _, vLog := range logs {
+//		commit,err := instance.ParseSendDACommitment(vLog)
+//		if err == nil {
+//			cmHash
+//		}
+//
+//	}
+//}
+
 
 // Get retrieves the DA from local DAPool with given
 // hash.
@@ -343,7 +376,7 @@ Lable:
 					return da,nil
 				}
 			}
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(WaitTime * time.Millisecond)
 			getTimes ++
 			if getTimes <= 1 {
 				goto Lable
@@ -373,7 +406,7 @@ Lable:
 	fd := dp.get(hash)
 	if fd == nil {
 		da,err := db.GetCommitmentByTxHash(dp.chain.SqlDB(),hash)
-		if err != nil || da == nil {
+		if err != nil || da.Data == nil || len(da.Data) == 0 {
 			if getTimes < 1 {
 				da,err = db.GetDAByCommitmentHash(dp.chain.SqlDB(),hash)
 				if da == nil || err != nil{
@@ -382,7 +415,11 @@ Lable:
 					return da,nil
 				}
 			}
-			time.Sleep(200 * time.Millisecond)
+			daLength := da.Length
+			index := daLength / 1000
+			d := time.Duration(index)
+			wait := d * WaitTime * time.Millisecond
+			time.Sleep(wait)
 			getTimes ++
 			if getTimes <= 1 {
 				goto Lable
