@@ -313,10 +313,6 @@ Lable:
 		return fd,nil
 	}
 	da,err := db.GetDAByCommitment(dp.chain.SqlDB(),commit)
-	if err != nil {
-		return nil, err
-	}
-
 	if err != nil || da == nil {
 		log.Info("本地节点没有从需要从远端要--------", "cmHash", cmHash.String())
 		if getTimes < 1 {
@@ -331,29 +327,6 @@ Lable:
 	}
 	return da,nil
 }
-
-//func (dp *DAPool)filerLogWaitTime()  {
-//	contract := dp.chain.Config().L1Conf.CommitmentManagerProxy
-//	query := ethereum.FilterQuery{
-//		FromBlock: big.NewInt(int64(dp.chain.Config().L1Conf.GenesisBlockNumber)), // 起始区块编号
-//		ToBlock:   nil,               // 终止区块为nil表示最新区块
-//		Addresses: []common.Address{
-//			common.HexToAddress(contract), // 合约地址
-//		},
-//		Topics: [][]common.Hash{{common.HexToHash("0xdb9b4525c3dab3bc5b454e2926d7b929a1286fe72cea980f1f8b782cd6f044ce")}},
-//	}
-//
-//	instance, _  := contract2.NewCommitmentManager(common.HexToAddress(contract),dp.client)
-//	logs, _ := dp.client.FilterLogs(context.Background(), query)
-//	for _, vLog := range logs {
-//		commit,err := instance.ParseSendDACommitment(vLog)
-//		if err == nil {
-//			cmHash
-//		}
-//
-//	}
-//}
-
 
 // Get retrieves the DA from local DAPool with given
 // hash.

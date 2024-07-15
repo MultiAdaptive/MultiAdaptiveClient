@@ -378,10 +378,21 @@ func (cs *chainSyncer) doEthereumSync() error {
 				for _,logDetail := range logs{
 					if err == nil {
 						time.Sleep(QuickReqTime)
-						block,err := cs.ethClient.BlockByNumber(cs.ctx,new(big.Int).SetUint64(logDetail.BlockNumber))
-						log.Info("doSync--------","block num",block.NumberU64())
-						if err == nil {
-							blocks = append(blocks,block)
+						requireTime := time.NewTimer(QuickReqTime)
+						select {
+						case <-requireTime.C:
+							block,err := cs.ethClient.BlockByNumber(cs.ctx,new(big.Int).SetUint64(logDetail.BlockNumber))
+							if err == nil {
+								log.Info("doSync--------","block num",block.NumberU64())
+								blocks = append(blocks,block)
+								requireTime.Reset(QuickReqTime)
+							} else {
+								cs.forced = false
+								return err
+							}
+						case <-cs.ctx.Done():
+							log.Info("chainSyncer-----", "chainSyncer stop")
+							return nil
 						}
 					}
 				}

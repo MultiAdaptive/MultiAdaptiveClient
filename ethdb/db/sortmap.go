@@ -16,7 +16,7 @@ type CommitDetail struct {
 	SignAddress []string
 	Time     time.Time
 	OutOfTime time.Time
-	Root     common.Hash
+	Length    uint64
 }
 
 // OrderedMap 代表有序的 Map 结构
