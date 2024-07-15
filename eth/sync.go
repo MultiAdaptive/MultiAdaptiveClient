@@ -47,6 +47,8 @@ const (
 	SyncChunkSize       = 10
 )
 
+const TopicAddress string = "0x9057e36780b94e7894f43d35979c11e9190d633cbc49e719ab96ad04f4eef3b4"
+
 // chainSyncer coordinates blockchain sync components.
 type chainSyncer struct {
 	ctx       context.Context
@@ -355,7 +357,7 @@ func (cs *chainSyncer) doEthereumSync() error {
 	//当前高度为零 可以直接从genesis开始同步
 	if currentHeader == 0 {
 		addr := common.HexToAddress(cs.chain.Config().L1Conf.CommitmentManagerProxy)
-		topic := common.HexToHash("0x9057e36780b94e7894f43d35979c11e9190d633cbc49e719ab96ad04f4eef3b4")
+		topic := common.HexToHash(TopicAddress)
 		startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
 		scanTimes := (l1Num - startNum) / 100
 		for i := 0; i < int(scanTimes); i ++ {
