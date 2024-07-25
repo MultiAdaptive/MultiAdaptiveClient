@@ -379,7 +379,6 @@ func (cs *chainSyncer) doEthereumSync() error {
 			if err == nil {
 				for _,logDetail := range logs{
 					if err == nil {
-						time.Sleep(QuickReqTime)
 						requireTime := time.NewTimer(QuickReqTime)
 						select {
 						case <-requireTime.C:
@@ -579,8 +578,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 				if err != nil {
 					log.Info("processBlocks-----", "err", err.Error())
 					continue
-				}
-				if err == nil && da != nil {
+				}else if err == nil && da != nil {
 					da.NameSpaceKey = daDetail.NameSpaceKey
 					da.TxHash = common.HexToHash(txHash)
 					da.Nonce = daDetail.Nonce
