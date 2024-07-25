@@ -330,10 +330,7 @@ func (cs *chainSyncer) doEthereumSync() error {
 	var currentHeader uint64
 	currentBlock := cs.chain.CurrentBlock()
 	if currentBlock == nil || currentBlock.Number == nil || currentBlock.Number.Uint64() == 0 {
-		num, err := db.GetLastBlockNum(cs.db)
-		if err != nil {
-			return err
-		}
+		num, _ := db.GetLastBlockNum(cs.db)
 		blockNum, err := db.GetMaxIDBlockNum(cs.db)
 		if err != nil {
 			log.Info("doEthereumSync----GetMaxIDBlockNum", "err", err.Error())
@@ -398,7 +395,14 @@ func (cs *chainSyncer) doEthereumSync() error {
 					}
 				}
 			}
-			cs.processBlocks(blocks)
+			if len(blocks) == 0 {
+				block,err := cs.ethClient.BlockByNumber(cs.ctx,new(big.Int).SetUint64(l1Num))
+				if err == nil {
+					cs.chain.SetCurrentBlock(block)
+				}
+			}else {
+				cs.processBlocks(blocks)
+			}
 		}
 		cs.forced = false
 	} else {
@@ -509,7 +513,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 
 	for i, k := range checkHash {
 		txHash := common.HexToHash(k)
-		time.Sleep(1 * time.Second)
+		time.Sleep(QuickReqTime)
 		receipt, err := cs.ethClient.TransactionReceipt(cs.ctx, txHash)
 		if err == nil && receipt != nil && receipt.Status == types.ReceiptStatusSuccessful {
 			receipts[i] = receipt
