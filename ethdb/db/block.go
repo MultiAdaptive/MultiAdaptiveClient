@@ -30,7 +30,7 @@ func AddBlock(tx *gorm.DB, block *types.Block) error {
 		BlockNum:   block.Number().Int64(),
 		BlockHash:  block.Hash().Hex(),
 		ParentHash: block.ParentHash().Hex(),
-		ReceivedAt: block.ReceivedAt.String(),
+		ReceivedAt: strconv.FormatUint(block.Time(), 10),
 		EncodeData: common.Bytes2Hex(data),
 	}
 	result := tx.Create(&wb)

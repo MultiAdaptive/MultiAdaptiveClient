@@ -357,6 +357,9 @@ func (cs *chainSyncer) doEthereumSync() error {
 		topic := common.HexToHash(TopicAddress)
 		startNum := cs.chain.Config().L1Conf.GenesisBlockNumber
 		scanTimes := (l1Num - startNum) / 100
+		if scanTimes == 0 {
+			scanTimes = 1
+		}
 		for i := 0; i < int(scanTimes); i ++ {
 			i := i
 			fromBlockNum := startNum +(uint64(i) * 100)
@@ -395,10 +398,11 @@ func (cs *chainSyncer) doEthereumSync() error {
 					}
 				}
 			}
+
 			if len(blocks) == 0 {
 				block,err := cs.ethClient.BlockByNumber(cs.ctx,new(big.Int).SetUint64(l1Num))
 				if err == nil {
-					cs.chain.SetCurrentBlock(block)
+					cs.processBlocks([]*types.Block{block})
 				}
 			}else {
 				cs.processBlocks(blocks)
