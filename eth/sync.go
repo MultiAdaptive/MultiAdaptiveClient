@@ -379,7 +379,6 @@ func (cs *chainSyncer) doEthereumSync() error {
 			blocks := make([]*types.Block,0)
 			if err == nil {
 				for _,logDetail := range logs{
-					if err == nil {
 						requireTime := time.NewTimer(QuickReqTime)
 						select {
 						case <-requireTime.C:
@@ -396,7 +395,6 @@ func (cs *chainSyncer) doEthereumSync() error {
 							log.Info("chainSyncer-----", "chainSyncer stop")
 							return nil
 						}
-					}
 				}
 			}
 
