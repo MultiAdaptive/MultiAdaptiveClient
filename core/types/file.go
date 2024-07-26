@@ -40,8 +40,8 @@ type DA struct {
 	OutOfTime    time.Time      `json:"OutOfTime"`
 	Proof        []byte         `json:"Proof"`
 	ClaimedValue []byte         `json:"ClaimedValue"`
-	NameSpaceKey  common.Hash      `json:"NameSpaceKey"`
-	Root         common.Hash    `json:"Root"`
+	NameSpaceKey  common.Hash   `json:"NameSpaceKey"`
+	State         bool          `json:"State"` //data original state :default is false (have data)
 }
 
 func NewDA(sender common.Address, index, length uint64, commitment kzg.Digest, data []byte, nodeGroupKey [32]byte, proof []byte, claimedValue []byte) *DA {

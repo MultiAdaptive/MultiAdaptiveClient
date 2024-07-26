@@ -19,6 +19,7 @@ package eth
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/rpcclient"
@@ -493,11 +494,13 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 						if len(txData) != 0 {
 							//由于txData变化导致的commit位置发生变化没有修改
 							commitment := slice(txData)
+							dataLength := sliceLength(txData)
 							commitCache.Set(tx.Hash().String(), &db.CommitDetail{
 								Commit:   commitment,
 								BlockNum: bc.NumberU64(),
 								TxHash:   tx.Hash(),
 								Time:     time.Unix(int64(bc.Time()),0 ),
+								Length:   dataLength,
 							})
 						}
 					}
@@ -580,25 +583,26 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			//new commit get from memory pool
 			outTime := daDetail.Time.Add(14*24*time.Hour)
 			outOfData := outTime.Before(time.Now())
-			log.Info("outOfData------","outOfData",outOfData)
 			if !outOfData {
 				da, err := cs.handler.daPool.GetDAByCommit(daDetail.Commit)
 				if err != nil {
-					log.Info("processBlocks-----", "err", err.Error())
-					continue
-				}else if err == nil && da != nil {
-					da.NameSpaceKey = daDetail.NameSpaceKey
-					da.TxHash = common.HexToHash(txHash)
-					da.Nonce = daDetail.Nonce
-					da.ReceiveAt = daDetail.Time
-					da.SignData = daDetail.SigData
-					da.BlockNum = daDetail.BlockNum
-					da.SignerAddr = daDetail.SignAddress
-					da.ReceiveAt = time.Now()
-					da.OutOfTime = daDetail.OutOfTime
-					cs.handler.daPool.Add([]*types.DA{da}, false, false)
-					daDatas = append(daDatas, da)
+					da = new(types.DA)
+					da.State = true
 				}
+				da.NameSpaceKey = daDetail.NameSpaceKey
+				da.TxHash = common.HexToHash(txHash)
+				da.Length = daDetail.Length
+				da.Nonce = daDetail.Nonce
+				da.ReceiveAt = daDetail.Time
+				da.SignData = daDetail.SigData
+				da.BlockNum = daDetail.BlockNum
+				da.SignerAddr = daDetail.SignAddress
+				da.OutOfTime = daDetail.OutOfTime
+				if err == nil && da != nil {
+					da.State = false
+					cs.handler.daPool.Add([]*types.DA{da}, false, false)
+				}
+				daDatas = append(daDatas, da)
 			}
 		}
 	}
@@ -624,7 +628,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 
 			if cs.nodeType == "b" {
 				log.Info("SaveDACommit-----","da",da.BlockNum)
-				 db.SaveDACommit(cs.db, da, true)
+				db.SaveDACommit(cs.db, da, true)
 			}
 		}
 	}
@@ -650,6 +654,13 @@ func addressIncluded(list []common.Address, targe common.Address) bool {
 	}
 	return false
 }
+
+func sliceLength(data []byte) uint64 {
+	value := data[0: 32]
+	i := binary.BigEndian.Uint64(value)
+	return i
+}
+
 
 func slice(data []byte) []byte {
 	digst := new(kzg.Digest)

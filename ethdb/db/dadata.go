@@ -39,6 +39,7 @@ type DA struct {
 	OutOfTime       string `gorm:"column:f_out_time;not null;comment:失效时间" json:"out_of_time"`
 	CreateAt        int64  `gorm:"column:f_create_at;not null;comment:创建时间;index:idx_das_create_at" json:"create_at"` // 创建时间
 	NameSpaceKey    string  `gorm:"column:f_name_space_id;not null;comment:命名空间" json:"name_space_key"`
+	State           bool  `gorm:"column:f_state;not null;comment:数据状态;index:idx_state" json:"state"`
 }
 
 func (*DA) TableName() string {
@@ -82,10 +83,9 @@ func SaveDACommit(db *gorm.DB, da *types.DA, shouldSave bool)  error {
 			SignData:        result,
 			SignAddr:        addrRes,
 			OutOfTime:       da.OutOfTime.Format(time.RFC3339),
-			//ParentStateHash: currentParentHash.Hex(),
-			//StateHash:       stateHash.Hex(),
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
 			NameSpaceKey:     da.NameSpaceKey.Hex(),
+			State:            da.State,
 		}
 		res := db.Create(&wd)
 		return res.Error

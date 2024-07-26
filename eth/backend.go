@@ -223,7 +223,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		// 解密keystore文件，获取私钥
 		key, err := keystore.DecryptKey(keyjson, eth.config.Passphrase)
 		if err != nil {
-			log.Error("New----failed", "DecryptKey  err", err.Error())
+			log.Error(" New----failed", "DecryptKey  err", err.Error())
 		}
 		eth.singer = types.NewSingerTool(eth.blockchain.Config(), key.PrivateKey)
 		localAddress = key.Address

@@ -37,23 +37,23 @@ var (
 )
 
 var (
-	knownDAMeter       = metrics.NewRegisteredMeter("DA/known", nil)
-	invalidDAMeter     = metrics.NewRegisteredMeter("DA/invalid", nil)
+	knownDAMeter   = metrics.NewRegisteredMeter("DA/known", nil)
+	invalidDAMeter = metrics.NewRegisteredMeter("DA/invalid", nil)
 
-	slotsGauge   = metrics.NewRegisteredGauge("DA/slots", nil)
+	slotsGauge = metrics.NewRegisteredGauge("DA/slots", nil)
 )
 
 var (
-	HashListKey = []byte("HashListKey")  //disk hash and disk time
+	HashListKey = []byte("HashListKey") //disk hash and disk time
 )
 
 const WaitTime = 500
 
 type Config struct {
-	Journal   string           // Journal of local file to survive node restarts
-	Locals    []common.Address // Addresses that should be treated by default as local
+	Journal string           // Journal of local file to survive node restarts
+	Locals  []common.Address // Addresses that should be treated by default as local
 
-	Rejournal time.Duration    // Time interval to regenerate the local DA journal
+	Rejournal time.Duration // Time interval to regenerate the local DA journal
 	// JournalRemote controls whether journaling includes remote DA or not.
 	// When true, all DA loaded from the journal are treated as remote.
 	JournalRemote bool
@@ -62,11 +62,11 @@ type Config struct {
 }
 
 var DefaultConfig = Config{
-	Journal:  "DA.rlp",
-	Lifetime: 10 * time.Second,
-	Rejournal: time.Hour,
+	Journal:       "DA.rlp",
+	Lifetime:      10 * time.Second,
+	Rejournal:     time.Hour,
 	JournalRemote: true,
-	GlobalSlots: 4096,
+	GlobalSlots:   4096,
 }
 
 type BlockChain interface {
@@ -84,16 +84,16 @@ type BlockChain interface {
 }
 
 type DiskDetail struct {
-	TxHash        common.Hash 				`json:"TxHash"`
-	TimeRecord    time.Time					`json:"TimeRecord"`
-	Data          types.DA			           `json:"Data"`
+	TxHash     common.Hash `json:"TxHash"`
+	TimeRecord time.Time   `json:"TimeRecord"`
+	Data       types.DA    `json:"Data"`
 }
 
 type HashCollect struct {
-	Hashes   map[common.Hash]time.Time  `json:"Hashes"`
+	Hashes map[common.Hash]time.Time `json:"Hashes"`
 }
 
-func newHashCollect() *HashCollect{
+func newHashCollect() *HashCollect {
 	return &HashCollect{
 		Hashes: make(map[common.Hash]time.Time),
 	}
@@ -102,34 +102,34 @@ func newHashCollect() *HashCollect{
 type DAPool struct {
 	config          Config
 	chainconfig     *params.ChainConfig
-	client           *ethclient.Client
-	chain            BlockChain
-	DAFeed            event.Feed
-	DAHashFeed        event.Feed
+	client          *ethclient.Client
+	chain           BlockChain
+	DAFeed          event.Feed
+	DAHashFeed      event.Feed
 	mu              sync.RWMutex
 	signer          types.DASigner
 	journal         *journal                // Journal of local DA to back up to disk
 	subs            event.SubscriptionScope // Subscription scope to unsubscribe all on shutdown
 	all             *lookup
 	nodeType        string
-	diskCache	    *HashCollect  //
+	diskCache       *HashCollect //
 	collector       map[common.Hash]*types.DA
 	beats           map[common.Hash]time.Time // Last heartbeat from each known account
 	reorgDoneCh     chan chan struct{}
-	reorgShutdownCh chan struct{}  // requests shutdown of scheduleReorgLoop
-	wg              sync.WaitGroup // tracks loop
-	initDoneCh      chan struct{}  // is closed once the pool is initialized (for tests)
-	currentBlock     atomic.Pointer[types.Header] // Current head of the blockchain
+	reorgShutdownCh chan struct{}                // requests shutdown of scheduleReorgLoop
+	wg              sync.WaitGroup               // tracks loop
+	initDoneCh      chan struct{}                // is closed once the pool is initialized (for tests)
+	currentBlock    atomic.Pointer[types.Header] // Current head of the blockchain
 }
 
-func New(config Config, chain BlockChain,nodeType string) *DAPool {
+func New(config Config, chain BlockChain, nodeType string) *DAPool {
 	dp := &DAPool{
 		config:          config,
-		chain:	     chain,
+		chain:           chain,
 		chainconfig:     chain.Config(),
 		signer:          types.LatestDASigner(chain.Config()),
 		all:             newLookup(),
-		diskCache:	     newHashCollect(),
+		diskCache:       newHashCollect(),
 		nodeType:        nodeType,
 		collector:       make(map[common.Hash]*types.DA),
 		beats:           make(map[common.Hash]time.Time),
@@ -147,7 +147,7 @@ func New(config Config, chain BlockChain,nodeType string) *DAPool {
 }
 
 func (dp *DAPool) SetClient(url string) {
-	client,err := ethclient.Dial(url)
+	client, err := ethclient.Dial(url)
 	if err == nil {
 		dp.client = client
 	}
@@ -176,11 +176,11 @@ func (dp *DAPool) Init(head *types.Header) error {
 	dp.wg.Add(1)
 
 	if dp.nodeType == "b" {
-		das,err := db.GetAllDARecords(dp.chain.SqlDB())
+		das, err := db.GetAllDARecords(dp.chain.SqlDB())
 		if err != nil {
-			log.Info("DAPool init","err",err.Error())
-		}else {
-			for _,da := range das{
+			log.Info("DAPool init", "err", err.Error())
+		} else {
+			for _, da := range das {
 				dp.mu.Lock()
 				dp.diskCache.Hashes[da.TxHash] = da.ReceiveAt
 				hashData := common.BytesToHash(da.Commitment.Marshal())
@@ -214,12 +214,12 @@ func (dp *DAPool) loop() {
 		case <-dp.reorgShutdownCh:
 			return
 
-		case <- remove.C:
+		case <-remove.C:
 			dp.mu.Lock()
-			for hash,receive := range dp.diskCache.Hashes {
-				if receive.Add(14*24*time.Hour).Before(time.Now()) {
-					db.DeleteDAByHash(dp.chain.SqlDB(),hash)
-					delete(dp.diskCache.Hashes,hash)
+			for hash, receive := range dp.diskCache.Hashes {
+				if receive.Add(14 * 24 * time.Hour).Before(time.Now()) {
+					db.DeleteDAByHash(dp.chain.SqlDB(), hash)
+					delete(dp.diskCache.Hashes, hash)
 				}
 			}
 			dp.mu.Unlock()
@@ -229,11 +229,11 @@ func (dp *DAPool) loop() {
 			dp.mu.Lock()
 			for hash := range dp.collector {
 				// Any non-locals old enough should be removed
-				if time.Since(dp.beats[hash]) > 24 * time.Hour {
+				if time.Since(dp.beats[hash]) > 24*time.Hour {
 					for txHash := range dp.collector {
-						for hash,_ := range dp.diskCache.Hashes {
+						for hash, _ := range dp.diskCache.Hashes {
 							if hash == txHash {
-								delete(dp.diskCache.Hashes,hash)
+								delete(dp.diskCache.Hashes, hash)
 							}
 						}
 						dp.removeDA(txHash)
@@ -255,7 +255,7 @@ func (dp *DAPool) loop() {
 	}
 }
 
-func (dp *DAPool) AddInToDisk(hash common.Hash,receive time.Time)  {
+func (dp *DAPool) AddInToDisk(hash common.Hash, receive time.Time) {
 	dp.diskCache.Hashes[hash] = receive
 }
 
@@ -274,7 +274,6 @@ func (dp *DAPool) SubscribenDASHash(ch chan<- core.DAHashEvent) event.Subscripti
 	return dp.DAHashFeed.Subscribe(ch)
 }
 
-
 func (dp *DAPool) removeDA(hash common.Hash) error {
 	fd := dp.all.Get(hash)
 	if fd == nil {
@@ -287,32 +286,32 @@ func (dp *DAPool) removeDA(hash common.Hash) error {
 }
 
 // cached with the given hash.
-func (dp *DAPool) Has(hash common.Hash) bool{
+func (dp *DAPool) Has(hash common.Hash) bool {
 	fd := dp.get(hash)
 	return fd != nil
 }
 
-func (dp *DAPool) GetSender(signData [][]byte) ([]common.Address,[]error) {
+func (dp *DAPool) GetSender(signData [][]byte) ([]common.Address, []error) {
 	da := new(types.DA)
 	da.SignData = signData
-	recoverAddr,err := types.FdSender(dp.signer,da)
-	return recoverAddr,err
+	recoverAddr, err := types.FdSender(dp.signer, da)
+	return recoverAddr, err
 }
 
-func (dp *DAPool) GetDAByCommit(commit []byte) (*types.DA,error){
+func (dp *DAPool) GetDAByCommit(commit []byte) (*types.DA, error) {
 	dp.mu.RLock()
 	defer dp.mu.RUnlock()
 	var digest kzg.Digest
 	digest.SetBytes(commit)
 	cmHash := common.BytesToHash(digest.Marshal())
-	log.Info("GetDAByCommit-----","cmHash",cmHash.Hex())
+	log.Info("GetDAByCommit-----", "cmHash", cmHash.Hex())
 	var getTimes uint64
 Lable:
 	fd := dp.get(cmHash)
 	if fd != nil {
-		return fd,nil
+		return fd, nil
 	}
-	da,err := db.GetDAByCommitment(dp.chain.SqlDB(),commit)
+	da, err := db.GetDAByCommitment(dp.chain.SqlDB(), commit)
 	if err != nil || da == nil {
 		log.Info("本地节点没有从需要从远端要--------", "cmHash", cmHash.String())
 		if getTimes < 1 {
@@ -325,67 +324,67 @@ Lable:
 			goto Lable
 		}
 	}
-	return da,nil
+	return da, nil
 }
 
 // Get retrieves the DA from local DAPool with given
 // hash.
-func (dp *DAPool) Get(hash common.Hash) (*types.DA,error){
+func (dp *DAPool) Get(hash common.Hash) (*types.DA, error) {
 	dp.mu.RLock()
 	defer dp.mu.RUnlock()
 	var getTimes uint64
 Lable:
 	fd := dp.get(hash)
 	if fd == nil {
-		da,err := db.GetCommitmentByTxHash(dp.chain.SqlDB(),hash)
+		da, err := db.GetCommitmentByTxHash(dp.chain.SqlDB(), hash)
 		if err != nil || da == nil {
 			if getTimes < 1 {
-				da,err = db.GetDAByCommitmentHash(dp.chain.SqlDB(),hash)
-				if da == nil || err != nil{
+				da, err = db.GetDAByCommitmentHash(dp.chain.SqlDB(), hash)
+				if da == nil || err != nil {
 					dp.DAHashFeed.Send(core.DAHashEvent{Hashes: []common.Hash{hash}})
-					log.Info("本地节点没有从需要从远端要--------","hash",hash.String())
-					return nil,nil
-				}else {
-					return da,nil
+					log.Info("本地节点没有从需要从远端要--------", "hash", hash.String())
+					return nil, nil
+				} else {
+					return da, nil
 				}
 			}
 			time.Sleep(WaitTime * time.Millisecond)
-			getTimes ++
+			getTimes++
 			if getTimes <= 1 {
 				goto Lable
 			}
 			currentPath, _ := os.Getwd()
 			file, _ := os.OpenFile(currentPath+"/unknowTxHash.txt", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
-			str := fmt.Sprintf("can not find DA by TxHash is： %s time to ask ： %s",hash.Hex(),time.Now().String())
+			str := fmt.Sprintf("can not find DA by TxHash is： %s time to ask ： %s", hash.Hex(), time.Now().String())
 			writeStr := str + "\n"
 			if _, err := file.WriteString(writeStr); err != nil {
-				log.Info("WriteString unknowTxHash err",err.Error())
+				log.Info("WriteString unknowTxHash err", err.Error())
 			}
 			file.Close()
-		}else {
-			return da,nil
+		} else {
+			return da, nil
 		}
-	}else {
-		return fd,nil
+	} else {
+		return fd, nil
 	}
-	return nil,nil
+	return nil, nil
 }
 
-func (dp *DAPool) GetDA(hash common.Hash) (*types.DA,error) {
+func (dp *DAPool) GetDA(hash common.Hash) (*types.DA, error) {
 	dp.mu.RLock()
 	defer dp.mu.RUnlock()
 	var getTimes uint64
 Lable:
 	fd := dp.get(hash)
 	if fd == nil {
-		da,err := db.GetCommitmentByTxHash(dp.chain.SqlDB(),hash)
+		da, err := db.GetCommitmentByTxHash(dp.chain.SqlDB(), hash)
 		if err != nil || da.Data == nil || len(da.Data) == 0 {
 			if getTimes < 1 {
-				da,err = db.GetDAByCommitmentHash(dp.chain.SqlDB(),hash)
-				if da == nil || err != nil{
-					return nil,nil
-				}else {
-					return da,nil
+				da, err = db.GetDAByCommitmentHash(dp.chain.SqlDB(), hash)
+				if da == nil || err != nil {
+					return nil, nil
+				} else {
+					return da, nil
 				}
 			}
 			daLength := da.Length
@@ -393,25 +392,23 @@ Lable:
 			d := time.Duration(index)
 			wait := d * WaitTime * time.Millisecond
 			time.Sleep(wait)
-			getTimes ++
+			getTimes++
 			if getTimes <= 1 {
 				goto Lable
 			}
-		}else {
-			return da,nil
+		} else {
+			return da, nil
 		}
-	}else {
-		return fd,nil
+	} else {
+		return fd, nil
 	}
-	return nil,nil
+	return nil, nil
 }
-
 
 // get returns a DA if it is contained in the pool and nil otherwise.
 func (dp *DAPool) get(hash common.Hash) *types.DA {
 	return dp.all.Get(hash)
 }
-
 
 // addRemotesSync is like addRemotes, but waits for pool reorganization. Tests use this method.
 func (dp *DAPool) addRemotesSync(fds []*types.DA) []error {
@@ -453,24 +450,24 @@ func (dp *DAPool) Add(fds []*types.DA, local, sync bool) []error {
 	)
 	for i, fd := range fds {
 		// If the DA is known, pre-set the error slot
-		var hashData  common.Hash
+		var hashData common.Hash
 
-		flag,err := dp.validateDASignature(fd,local)
+		flag, err := dp.validateDASignature(fd, local)
 		if !flag || err != nil {
-			errs = append(errs,err)
+			errs = append(errs, err)
 		}
 
 		if fd.TxHash.Cmp(common.Hash{}) != 0 {
 			hashData = fd.TxHash
 			txHash := fd.TxHash.String()
-			log.Info("DAPool----Add","txHash",txHash)
-		}else {
+			log.Info("DAPool----Add", "txHash", txHash)
+		} else {
 			hashData = common.BytesToHash(fd.Commitment.Marshal())
-			log.Info("DAPool----Add","commitHash",hashData.Hex())
+			log.Info("DAPool----Add", "commitHash", hashData.Hex())
 		}
 
 		if dp.nodeType == "b" {
-			dp.AddInToDisk(hashData,fd.ReceiveAt)
+			dp.AddInToDisk(hashData, fd.ReceiveAt)
 		}
 
 		if dp.all.Get(hashData) != nil {
@@ -489,7 +486,7 @@ func (dp *DAPool) Add(fds []*types.DA, local, sync bool) []error {
 	var final = make([]*types.DA, 0)
 	for index, err := range newErrs {
 		if err == nil {
-			final = append(final,news[index])
+			final = append(final, news[index])
 		}
 		for errs[nilSlot] != nil {
 			nilSlot++
@@ -504,15 +501,17 @@ func (dp *DAPool) Add(fds []*types.DA, local, sync bool) []error {
 }
 
 func (dp *DAPool) SendNewDAEvent(DA []*types.DA) {
-	if len(DA) != 0 {
-		dp.DAFeed.Send(core.NewDAEvent{Fileds: DA})
+	for _, da := range DA {
+		if da.State == false {
+			dp.DAFeed.Send(core.NewDAEvent{Fileds: []*types.DA{da}})
+		}
 	}
 }
 
 func (dp *DAPool) RemoveDA(das []*types.DA) {
 	dp.mu.Lock()
 	defer dp.mu.Unlock()
-	for _,da := range das{
+	for _, da := range das {
 		if len(da.TxHash) != 0 {
 			delete(dp.all.collector, da.TxHash)
 		}
@@ -538,10 +537,10 @@ func (dp *DAPool) add(fd *types.DA, local bool) (replaced bool, err error) {
 	// If the DA is already known, discard it
 	if fd.TxHash.Cmp(common.Hash{}) != 0 {
 		hash = fd.TxHash
-		log.Info("DAPool----add","TxHash---hash",hash.Hex())
-	}else {
+		log.Info("DAPool----add", "TxHash---hash", hash.Hex())
+	} else {
 		hash = common.BytesToHash(fd.Commitment.Marshal())
-		log.Info("DAPool----add","Commitment --hash",hash.Hex())
+		log.Info("DAPool----add", "Commitment --hash", hash.Hex())
 	}
 	if dp.all.Get(hash) != nil {
 		log.Trace("Discarding already known DA", "hash", hash)
@@ -550,7 +549,7 @@ func (dp *DAPool) add(fd *types.DA, local bool) (replaced bool, err error) {
 	}
 
 	if uint64(dp.all.Slots()+1) > dp.config.GlobalSlots {
-		return false,ErrDAPoolOverflow
+		return false, ErrDAPoolOverflow
 	}
 
 	dp.journalFd(hash, fd)
@@ -592,19 +591,19 @@ func (dp *DAPool) Close() error {
 // rules, but does not check state-dependent validation such as sufficient balance.
 // This check is meant as an early check which only needs to be performed once,
 // and does not require the pool mutex to be held.
-func (dp *DAPool) validateDASignature(da *types.DA, local bool) (bool,error) {
+func (dp *DAPool) validateDASignature(da *types.DA, local bool) (bool, error) {
 	if local {
-		return true,nil
+		return true, nil
 	}
 	if da.Length != uint64(len(da.Data)) {
-		return false,errors.New("DA data length not match legth")
+		return false, errors.New("DA data length not match legth")
 	}
-	if len(da.SignData) == 0  {
-		return false,errors.New("DA signature is empty")
+	if len(da.SignData) == 0 {
+		return false, errors.New("DA signature is empty")
 	}
 
 	currentPath, _ := os.Getwd()
-	path := strings.Split(currentPath,"/build")[0] + "/srs"
+	path := strings.Split(currentPath, "/build")[0] + "/srs"
 	domiconSDK, err := kzgSdk.InitMultiAdaptiveSdk(path)
 	if err != nil {
 		return false, err
@@ -614,13 +613,11 @@ func (dp *DAPool) validateDASignature(da *types.DA, local bool) (bool,error) {
 	if err != nil {
 		return false, err
 	}
-	return true,nil
+	return true, nil
 }
 
-
-
 type lookup struct {
-	slots   int
+	slots     int
 	lock      sync.RWMutex
 	collector map[common.Hash]*types.DA
 }
@@ -677,16 +674,16 @@ func (t *lookup) Add(fd *types.DA) {
 		commitIsEmpty = true
 	}
 
-	if fd.TxHash.Cmp(common.Hash{}) != 0 && commitIsEmpty  {
+	if fd.TxHash.Cmp(common.Hash{}) != 0 && commitIsEmpty {
 		t.collector[fd.TxHash] = fd
-	}else if fd.TxHash.Cmp(common.Hash{}) != 0 && !commitIsEmpty{
+	} else if fd.TxHash.Cmp(common.Hash{}) != 0 && !commitIsEmpty {
 		t.collector[fd.TxHash] = fd
 		hash := common.BytesToHash(fd.Commitment.Marshal())
 		t.collector[hash] = fd
-	}else if fd.TxHash.Cmp(common.Hash{}) == 0 && !commitIsEmpty{
+	} else if fd.TxHash.Cmp(common.Hash{}) == 0 && !commitIsEmpty {
 		hash := common.BytesToHash(fd.Commitment.Marshal())
 		t.collector[hash] = fd
-	}else if fd.TxHash.Cmp(common.Hash{}) == 0 && commitIsEmpty{
+	} else if fd.TxHash.Cmp(common.Hash{}) == 0 && commitIsEmpty {
 		return
 	}
 }
@@ -698,7 +695,6 @@ func (t *lookup) Slots() int {
 
 	return t.slots
 }
-
 
 // Remove removes a DA from the lookup.
 func (t *lookup) Remove(hash common.Hash) {

@@ -17,6 +17,7 @@ type CommitDetail struct {
 	Time     time.Time
 	OutOfTime time.Time
 	Length    uint64
+	State     bool
 }
 
 // OrderedMap 代表有序的 Map 结构
