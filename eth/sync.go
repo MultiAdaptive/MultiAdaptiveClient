@@ -535,7 +535,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 
 	logs := make([]*types.Log, 0)
 	for _, receipt := range receipts {
-		if receipt != nil || len(receipt.Logs) != 0 {
+		if receipt != nil || receipt.Logs != nil{
 			logs = append(logs, receipt.Logs...)
 		}
 	}
