@@ -535,7 +535,9 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 
 	logs := make([]*types.Log, 0)
 	for _, receipt := range receipts {
-		logs = append(logs, receipt.Logs...)
+		if receipt != nil || len(receipt.Logs) != 0 {
+			logs = append(logs, receipt.Logs...)
+		}
 	}
 
 	err = db.AddBatchLogs(db.Tx, logs)
