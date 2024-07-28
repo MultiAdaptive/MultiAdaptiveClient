@@ -446,7 +446,6 @@ func (cs *chainSyncer) startSyncWithNum(num uint64) error {
 		select {
 		case <-requerTimer.C:
 			block, err := cs.ethClient.BlockByNumber(cs.ctx, new(big.Int).SetUint64(num))
-			log.Info("startSyncWithNum---get block num","num",block.NumberU64())
 			if err == nil && block != nil {
 				currentNum, _ := cs.ethClient.BlockNumber(context.Background())
 				if block.NumberU64() == currentNum {
