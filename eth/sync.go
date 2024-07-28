@@ -434,6 +434,7 @@ func (cs *chainSyncer) doEthereumSync() error {
 			//没回滚继续同步
 			//cs.startSyncWithNum(uint64(org.BlockNum+1))
 		}
+		log.Info("chainSyncer---startSyncWithNum---","org num",org.NumberU64() + 1)
 		cs.startSyncWithNum(org.NumberU64() + 1)
 	}
 	return nil

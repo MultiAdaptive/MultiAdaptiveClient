@@ -32,20 +32,22 @@ func AddReceipt(tx *gorm.DB, receipt Receipt) error {
 func AddBatchReceipts(tx *gorm.DB, receipts []*types.Receipt) error {
 	// 遍历每个区块，依次插入数据库
 	for _, rec := range receipts {
-		wr := Receipt{
-			TxHash:            rec.TxHash.String(),
-			TxType:            int(rec.Type),
-			Status:            int64(rec.Status),
-			CumulativeGasUsed: int64(rec.CumulativeGasUsed),
-			GasUsed:           int64(rec.GasUsed),
-			BlockNum:          rec.BlockNumber.Int64(),
-			ContractAddress:   rec.ContractAddress.String(),
-		}
-		result := tx.Create(&wr)
-		if result.Error != nil {
-			// 插入失败，回滚事务并返回错误
-			tx.Rollback()
-			return result.Error
+		if rec != nil {
+			wr := Receipt{
+				TxHash:            rec.TxHash.String(),
+				TxType:            int(rec.Type),
+				Status:            int64(rec.Status),
+				CumulativeGasUsed: int64(rec.CumulativeGasUsed),
+				GasUsed:           int64(rec.GasUsed),
+				BlockNum:          rec.BlockNumber.Int64(),
+				ContractAddress:   rec.ContractAddress.String(),
+			}
+			result := tx.Create(&wr)
+			if result.Error != nil {
+				// 插入失败，回滚事务并返回错误
+				tx.Rollback()
+				return result.Error
+			}
 		}
 	}
 	return nil
