@@ -586,7 +586,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			outOfData := outTime.Before(time.Now())
 			if !outOfData {
 				da, err := cs.handler.daPool.GetDAByCommit(daDetail.Commit)
-				if err != nil {
+				if err != nil || da == nil{
 					da = new(types.DA)
 					da.State = true
 				}
