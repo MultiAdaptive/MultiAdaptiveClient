@@ -283,7 +283,7 @@ func CreateBlobHandler(w http.ResponseWriter, r *http.Request) {
 			DAsKey:          newBlob.DAsKey,
 			SignData:        newBlob.SignData,
 			ParentStateHash: newBlob.ParentStateHash,
-			StateHash:       newBlob.StateHash,
+			//StateHash:       newBlob.StateHash,
 			BlockNum:        newBlob.BlockNum,
 			ReceiveAt:       newBlob.ReceiveAt,
 		}
@@ -383,7 +383,7 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 				DAsKey:          da.DAsKey,
 				SignData:        da.SignData,
 				ParentStateHash: da.ParentStateHash,
-				StateHash:       da.StateHash,
+				//StateHash:       da.StateHash,
 				BlockNum:        da.BlockNum,
 				ReceiveAt:       da.ReceiveAt,
 				Validators:      strings.Split(da.SignAddr, SEPARATOR_COMMA),
@@ -666,7 +666,7 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 			BlockNum:       da.BlockNum,
 			Timestamp:      da.ReceiveAt,
 			Size:           da.Length,
-			StorageState:   da.StateHash,
+			//StorageState:   da.StateHash,
 			CommitmentXY: CommitmentCoordinate{
 				X: digest.X.String(),
 				Y: digest.Y.String(),
