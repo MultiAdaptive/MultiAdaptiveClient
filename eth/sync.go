@@ -682,6 +682,8 @@ func (cs *chainSyncer) checkReorg(block *types.Block) (bool, *types.Block) {
 	if block == nil || bytes.Compare(common.Hash{}.Bytes(),block.Hash().Bytes()) == 0  {
 		return false,block
 	}
+	log.Info("checkReorg------","block",block.NumberU64(),"block hash",block.Hash().Hex())
+	log.Info("checkReorg-------","11Block",l1Block.NumberU64(),"block hash",l1Block.Hash().Hex())
 	if block.Hash().Hex() == l1Block.Hash().String() {
 		return false, block
 	} else {
