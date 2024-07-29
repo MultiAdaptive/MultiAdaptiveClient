@@ -380,7 +380,10 @@ func (cs *chainSyncer) doEthereumSync() error {
 							block,err := cs.ethClient.BlockByNumber(cs.ctx,new(big.Int).SetUint64(logDetail.BlockNumber))
 							if err == nil {
 								log.Info("doSync--------","block num",block.NumberU64())
-								blocks = append(blocks,block)
+								flag := blocksContains(blocks,block)
+								if !flag {
+									blocks = append(blocks,block)
+								}
 								requireTime.Reset(QuickReqTime)
 							} else {
 								cs.forced = false
@@ -433,6 +436,15 @@ func (cs *chainSyncer) doEthereumSync() error {
 		cs.startSyncWithNum(org.NumberU64() + 1)
 	}
 	return nil
+}
+
+func blocksContains(blocks []*types.Block,block *types.Block) bool {
+	for _,item := range blocks{
+		if item.NumberU64() == block.NumberU64() {
+			return true
+		}
+	}
+	return false
 }
 
 func (cs *chainSyncer) startSyncWithNum(num uint64) error {
@@ -653,11 +665,11 @@ func addressIncluded(list []common.Address, targe common.Address) bool {
 }
 
 func sliceLength(data []byte) uint64 {
-	value := data[0: 32]
-	i := binary.BigEndian.Uint64(value)
+	value := data[4: 4+32]
+	last8Bytes := value[len(value)-8:]
+	i := binary.BigEndian.Uint64(last8Bytes)
 	return i
 }
-
 
 func slice(data []byte) []byte {
 	digst := new(kzg.Digest)
