@@ -450,6 +450,7 @@ func (cs *chainSyncer) startSyncWithNum(num uint64) error {
 					num++
 					requerTimer.Reset(QuickReqTime)
 				} else {
+					cs.forced = false
 					return nil
 				}
 				cs.processBlocks([]*types.Block{block})
