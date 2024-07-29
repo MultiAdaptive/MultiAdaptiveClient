@@ -33,7 +33,7 @@ type DA struct {
 	SignData        string `gorm:"column:f_sign_data;not null;comment:签名数据" json:"sign_data"` // 签名数据
 	SignAddr        string `gorm:"column:f_sign_address;not null;comment:签名地址" json:"sign_addr"`
 	ParentStateHash string `gorm:"column:f_parent_state_hash;not null;comment:父提交数据哈希;index:idx_das_parent_state_hash" json:"parent_state_hash"` // 父提交数据哈希
-	StateHash       string `gorm:"column:f_state_hash;not null;comment:最新数据哈希;index:idx_das_state_hash" json:"state_hash"`                       // 最新数据哈希
+	//StateHash       string `gorm:"column:f_state_hash;not null;comment:最新数据哈希;index:idx_das_state_hash" json:"state_hash"`                       // 最新数据哈希
 	BlockNum        int64  `gorm:"column:f_block_num;not null;comment:区块号;index:idx_das_block_num" json:"block_num"`                             // 区块号
 	ReceiveAt       string `gorm:"column:f_receive_at;not null;comment:接收时间" json:"receive_at"`                                                  // 接收时间
 	OutOfTime       string `gorm:"column:f_out_time;not null;comment:失效时间" json:"out_of_time"`
@@ -48,14 +48,6 @@ func (*DA) TableName() string {
 
 func SaveDACommit(db *gorm.DB, da *types.DA, shouldSave bool)  error {
 	if shouldSave {
-		//currentParentHash := parentHash
-		//dataCollect := make([]byte, 0)
-		//dataCollect = append(dataCollect, da.Commitment.X.Marshal()...)
-		//dataCollect = append(dataCollect, da.Commitment.Y.Marshal()...)
-		//dataCollect = append(dataCollect, da.Sender.Bytes()...)
-		//dataCollect = append(dataCollect, currentParentHash.Bytes()...)
-		//stateHash := common.BytesToHash(dataCollect)
-
 		sigDatStr := make([]string, len(da.SignData))
 		for i, data := range da.SignData {
 			sigDatStr[i] = common.Bytes2Hex(data)
@@ -93,18 +85,11 @@ func SaveDACommit(db *gorm.DB, da *types.DA, shouldSave bool)  error {
 	return  nil
 }
 
-func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) error {
-	currentParentHash := parentHash
-	dataCollect := make([]byte, 0)
+func SaveBatchCommitment(db *gorm.DB, das []*types.DA) error {
 	wdas := make([]DA, 0)
 
 	// 遍历每个区块，依次插入数据库
 	for _, da := range das {
-		dataCollect = append(dataCollect, da.Commitment.X.Marshal()...)
-		dataCollect = append(dataCollect, da.Commitment.Y.Marshal()...)
-		dataCollect = append(dataCollect, da.Sender.Bytes()...)
-		dataCollect = append(dataCollect, currentParentHash.Bytes()...)
-		stateHash := common.BytesToHash(dataCollect)
 		commitData := da.Commitment.Marshal()
 		sigDatStr := make([]string, len(da.SignData))
 		for i, data := range da.SignData {
@@ -129,13 +114,10 @@ func SaveBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) e
 			CommitmentHash:  common.BytesToHash(commitData).Hex(),
 			SignData:        result,
 			SignAddr:        addrRes,
-			ParentStateHash: currentParentHash.String(),
-			StateHash:       stateHash.Hex(),
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
-			//NameSpaceKey:     da.NameSpaceKey.Int64(),
+			State:            da.State,
 		}
 		wdas = append(wdas, wda)
-		currentParentHash = stateHash
 	}
 
 	result := db.Create(&wdas)
@@ -181,7 +163,7 @@ func AddBatchCommitment(db *gorm.DB, das []*types.DA, parentHash common.Hash) er
 			SignAddr:        addrRes,
 			BlockNum:        int64(da.BlockNum),
 			ParentStateHash: currentParentHash.String(),
-			StateHash:       stateHash.Hex(),
+			//StateHash:       stateHash.Hex(),
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
 			NameSpaceKey:     da.NameSpaceKey.Hex(),
 		}
@@ -257,6 +239,7 @@ func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 		BlockNum:    uint64(da.BlockNum),
 		ReceiveAt:   parsedTime,
 		NameSpaceKey: common.HexToHash(da.NameSpaceKey),
+		State:        da.State,
 	}, nil
 }
 
@@ -318,6 +301,7 @@ func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
 		TxHash:      common.HexToHash(da.TxHash),
 		ReceiveAt:   parsedTime,
 		NameSpaceKey: common.HexToHash(da.NameSpaceKey),
+		State:        da.State,
 	}, nil
 }
 
@@ -381,16 +365,8 @@ func GetCommitmentByTxHash(db *gorm.DB, txHash common.Hash) (*types.DA, error) {
 		TxHash:      common.HexToHash(da.TxHash),
 		ReceiveAt:   parsedTime,
 		NameSpaceKey: common.HexToHash(da.NameSpaceKey),
+		State:        da.State,
 	}, nil
-}
-
-// 获取ID最大的DA记录
-func GetMaxIDDAStateHash(db *gorm.DB) (string, error) {
-	var da DA
-	if err := db.Order("f_nonce DESC").Limit(1).Find(&da).Error; err != nil {
-		return "", err
-	}
-	return da.StateHash, nil
 }
 
 func GetMaxIDDANonce(db *gorm.DB) (uint64, error) {

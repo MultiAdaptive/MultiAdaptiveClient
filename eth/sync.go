@@ -311,13 +311,8 @@ func (cs *chainSyncer) doBitcoinSync() error {
 	log.Info("number of daDatas", "number", len(daDatas))
 
 	if len(daDatas) != 0 {
-		parentHashData, err := db.GetMaxIDDAStateHash(cs.db)
-		if err != nil {
-			parentHashData = ""
-		}
-		parentHash := common.HexToHash(parentHashData)
 		cs.handler.daPool.SendNewDAEvent(daDatas)
-		_ = db.SaveBatchCommitment(cs.db, daDatas, parentHash)
+		_ = db.SaveBatchCommitment(cs.db, daDatas)
 		cs.handler.daPool.RemoveDA(daDatas)
 	}
 	cs.forced = false
