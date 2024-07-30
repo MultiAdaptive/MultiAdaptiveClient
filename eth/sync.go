@@ -684,8 +684,9 @@ func (cs *chainSyncer) checkReorg(block *types.Block) (bool, *types.Block) {
 	blockNum := block.NumberU64()
 	time.After(QuickReqTime)
 	l1Block, err := cs.ethClient.BlockByNumber(cs.ctx, block.Number())
-	if err != nil {
+	if err != nil || l1Block == nil{
 		log.Error("checkReorg------BlockByNumber", "num", blockNum)
+		return false, block
 	}
 	if block == nil || bytes.Compare(common.Hash{}.Bytes(),block.Hash().Bytes()) == 0  {
 		return false,block
