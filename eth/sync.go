@@ -24,6 +24,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
+	"github.com/coreos/etcd/client"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -408,10 +409,14 @@ func (cs *chainSyncer) doEthereumSync() error {
 		cs.forced = false
 	} else {
 		log.Info("chainSyncer---start---", "currentHeader", currentHeader)
-		//当前数据库有数据需要检查是否回滚
-		latestBlock, err := db.GetBlockByNum(cs.db, currentHeader)
-		if err != nil {
-			return err
+		header := cs.chain.CurrentBlock()
+		latestBlock := cs.chain.GetBlockByNumber(header.Number.Uint64())
+		if latestBlock == nil{
+			latestBlock, err = db.GetBlockByNum(cs.db, currentHeader)
+			//当前数据库有数据需要检查是否回滚
+			if err != nil {
+				return err
+			}
 		}
 		flag, org := cs.checkReorg(latestBlock)
 		switch flag {
@@ -688,6 +693,10 @@ func (cs *chainSyncer) checkReorg(block *types.Block) (bool, *types.Block) {
 		log.Error("checkReorg------BlockByNumber", "num", blockNum)
 		return false, block
 	}
+	if l1Block.NumberU64() > block.NumberU64() {
+		return false, block
+	}
+
 	if block == nil || bytes.Compare(common.Hash{}.Bytes(),block.Hash().Bytes()) == 0  {
 		return false,block
 	}
