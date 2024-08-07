@@ -43,7 +43,7 @@ type PairingG1Point struct {
 
 // CommitmentManagerMetaData contains all meta data concerning the CommitmentManager contract.
 var CommitmentManagerMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"indexed\":false,\"internalType\":\"structPairing.G1Point\",\"name\":\"commitment\",\"type\":\"tuple\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"nonce\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"len\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"nodeGroupKey\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"nameSpaceKey\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bytes[]\",\"name\":\"signatures\",\"type\":\"bytes[]\"}],\"name\":\"SendDACommitment\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_length\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_timeout\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"_nameSpaceKey\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"_nodeGroupKey\",\"type\":\"bytes32\"},{\"internalType\":\"bytes[]\",\"name\":\"_signatures\",\"type\":\"bytes[]\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structPairing.G1Point\",\"name\":\"_commitment\",\"type\":\"tuple\"}],\"name\":\"SubmitCommitment\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"commitments\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"daDetails\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"hashSignatures\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_nonce\",\"type\":\"uint256\"}],\"name\":\"getDADetailsByNonce\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"hashSignatures\",\"type\":\"bytes32\"}],\"internalType\":\"structCommitmentManager.DADetails\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_user\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_index\",\"type\":\"uint256\"}],\"name\":\"getDADetailsByUserAndIndex\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"hashSignatures\",\"type\":\"bytes32\"}],\"internalType\":\"structCommitmentManager.DADetails\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_nameSpaceKey\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"_index\",\"type\":\"uint256\"}],\"name\":\"getNameSpaceCommitment\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structPairing.G1Point\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_user\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_index\",\"type\":\"uint256\"}],\"name\":\"getUserCommitment\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"internalType\":\"structPairing.G1Point\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"indices\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contractNodeManager\",\"name\":\"_nodeManager\",\"type\":\"address\"},{\"internalType\":\"contractStorageManager\",\"name\":\"_storageManagement\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"nameSpaceCommitments\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"nameSpaceIndex\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"nodeManager\",\"outputs\":[{\"internalType\":\"contractNodeManager\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"nonce\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"storageManagement\",\"outputs\":[{\"internalType\":\"contractStorageManager\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"userCommitments\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"X\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"Y\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"version\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdraw\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"baseFee\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"commitments\",\"inputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"daDetails\",\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"timestamp\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"hashSignatures\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getDADetailsByNonce\",\"inputs\":[{\"name\":\"_nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structCommitmentManager.DADetails\",\"components\":[{\"name\":\"timestamp\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"hashSignatures\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getDADetailsByUserAndIndex\",\"inputs\":[{\"name\":\"_user\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_index\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structCommitmentManager.DADetails\",\"components\":[{\"name\":\"timestamp\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"hashSignatures\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNameSpaceCommitment\",\"inputs\":[{\"name\":\"_nameSpaceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"_index\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structPairing.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getUserCommitment\",\"inputs\":[{\"name\":\"_user\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_index\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structPairing.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"indices\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"_nodeManager\",\"type\":\"address\",\"internalType\":\"contractNodeManager\"},{\"name\":\"_storageManagement\",\"type\":\"address\",\"internalType\":\"contractStorageManager\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"nameSpaceCommitments\",\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"nameSpaceIndex\",\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"nodeManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractNodeManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"nonce\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setBaseFee\",\"inputs\":[{\"name\":\"_newFee\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"storageManagement\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractStorageManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"submitCommitment\",\"inputs\":[{\"name\":\"_length\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_timeout\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_nameSpaceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"_nodeGroupKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"_signatures\",\"type\":\"bytes[]\",\"internalType\":\"bytes[]\"},{\"name\":\"_commitment\",\"type\":\"tuple\",\"internalType\":\"structPairing.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"userCommitments\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"version\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"withdraw\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SendDACommitment\",\"inputs\":[{\"name\":\"commitment\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structPairing.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"timestamp\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"index\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"len\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"nodeGroupKey\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"},{\"name\":\"nameSpaceKey\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"},{\"name\":\"signatures\",\"type\":\"bytes[]\",\"indexed\":false,\"internalType\":\"bytes[]\"}],\"anonymous\":false}]",
 }
 
 // CommitmentManagerABI is the input ABI used to generate the binding from.
@@ -190,6 +190,37 @@ func (_CommitmentManager *CommitmentManagerTransactorRaw) Transfer(opts *bind.Tr
 // Transact invokes the (paid) contract method with params as input values.
 func (_CommitmentManager *CommitmentManagerTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
 	return _CommitmentManager.Contract.contract.Transact(opts, method, params...)
+}
+
+// BaseFee is a free data retrieval call binding the contract method 0x6ef25c3a.
+//
+// Solidity: function baseFee() view returns(uint256)
+func (_CommitmentManager *CommitmentManagerCaller) BaseFee(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _CommitmentManager.contract.Call(opts, &out, "baseFee")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// BaseFee is a free data retrieval call binding the contract method 0x6ef25c3a.
+//
+// Solidity: function baseFee() view returns(uint256)
+func (_CommitmentManager *CommitmentManagerSession) BaseFee() (*big.Int, error) {
+	return _CommitmentManager.Contract.BaseFee(&_CommitmentManager.CallOpts)
+}
+
+// BaseFee is a free data retrieval call binding the contract method 0x6ef25c3a.
+//
+// Solidity: function baseFee() view returns(uint256)
+func (_CommitmentManager *CommitmentManagerCallerSession) BaseFee() (*big.Int, error) {
+	return _CommitmentManager.Contract.BaseFee(&_CommitmentManager.CallOpts)
 }
 
 // Commitments is a free data retrieval call binding the contract method 0x49ce8997.
@@ -713,27 +744,6 @@ func (_CommitmentManager *CommitmentManagerCallerSession) Version() (string, err
 	return _CommitmentManager.Contract.Version(&_CommitmentManager.CallOpts)
 }
 
-// SubmitCommitment is a paid mutator transaction binding the contract method 0xe47611d7.
-//
-// Solidity: function SubmitCommitment(uint256 _length, uint256 _timeout, bytes32 _nameSpaceKey, bytes32 _nodeGroupKey, bytes[] _signatures, (uint256,uint256) _commitment) payable returns()
-func (_CommitmentManager *CommitmentManagerTransactor) SubmitCommitment(opts *bind.TransactOpts, _length *big.Int, _timeout *big.Int, _nameSpaceKey [32]byte, _nodeGroupKey [32]byte, _signatures [][]byte, _commitment PairingG1Point) (*types.Transaction, error) {
-	return _CommitmentManager.contract.Transact(opts, "SubmitCommitment", _length, _timeout, _nameSpaceKey, _nodeGroupKey, _signatures, _commitment)
-}
-
-// SubmitCommitment is a paid mutator transaction binding the contract method 0xe47611d7.
-//
-// Solidity: function SubmitCommitment(uint256 _length, uint256 _timeout, bytes32 _nameSpaceKey, bytes32 _nodeGroupKey, bytes[] _signatures, (uint256,uint256) _commitment) payable returns()
-func (_CommitmentManager *CommitmentManagerSession) SubmitCommitment(_length *big.Int, _timeout *big.Int, _nameSpaceKey [32]byte, _nodeGroupKey [32]byte, _signatures [][]byte, _commitment PairingG1Point) (*types.Transaction, error) {
-	return _CommitmentManager.Contract.SubmitCommitment(&_CommitmentManager.TransactOpts, _length, _timeout, _nameSpaceKey, _nodeGroupKey, _signatures, _commitment)
-}
-
-// SubmitCommitment is a paid mutator transaction binding the contract method 0xe47611d7.
-//
-// Solidity: function SubmitCommitment(uint256 _length, uint256 _timeout, bytes32 _nameSpaceKey, bytes32 _nodeGroupKey, bytes[] _signatures, (uint256,uint256) _commitment) payable returns()
-func (_CommitmentManager *CommitmentManagerTransactorSession) SubmitCommitment(_length *big.Int, _timeout *big.Int, _nameSpaceKey [32]byte, _nodeGroupKey [32]byte, _signatures [][]byte, _commitment PairingG1Point) (*types.Transaction, error) {
-	return _CommitmentManager.Contract.SubmitCommitment(&_CommitmentManager.TransactOpts, _length, _timeout, _nameSpaceKey, _nodeGroupKey, _signatures, _commitment)
-}
-
 // Initialize is a paid mutator transaction binding the contract method 0x485cc955.
 //
 // Solidity: function initialize(address _nodeManager, address _storageManagement) returns()
@@ -774,6 +784,48 @@ func (_CommitmentManager *CommitmentManagerSession) RenounceOwnership() (*types.
 // Solidity: function renounceOwnership() returns()
 func (_CommitmentManager *CommitmentManagerTransactorSession) RenounceOwnership() (*types.Transaction, error) {
 	return _CommitmentManager.Contract.RenounceOwnership(&_CommitmentManager.TransactOpts)
+}
+
+// SetBaseFee is a paid mutator transaction binding the contract method 0x46860698.
+//
+// Solidity: function setBaseFee(uint256 _newFee) returns()
+func (_CommitmentManager *CommitmentManagerTransactor) SetBaseFee(opts *bind.TransactOpts, _newFee *big.Int) (*types.Transaction, error) {
+	return _CommitmentManager.contract.Transact(opts, "setBaseFee", _newFee)
+}
+
+// SetBaseFee is a paid mutator transaction binding the contract method 0x46860698.
+//
+// Solidity: function setBaseFee(uint256 _newFee) returns()
+func (_CommitmentManager *CommitmentManagerSession) SetBaseFee(_newFee *big.Int) (*types.Transaction, error) {
+	return _CommitmentManager.Contract.SetBaseFee(&_CommitmentManager.TransactOpts, _newFee)
+}
+
+// SetBaseFee is a paid mutator transaction binding the contract method 0x46860698.
+//
+// Solidity: function setBaseFee(uint256 _newFee) returns()
+func (_CommitmentManager *CommitmentManagerTransactorSession) SetBaseFee(_newFee *big.Int) (*types.Transaction, error) {
+	return _CommitmentManager.Contract.SetBaseFee(&_CommitmentManager.TransactOpts, _newFee)
+}
+
+// SubmitCommitment is a paid mutator transaction binding the contract method 0x090ad065.
+//
+// Solidity: function submitCommitment(uint256 _length, uint256 _timeout, bytes32 _nameSpaceKey, bytes32 _nodeGroupKey, bytes[] _signatures, (uint256,uint256) _commitment) payable returns()
+func (_CommitmentManager *CommitmentManagerTransactor) SubmitCommitment(opts *bind.TransactOpts, _length *big.Int, _timeout *big.Int, _nameSpaceKey [32]byte, _nodeGroupKey [32]byte, _signatures [][]byte, _commitment PairingG1Point) (*types.Transaction, error) {
+	return _CommitmentManager.contract.Transact(opts, "submitCommitment", _length, _timeout, _nameSpaceKey, _nodeGroupKey, _signatures, _commitment)
+}
+
+// SubmitCommitment is a paid mutator transaction binding the contract method 0x090ad065.
+//
+// Solidity: function submitCommitment(uint256 _length, uint256 _timeout, bytes32 _nameSpaceKey, bytes32 _nodeGroupKey, bytes[] _signatures, (uint256,uint256) _commitment) payable returns()
+func (_CommitmentManager *CommitmentManagerSession) SubmitCommitment(_length *big.Int, _timeout *big.Int, _nameSpaceKey [32]byte, _nodeGroupKey [32]byte, _signatures [][]byte, _commitment PairingG1Point) (*types.Transaction, error) {
+	return _CommitmentManager.Contract.SubmitCommitment(&_CommitmentManager.TransactOpts, _length, _timeout, _nameSpaceKey, _nodeGroupKey, _signatures, _commitment)
+}
+
+// SubmitCommitment is a paid mutator transaction binding the contract method 0x090ad065.
+//
+// Solidity: function submitCommitment(uint256 _length, uint256 _timeout, bytes32 _nameSpaceKey, bytes32 _nodeGroupKey, bytes[] _signatures, (uint256,uint256) _commitment) payable returns()
+func (_CommitmentManager *CommitmentManagerTransactorSession) SubmitCommitment(_length *big.Int, _timeout *big.Int, _nameSpaceKey [32]byte, _nodeGroupKey [32]byte, _signatures [][]byte, _commitment PairingG1Point) (*types.Transaction, error) {
+	return _CommitmentManager.Contract.SubmitCommitment(&_CommitmentManager.TransactOpts, _length, _timeout, _nameSpaceKey, _nodeGroupKey, _signatures, _commitment)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
