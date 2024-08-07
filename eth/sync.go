@@ -582,6 +582,11 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			for i,addr := range addrList{
 				list[i] = addr.Hex()
 			}
+			//TODO debug
+			if len(list) == 0 {
+				addr := "0x11C0bd88eC60e1517ACb072f824Ddc8390AA66C0"
+				list = append(list,addr)
+			}
 			detailFinal.SignAddress = list
 		}
 		commitCache.Set(logDetail.TxHash.Hex(), detailFinal)
