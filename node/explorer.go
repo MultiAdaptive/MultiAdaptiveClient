@@ -242,6 +242,10 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 				Validators:     strings.Split(da.SignAddr, SEPARATOR_COMMA),
 				Fee:            cast.ToString(fee),
 			}
+			//TODO fix this
+			if len(blob.Validators) == 1 {
+				blob.Validators = []string{"0x11C0bd88eC60e1517ACb072f824Ddc8390AA66C0"}
+			}
 			blobs = append(blobs, blob)
 		}
 
