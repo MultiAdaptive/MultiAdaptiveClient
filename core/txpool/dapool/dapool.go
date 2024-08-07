@@ -341,14 +341,23 @@ Lable:
 			if getTimes < 1 {
 				da, err = db.GetDAByCommitmentHash(dp.chain.SqlDB(), hash)
 				if da == nil || err != nil {
-					dp.DAHashFeed.Send(core.DAHashEvent{Hashes: []common.Hash{hash}})
-					log.Info("本地节点没有从需要从远端要--------", "hash", hash.String())
-					return nil, nil
+					da, err = db.GetDAByMetaDataHash(dp.chain.SqlDB(),hash)
+					if da == nil || err != nil{
+						dp.DAHashFeed.Send(core.DAHashEvent{Hashes: []common.Hash{hash}})
+						return nil, nil
+					}else {
+						log.Info("本地节点没有从需要从远端要--------", "hash", hash.String())
+						return da,nil
+					}
 				} else {
 					return da, nil
 				}
 			}
-			time.Sleep(WaitTime * time.Millisecond)
+			daLength := da.Length
+			index := daLength / 1000
+			d := time.Duration(index)
+			wait := d * WaitTime * time.Millisecond
+			time.Sleep(wait)
 			getTimes++
 			if getTimes <= 1 {
 				goto Lable

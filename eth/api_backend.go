@@ -93,11 +93,14 @@ func (b *EthAPIBackend) BlockByNumberOrHash(ctx context.Context, blockNrOrHash r
 	return nil, errors.New("invalid arguments; neither block nor hash specified")
 }
 
-func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64) ([]byte,error) {
+func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64,metaData []byte) ([]byte,error) {
 	log.Info("SendDAByParams--------","sender",sender.Hex())
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
 	fd := types.NewDA(sender, index, length, digest, data, nodeGroupKey, proof, claimedValue)
+	if len(metaData) > 0 {
+		fd.MetaData = metaData
+	}
 	t := time.Unix(outTimeStamp,0)
 	fd.OutOfTime = t
 	flag,err := b.eth.singer.VerifyEth(fd)
@@ -109,6 +112,17 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 		return signData,err
 	}
 }
+
+func (b *EthAPIBackend) GetDAByMetaData(metaData []byte) (*types.DA, error) {
+	mdHash := common.BytesToHash(metaData)
+	fd,err := b.eth.daPool.Get(mdHash)
+	log.Info("EthAPIBackend-----GetDAByMetaData", "mdHash", mdHash.String())
+	if fd != nil {
+		return fd,nil
+	}
+	return nil,err
+}
+
 
 func (b *EthAPIBackend) SendBTCDAByParams(commitment ,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error)  {
 	var digest kzg.Digest

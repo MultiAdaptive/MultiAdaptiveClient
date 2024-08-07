@@ -71,7 +71,7 @@ type Backend interface {
 	Chain() *core.BlockChain
 
 	// TxPool retrieves the transaction pool object to serve data.
-	FildDataPool() DAPool
+	DADataPool() DAPool
 
 	// AcceptTxs retrieves whether transaction processing is enabled on the node
 	// or if inbound transactions should simply be dropped.
@@ -98,6 +98,7 @@ type DAPool interface {
 	// Get retrieves the fileData from the local fileDatapool with the given hash.
 	Get(hash common.Hash) (*types.DA,error)
 	GetDA(hash common.Hash) (*types.DA,error)
+
 }
 
 
@@ -116,7 +117,7 @@ func MakeProtocols(backend Backend, network uint64, dnsdisc enode.Iterator) []p2
 			Version: version,
 			Length:  protocolLengths[version],
 			Run: func(p *p2p.Peer, rw p2p.MsgReadWriter) error {
-				peer := NewPeer(version, p, rw, backend.FildDataPool())
+				peer := NewPeer(version, p, rw, backend.DADataPool())
 				defer peer.Close()
 
 				return backend.RunPeer(peer, func(peer *Peer) error {

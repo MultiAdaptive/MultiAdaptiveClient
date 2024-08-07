@@ -50,12 +50,13 @@ type Backend interface {
 	GetTransaction(ctx context.Context, txHash common.Hash) (*types.Transaction, common.Hash, uint64, uint64, error)
 
 	// DA pool API
-	SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64) ([]byte,error)
+	SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64,metaData []byte) ([]byte,error)
 	SendBTCDAByParams(commitment ,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error)
 	SendBatchDA(datas [][]byte) ([][]byte,[]error)
 	GetDAByHash(hash common.Hash) (*types.DA,error)
 	GetBatchDAsByHashes(hashes []common.Hash) ([]*types.DA,[]error)
 	GetDAByCommitment(comimt []byte) (*types.DA, error)
+	GetDAByMetaData(metaData []byte) (*types.DA, error)
 	GetBatchDAsByCommitments(commitments [][]byte) ([]*types.DA,[]error)
 	SubscribeNewDAEvent(chan<- core.NewDAEvent) event.Subscription
 

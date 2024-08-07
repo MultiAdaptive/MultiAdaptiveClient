@@ -21,9 +21,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// RemovedLogsEvent is posted when a reorg happens
-type RemovedLogsEvent struct{ Logs []*types.Log }
-
 // NewDAEvent is posted when a batch of DAs enter the DA pool.
 type NewDAEvent struct{ Fileds []*types.DA }
 
@@ -35,9 +32,3 @@ type ChainEvent struct {
 	Hash  common.Hash
 	Logs  []*types.Log
 }
-
-type ChainSideEvent struct {
-	Block *types.Block
-}
-
-type ChainHeadEvent struct{ Block *types.Block }

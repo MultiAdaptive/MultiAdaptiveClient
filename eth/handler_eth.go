@@ -31,8 +31,8 @@ import (
 // packets that are sent as replies or broadcasts.
 type ethHandler handler
 
-// FildDataPool implements eth.Backend.
-func (h *ethHandler) FildDataPool() eth.DAPool {
+// DADataPool implements eth.Backend.
+func (h *ethHandler) DADataPool() eth.DAPool {
 	return h.daPool
 }
 
@@ -83,6 +83,7 @@ func (h *ethHandler) Handle(peer *eth.Peer, packet eth.Packet) error {
 	case *eth.NewPooledDAHashesPacket68:
 		return h.fdFetcher.Notify(peer.ID(), nil, packet.Sizes, packet.Hashes)
 
+	//case :
 	case *eth.PooledDAResponse:
 		return h.fdFetcher.Enqueue(peer.ID(), *packet, true)
 

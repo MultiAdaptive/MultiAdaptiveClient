@@ -42,6 +42,8 @@ type DA struct {
 	ClaimedValue []byte         `json:"ClaimedValue"`
 	NameSpaceKey  common.Hash   `json:"NameSpaceKey"`
 	State         bool          `json:"State"` //data original state :default is false (have data)
+	MetaData      []byte         `json:"MeatData"` //
+	MetaDataHash  common.Hash   `json:"MeatDataHash"`
 }
 
 func NewDA(sender common.Address, index, length uint64, commitment kzg.Digest, data []byte, nodeGroupKey [32]byte, proof []byte, claimedValue []byte) *DA {

@@ -625,25 +625,29 @@ type RPCDA struct {
 	Index      hexutil.Uint64 `json:"index"`
 	Commitment hexutil.Bytes  `json:"commitment"`
 	Data       hexutil.Bytes  `json:"data"`
-	SignHash   []common.Hash `json:"sign"`
+	SignHash   []common.Hash  `json:"sign"`
 	TxHash     common.Hash    `json:"txhash"`
+	MetaData   []byte          `json:"metaData"`
 }
 
-func NewRPCDA(fd *types.DA) *RPCDA {
-	comitData := fd.Commitment.Marshal()
-	signHash := make([]common.Hash, len(fd.SignData))
-	for _,sign := range fd.SignData{
+func NewRPCDA(da *types.DA) *RPCDA {
+	comitData := da.Commitment.Marshal()
+	signHash := make([]common.Hash, len(da.SignData))
+	for _,sign := range da.SignData{
 		hash := common.BytesToHash(sign)
 		signHash = append(signHash,hash)
 	}
 	result := &RPCDA{
-		Sender:     fd.Sender,
-		Length:     hexutil.Uint64(fd.Length),
-		Index:      hexutil.Uint64(fd.Index),
+		Sender:     da.Sender,
+		Length:     hexutil.Uint64(da.Length),
+		Index:      hexutil.Uint64(da.Index),
 		Commitment: hexutil.Bytes(comitData),
-		Data:       hexutil.Bytes(fd.Data),
+		Data:       hexutil.Bytes(da.Data),
 		SignHash:   signHash,
-		TxHash:     fd.TxHash,
+		TxHash:     da.TxHash,
+	}
+	if len(da.MetaData) > 0 {
+		result.MetaData = da.MetaData
 	}
 	return result
 }
@@ -854,19 +858,19 @@ func NewDAAPI(b Backend) *DAAPI {
 	return &DAAPI{b, signer}
 }
 
-func (f *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64) ([]byte,error) {
-	sign,err := f.b.SendDAByParams(sender,index,length,commitment,data,nodeGroupKey,proof,claimedValue,outTimeStamp)
+func (d *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64,metaData []byte) ([]byte,error) {
+	sign,err := d.b.SendDAByParams(sender,index,length,commitment,data,nodeGroupKey,proof,claimedValue,outTimeStamp,metaData)
 	return sign,err
 }
 
-func (f *DAAPI) SendBTCDAByParams(commitment ,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error) {
+func (d *DAAPI) SendBTCDAByParams(commitment ,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,revealTxBytes, commitTxBytes, inscriptionScript []byte) ([]byte,error) {
 	log.Info("DAAPI----", "SendBTCDAParams---called--", common.Bytes2Hex(commitment))
-	return f.b.SendBTCDAByParams(commitment ,data,nodeGroupKey,proof,claimedValue,revealTxBytes, commitTxBytes, inscriptionScript)
+	return d.b.SendBTCDAByParams(commitment ,data,nodeGroupKey,proof,claimedValue,revealTxBytes, commitTxBytes, inscriptionScript)
 }
 
-func (f *DAAPI) GetDAByHash(hash common.Hash) (*RPCDA, error) {
+func (d *DAAPI) GetDAByHash(hash common.Hash) (*RPCDA, error) {
 	log.Info("DAAPI----", "GetDAByHash---called--", hash.String())
-	fd,err := f.b.GetDAByHash(hash)
+	fd,err := d.b.GetDAByHash(hash)
 	if err != nil || fd == nil{
 		return nil, err
 	}
@@ -874,8 +878,8 @@ func (f *DAAPI) GetDAByHash(hash common.Hash) (*RPCDA, error) {
 	return rpcFd, nil
 }
 
-func (f *DAAPI) GetBatchDAsByHashes(hashes []common.Hash) *RPCDAs {
-	das,errs := f.b.GetBatchDAsByHashes(hashes)
+func (d *DAAPI) GetBatchDAsByHashes(hashes []common.Hash) *RPCDAs {
+	das,errs := d.b.GetBatchDAsByHashes(hashes)
 	res := NewRPCDAs(len(hashes))
 	for index,da := range das {
 		rpcda := NewRPCDA(da)
@@ -887,10 +891,10 @@ func (f *DAAPI) GetBatchDAsByHashes(hashes []common.Hash) *RPCDAs {
 	return res
 }
 
-func (f *DAAPI) GetDAByCommitment(comimt string) (*RPCDA, error) {
+func (d *DAAPI) GetDAByCommitment(comimt string) (*RPCDA, error) {
 	log.Info("DAAPI----", "GetDAByCommitment---called--comimt", comimt)
 	data := common.Hex2Bytes(comimt)
-	fd, err := f.b.GetDAByCommitment(data)
+	fd, err := d.b.GetDAByCommitment(data)
 	if err != nil {
 		return nil, err
 	}
@@ -898,14 +902,23 @@ func (f *DAAPI) GetDAByCommitment(comimt string) (*RPCDA, error) {
 	return rpcFd, nil
 }
 
-func (f *DAAPI) GetBatchDAsByCommitments(commitments []string) *RPCDAs {
+func (d *DAAPI) GetDAByMetaData(metaData []byte) (*RPCDA, error)  {
+	fd, err := d.b.GetDAByMetaData(metaData)
+	if err != nil {
+		return nil, err
+	}
+	rpcFd := NewRPCDA(fd)
+	return rpcFd, nil
+}
+
+func (d *DAAPI) GetBatchDAsByCommitments(commitments []string) *RPCDAs {
 	commitmenDatas := make([][]byte,len(commitments))
 	for index,commit := range commitments{
 		data := common.Hex2Bytes(commit)
 		commitmenDatas[index] = data
 	}
 
-	das,errs := f.b.GetBatchDAsByCommitments(commitmenDatas)
+	das,errs := d.b.GetBatchDAsByCommitments(commitmenDatas)
 	res := NewRPCDAs(len(commitments))
 	for index,da := range das {
 		rpcda := NewRPCDA(da)
