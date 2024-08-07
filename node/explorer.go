@@ -393,6 +393,10 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 				Validators:      strings.Split(da.SignAddr, SEPARATOR_COMMA),
 				Fee:             cast.ToString(fee),
 			}
+			//TODO fix this
+			if len(blob.Validators) == 1 {
+				blob.Validators = []string{"0x11C0bd88eC60e1517ACb072f824Ddc8390AA66C0"}
+			}
 			blobs = append(blobs, blob)
 		}
 
@@ -503,6 +507,10 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 				Validators:     strings.Split(da.SignAddr, SEPARATOR_COMMA),
 				Fee:            cast.ToString(fee),
 			}
+			//TODO fix this
+			if len(blob.Validators) == 1 {
+				blob.Validators = []string{"0x11C0bd88eC60e1517ACb072f824Ddc8390AA66C0"}
+			}
 			filteredBlobs = append(filteredBlobs, blob)
 		}
 
@@ -598,6 +606,10 @@ func ShowBlobHandler(w http.ResponseWriter, r *http.Request) {
 				Validators:     strings.Split(da.SignAddr, SEPARATOR_COMMA),
 				Fee:            cast.ToString(fee),
 			}
+			//TODO fix this
+			if len(blob.Validators) == 1 {
+				blob.Validators = []string{"0x11C0bd88eC60e1517ACb072f824Ddc8390AA66C0"}
+			}
 			showBlobs = append(showBlobs, blob)
 		}
 
@@ -681,6 +693,10 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 			Proof:      da.Proof,
 		}
 
+		//TODO fix this
+		if len(foundBlob.Validators) == 1 {
+			foundBlob.Validators = []string{"0x11C0bd88eC60e1517ACb072f824Ddc8390AA66C0"}
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(foundBlob)
