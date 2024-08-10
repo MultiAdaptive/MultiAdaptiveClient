@@ -148,17 +148,18 @@ func (s EIP155DASigner) Equal(s2 DASigner) bool {
 }
 
 func (s EIP155DASigner) Sender(fd *DA) ([]common.Address, []error) {
-	recoverAddr := make([]common.Address,len(fd.SignData))
-	errors := make([]error,len(fd.SignData))
-	for i,signData := range fd.SignData{
+	recoverAddr := make([]common.Address,0)
+	errors := make([]error,0)
+	for _,signData := range fd.SignData{
 		if len(signData) == 64 {
 			R, S, V := sliteSignature(signData)
 			addr,err := recoverPlain(s.Hash(fd), R, S, V, true)
-			errors[i] = err
 			if err != nil {
+				errors = append(errors,err)
 				log.Info("Sender-----","err",err.Error())
+			}else {
+				recoverAddr = append(recoverAddr,addr)
 			}
-			recoverAddr[i] = addr
 		}
 	}
 	return recoverAddr,errors
