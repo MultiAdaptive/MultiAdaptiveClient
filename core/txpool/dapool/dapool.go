@@ -302,7 +302,10 @@ func (dp *DAPool) GetDAByCommit(commit []byte) (*types.DA, error) {
 	dp.mu.RLock()
 	defer dp.mu.RUnlock()
 	var digest kzg.Digest
-	digest.SetBytes(commit)
+	_,err := digest.SetBytes(commit)
+	if err != nil {
+		return nil, err
+	}
 	cmHash := common.BytesToHash(digest.Marshal())
 	log.Info("GetDAByCommit-----", "cmHash", cmHash.Hex())
 	var getTimes uint64
