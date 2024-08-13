@@ -41,7 +41,7 @@ type DA struct {
 	NameSpaceKey    string  `gorm:"column:f_name_space_id;not null;comment:命名空间" json:"name_space_key"`
 	State           bool  `gorm:"column:f_state;not null;comment:数据状态;index:idx_state" json:"state"`
 	MetaData        string `gorm:"column:f_meta_data;comment:额外数据" json:"metaData"`
-	MetaDataHash    string `gorm:"column:f_meta_data;comment:额外数据哈希;index:idx_metaData_hash" json:"metaData_hash"`
+	MetaDataHash    string `gorm:"column:f_meta_data_hash;comment:额外数据哈希;index:idx_metaData_hash" json:"metaData_hash"`
 }
 
 func (*DA) TableName() string {
@@ -330,9 +330,9 @@ func GetDAByExtraDataHash(db *gorm.DB, mdHash common.Hash) (*types.DA, error) {
 		return nil, errors.New(msg)
 	}
 	var da DA
-	gormdb = db.Limit(1).Find(&da, "commitment_hash = ?", mdHash.Hex())
+	gormdb = db.Limit(1).Find(&da, "meta_data_hash = ?", mdHash.Hex())
 	if gormdb.Error != nil {
-		log.Error("can not find DA with given commitment_hash", "commitment_hash", mdHash.Hex(), "err", gormdb.Error)
+		log.Error("can not find DA with given meta_data_hash", "meta_data_hash", mdHash.Hex(), "err", gormdb.Error)
 		return nil, gormdb.Error
 	}
 
