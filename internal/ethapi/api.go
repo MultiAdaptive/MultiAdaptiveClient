@@ -627,7 +627,7 @@ type RPCDA struct {
 	Data       hexutil.Bytes  `json:"data"`
 	SignHash   []common.Hash  `json:"sign"`
 	TxHash     common.Hash    `json:"txhash"`
-	MetaData   []byte          `json:"metaData"`
+	MetaData   []byte         `json:"metaData"`
 }
 
 func NewRPCDA(da *types.DA) *RPCDA {
@@ -654,7 +654,7 @@ func NewRPCDA(da *types.DA) *RPCDA {
 
 type RPCDAs struct {
 	DAs  []*RPCDA      `json:"das"`
-	Errs []error      `json:"errs"`
+	Errs []error        `json:"errs"`
 }
 
 func NewRPCDAs(length int) *RPCDAs {
@@ -858,8 +858,8 @@ func NewDAAPI(b Backend) *DAAPI {
 	return &DAAPI{b, signer}
 }
 
-func (d *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64,metaData []byte) ([]byte,error) {
-	sign,err := d.b.SendDAByParams(sender,index,length,commitment,data,nodeGroupKey,proof,claimedValue,outTimeStamp,metaData)
+func (d *DAAPI) SendDAByParams(sender common.Address,index,length uint64,commitment,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64,extraData []byte) ([]byte,error) {
+	sign,err := d.b.SendDAByParams(sender,index,length,commitment,data,nodeGroupKey,proof,claimedValue,outTimeStamp,extraData)
 	return sign,err
 }
 
@@ -902,8 +902,8 @@ func (d *DAAPI) GetDAByCommitment(comimt string) (*RPCDA, error) {
 	return rpcFd, nil
 }
 
-func (d *DAAPI) GetDAByMetaData(metaData []byte) (*RPCDA, error)  {
-	fd, err := d.b.GetDAByMetaData(metaData)
+func (d *DAAPI) GetDAByExtraData(metaData []byte) (*RPCDA, error)  {
+	fd, err := d.b.GetDAByExtraData(metaData)
 	if err != nil {
 		return nil, err
 	}

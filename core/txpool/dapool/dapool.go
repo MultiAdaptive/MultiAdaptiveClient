@@ -341,7 +341,7 @@ Lable:
 			if getTimes < 1 {
 				da, err = db.GetDAByCommitmentHash(dp.chain.SqlDB(), hash)
 				if da == nil || err != nil {
-					da, err = db.GetDAByMetaDataHash(dp.chain.SqlDB(),hash)
+					da, err = db.GetDAByExtraDataHash(dp.chain.SqlDB(),hash)
 					if da == nil || err != nil{
 						dp.DAHashFeed.Send(core.DAHashEvent{Hashes: []common.Hash{hash}})
 						return nil, nil

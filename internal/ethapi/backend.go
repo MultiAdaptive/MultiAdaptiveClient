@@ -56,7 +56,7 @@ type Backend interface {
 	GetDAByHash(hash common.Hash) (*types.DA,error)
 	GetBatchDAsByHashes(hashes []common.Hash) ([]*types.DA,[]error)
 	GetDAByCommitment(comimt []byte) (*types.DA, error)
-	GetDAByMetaData(metaData []byte) (*types.DA, error)
+	GetDAByExtraData(metaData []byte) (*types.DA, error)
 	GetBatchDAsByCommitments(commitments [][]byte) ([]*types.DA,[]error)
 	SubscribeNewDAEvent(chan<- core.NewDAEvent) event.Subscription
 

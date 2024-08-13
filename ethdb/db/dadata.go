@@ -315,8 +315,8 @@ func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
 	}, nil
 }
 
-func GetDAByMetaDataHash(db *gorm.DB, mdHash common.Hash) (*types.DA, error) {
-	log.Info("GetDAByMetaDataHash------")
+func GetDAByExtraDataHash(db *gorm.DB, mdHash common.Hash) (*types.DA, error) {
+	log.Info("GetDAByExtraDataHash------")
 	var gormdb *gorm.DB
 	var count int64
 	gormdb = db.Model(&DA{}).Count(&count)

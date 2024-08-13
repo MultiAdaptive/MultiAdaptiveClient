@@ -100,6 +100,8 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 	fd := types.NewDA(sender, index, length, digest, data, nodeGroupKey, proof, claimedValue)
 	if len(metaData) > 0 {
 		fd.MetaData = metaData
+		dataHash := common.BytesToHash(metaData)
+		fd.MetaDataHash = dataHash
 	}
 	t := time.Unix(outTimeStamp,0)
 	fd.OutOfTime = t
@@ -117,16 +119,6 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 		b.eth.daPool.Add([]*types.DA{fd},true,false)
 		return signData,err
 	}
-}
-
-func (b *EthAPIBackend) GetDAByMetaData(metaData []byte) (*types.DA, error) {
-	mdHash := common.BytesToHash(metaData)
-	fd,err := b.eth.daPool.Get(mdHash)
-	log.Info("EthAPIBackend-----GetDAByMetaData", "mdHash", mdHash.String())
-	if fd != nil {
-		return fd,nil
-	}
-	return nil,err
 }
 
 
@@ -213,6 +205,16 @@ func (b *EthAPIBackend) GetDAByCommitment(comimt []byte) (*types.DA, error) {
 		return fd, nil
 	}
 	return nil, err
+}
+
+func (b *EthAPIBackend) GetDAByExtraData(metaData []byte) (*types.DA, error) {
+	mdHash := common.BytesToHash(metaData)
+	fd,err := b.eth.daPool.Get(mdHash)
+	log.Info("EthAPIBackend-----GetDAByExtraData", "mdHash", mdHash.String())
+	if fd != nil {
+		return fd,nil
+	}
+	return nil,err
 }
 
 func (b *EthAPIBackend) GetBatchDAsByCommitments(commitments [][]byte) ([]*types.DA,[]error) {
