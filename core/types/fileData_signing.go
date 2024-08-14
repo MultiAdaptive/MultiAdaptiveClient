@@ -144,8 +144,6 @@ func (s EIP155DASigner) Sender(fd *DA) ([]common.Address, []error) {
 	for _, signData := range fd.SignData {
 		log.Info("Sender----signData","signData",common.Bytes2Hex(signData))
 		R, S, V := sliteSignature(signData)
-		signHash := s.Hash(fd)
-		log.Info("Sender----signData--2","signHash",signHash.Hex())
 		addr, err := recoverPlain(s.Hash(fd), R, S, V, true)
 		if err != nil {
 			errors = append(errors, err)
