@@ -142,14 +142,12 @@ func (s EIP155DASigner) Sender(fd *DA) ([]common.Address, []error) {
 	recoverAddr := make([]common.Address, 0)
 	errors := make([]error, 0)
 	for _, signData := range fd.SignData {
-		log.Info("Sender----signData","signData",common.Bytes2Hex(signData))
 		R, S, V := sliteSignature(signData)
 		addr, err := recoverPlain(s.Hash(fd), R, S, V, true)
 		if err != nil {
 			errors = append(errors, err)
 			log.Info("Sender-----", "err", err.Error())
 		} else {
-			log.Info("Sender----addr","addr",addr.Hex())
 			recoverAddr = append(recoverAddr, addr)
 		}
 	}
@@ -186,7 +184,6 @@ func (s EIP155DASigner) Hash(fd *DA) common.Hash {
 	data = append(data, receiveByte[:]...)
 	data = append(data, commitXByte[:]...)
 	data = append(data, commitYByte[:]...)
-	log.Info("Hash----2","data",common.Bytes2Hex(data))
 	return crypto.Keccak256Hash(data)
 }
 

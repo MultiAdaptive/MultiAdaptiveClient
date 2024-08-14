@@ -572,18 +572,6 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			detailFinal.OutOfTime = time.Unix(daDetail.Timestamp.Int64(),0)
 			detailFinal.SigData = daDetail.Signatures
 			detailFinal.BlockNum = logDetail.BlockNumber
-			addrList, err := cs.handler.daPool.GetSender(daDetail.Signatures)
-			for _, errDetail := range err {
-				if errDetail != nil {
-					log.Info("GetSender----", "err", errDetail.Error())
-				}
-			}
-			list := make([]string,len(addrList))
-			for i,addr := range addrList{
-				list[i] = addr.Hex()
-				log.Info("GetSender---------","addr",addr.Hex())
-			}
-			detailFinal.SignAddress = list
 		}
 		commitCache.Set(logDetail.TxHash.Hex(), detailFinal)
 	}
@@ -610,7 +598,18 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 				da.ReceiveAt = daDetail.Time
 				da.SignData = daDetail.SigData
 				da.BlockNum = daDetail.BlockNum
-				da.SignerAddr = daDetail.SignAddress
+				addrList, errs := cs.handler.daPool.GetSender(da.SignData)
+				for _, errDetail := range errs {
+					if errDetail != nil {
+						log.Info("GetSender----", "err", errDetail.Error())
+					}
+				}
+				list := make([]string,len(addrList))
+				for i,addr := range addrList{
+					list[i] = addr.Hex()
+					log.Info("GetSender---------","addr",addr.Hex())
+				}
+				da.SignerAddr = list
 				da.OutOfTime = daDetail.OutOfTime
 				if err == nil && da != nil {
 					da.State = false
