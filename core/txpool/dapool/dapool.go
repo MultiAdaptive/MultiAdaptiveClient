@@ -291,9 +291,7 @@ func (dp *DAPool) Has(hash common.Hash) bool {
 	return fd != nil
 }
 
-func (dp *DAPool) GetSender(signData [][]byte) ([]common.Address, []error) {
-	da := new(types.DA)
-	da.SignData = signData
+func (dp *DAPool) GetSender(da *types.DA) ([]common.Address, []error) {
 	recoverAddr, err := types.FdSender(dp.signer, da)
 	return recoverAddr, err
 }

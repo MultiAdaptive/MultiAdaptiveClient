@@ -569,10 +569,10 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			detailFinal.NameSpaceKey = daDetail.NameSpaceKey
 			detailFinal.Nonce = daDetail.Nonce.Uint64()
 			detailFinal.Index = daDetail.Index.Uint64()
+			log.Info("sync------out of time","outoftime",daDetail.Timestamp.Int64())
 			detailFinal.OutOfTime = time.Unix(daDetail.Timestamp.Int64(),0)
 			detailFinal.SigData = daDetail.Signatures
 			detailFinal.BlockNum = logDetail.BlockNumber
-			log.Info("detailFinal-----","Index",detailFinal.Index,"length",detailFinal.Length,"outoftime",daDetail.Timestamp.Int64())
 		}
 		commitCache.Set(logDetail.TxHash.Hex(), detailFinal)
 	}
@@ -601,7 +601,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 				da.BlockNum = daDetail.BlockNum
 				da.OutOfTime = daDetail.OutOfTime
 				log.Info("da----","sender",da.Sender.Hex(),"index",da.Index,"length",da.Length,"outoftime",da.OutOfTime.Unix())
-				addrList, errs := cs.handler.daPool.GetSender(da.SignData)
+				addrList, errs := cs.handler.daPool.GetSender(da)
 				for _, errDetail := range errs {
 					if errDetail != nil {
 						log.Info("GetSender----", "err", errDetail.Error())

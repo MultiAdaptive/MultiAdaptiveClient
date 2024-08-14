@@ -71,7 +71,7 @@ type daPool interface {
 
 	SendNewDAEvent(fileData []*types.DA)
 
-	GetSender(signData [][]byte) ([]common.Address,[]error)
+	GetSender(da *types.DA) ([]common.Address,[]error)
 
 	RemoveDA(das []*types.DA)
 
