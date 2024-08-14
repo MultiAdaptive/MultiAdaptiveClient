@@ -113,12 +113,10 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 		signData,err := b.eth.singer.Sign(fd)
 		fd.SignData = [][]byte{signData}
 		signerAddr,errs := b.eth.singer.Sender(fd)
-		log.Info("SendDAByParams----","addr",signerAddr[0].Hex())
 		if len(signerAddr) == 0 || len(errs) != 0 {
 			goto Mark
 		}
 		b.eth.daPool.Add([]*types.DA{fd},true,false)
-		log.Info("SendDAByParams--------","signData",common.Bytes2Hex(signData))
 		return signData,err
 	}
 }

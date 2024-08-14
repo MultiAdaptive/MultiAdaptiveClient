@@ -608,7 +608,6 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 				list := make([]string,len(addrList))
 				for i,addr := range addrList{
 					list[i] = addr.Hex()
-					log.Info("validator-----","addr",addr.Hex())
 				}
 				da.SignerAddr = list
 				da.OutOfTime = daDetail.OutOfTime

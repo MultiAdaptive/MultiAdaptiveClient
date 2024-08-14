@@ -573,7 +573,6 @@ func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (commo
 	sig[64] = V
 	// recover the public key from the signature
 	pub, err := crypto.Ecrecover(sighash[:], sig)
-	log.Info("recoverPlain----","pub",common.Bytes2Hex(pub))
 	if err != nil {
 		return common.Address{}, err
 	}
