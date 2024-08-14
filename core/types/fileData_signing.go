@@ -64,7 +64,6 @@ func LatestDASigner(config *params.ChainConfig) DASigner {
 	return HomesteadDASigner{}
 }
 
-
 // LatestDASignerForChainID returns the 'most permissive' Signer available. Specifically,
 // this enables support for EIP-155 replay protection and all implemented EIP-2718
 // fileData types if chainID is non-nil.
@@ -86,7 +85,7 @@ func SignFd(fd *DA, s DASigner, prv *ecdsa.PrivateKey) (*DA, error) {
 	if err != nil {
 		return nil, err
 	}
-	return fd.WithSignature(s,sig)
+	return fd.WithSignature(s, sig)
 }
 
 // FdSender returns the address derived from the signature (V, R, S) using secp256k1
@@ -94,7 +93,7 @@ func SignFd(fd *DA, s DASigner, prv *ecdsa.PrivateKey) (*DA, error) {
 // signature.
 //
 func FdSender(signer DASigner, fd *DA) ([]common.Address, []error) {
-	addr,err := signer.Sender(fd)
+	addr, err := signer.Sender(fd)
 	return addr, err
 }
 
@@ -111,13 +110,13 @@ type DASigner interface {
 	// SignatureValues returns the raw R, S, V values corresponding to the
 	// given signature.
 	SignatureValues(fd *DA, sig []byte) (r, s, v *big.Int, err error)
-	
+
 	ChainID() *big.Int
 
 	// Hash returns 'signature hash', i.e. the fileData hash that is signed by the
 	// private key. This hash does not uniquely identify the fileData.
 	Hash(fd *DA) common.Hash
-	
+
 	// Equal returns true if the given signer is the same as the receiver.
 	Equal(DASigner) bool
 }
@@ -148,21 +147,19 @@ func (s EIP155DASigner) Equal(s2 DASigner) bool {
 }
 
 func (s EIP155DASigner) Sender(fd *DA) ([]common.Address, []error) {
-	recoverAddr := make([]common.Address,0)
-	errors := make([]error,0)
-	for _,signData := range fd.SignData{
-		if len(signData) == 64 {
-			R, S, V := sliteSignature(signData)
-			addr,err := recoverPlain(s.Hash(fd), R, S, V, true)
-			if err != nil {
-				errors = append(errors,err)
-				log.Info("Sender-----","err",err.Error())
-			}else {
-				recoverAddr = append(recoverAddr,addr)
-			}
+	recoverAddr := make([]common.Address, 0)
+	errors := make([]error, 0)
+	for _, signData := range fd.SignData {
+		R, S, V := sliteSignature(signData)
+		addr, err := recoverPlain(s.Hash(fd), R, S, V, true)
+		if err != nil {
+			errors = append(errors, err)
+			log.Info("Sender-----", "err", err.Error())
+		} else {
+			recoverAddr = append(recoverAddr, addr)
 		}
 	}
-	return recoverAddr,errors
+	return recoverAddr, errors
 }
 
 // SignatureValues returns signature values. This signature
@@ -179,7 +176,7 @@ func (s EIP155DASigner) SignatureValues(fd *DA, sig []byte) (R, S, V *big.Int, e
 // Hash returns the hash to be signed by the sender.
 // It does not uniquely identify the transaction.
 func (s EIP155DASigner) Hash(fd *DA) common.Hash {
-	data := make([]byte,0)
+	data := make([]byte, 0)
 	chainId := transTo32Byte(uint64ToBigEndianHexBytes(s.chainId.Uint64()))
 	indexByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Index))
 	lengthByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Length))
@@ -187,13 +184,13 @@ func (s EIP155DASigner) Hash(fd *DA) common.Hash {
 	addrByte := transTo32Byte(fd.Sender.Bytes())
 	commitXByte := fd.Commitment.X.Bytes()
 	commitYByte := fd.Commitment.Y.Bytes()
-	data = append(data,chainId[:]...)
-	data = append(data,addrByte[:]...)
-	data = append(data,indexByte[:]...)
-	data = append(data,lengthByte[:]...)
-	data = append(data,receiveByte[:]...)
-	data = append(data,commitXByte[:]...)
-	data = append(data,commitYByte[:]...)
+	data = append(data, chainId[:]...)
+	data = append(data, addrByte[:]...)
+	data = append(data, indexByte[:]...)
+	data = append(data, lengthByte[:]...)
+	data = append(data, receiveByte[:]...)
+	data = append(data, commitXByte[:]...)
+	data = append(data, commitYByte[:]...)
 	return crypto.Keccak256Hash(data)
 }
 
@@ -201,7 +198,7 @@ func transTo32Byte(data []byte) [32]byte {
 	var byteData [32]byte
 	byteDataLength := len(byteData)
 	dataLength := len(data)
-	for i,b := range data {
+	for i, b := range data {
 		byteData[byteDataLength-dataLength+i] = b
 	}
 	return byteData
@@ -227,18 +224,17 @@ func (hs HomesteadDASigner) SignatureValues(fd *DA, sig []byte) (r, s, v *big.In
 }
 
 func (hs HomesteadDASigner) Sender(fd *DA) ([]common.Address, []error) {
-	recoverAddr := make([]common.Address,len(fd.SignData))
-	errors := make([]error,len(fd.SignData))
-	for i,_ := range fd.SignData{
-		r, s ,v := fd.RawSignatureValues(uint64(i))
-		v.Sub(v,new(big.Int).SetUint64(27))
-		addr,err := recoverPlain(hs.Hash(fd), r, s, v, true)
+	recoverAddr := make([]common.Address, len(fd.SignData))
+	errors := make([]error, len(fd.SignData))
+	for i, _ := range fd.SignData {
+		r, s, v := fd.RawSignatureValues(uint64(i))
+		v.Sub(v, new(big.Int).SetUint64(27))
+		addr, err := recoverPlain(hs.Hash(fd), r, s, v, true)
 		errors[i] = err
 		recoverAddr[i] = addr
 	}
-	return recoverAddr,errors
+	return recoverAddr, errors
 }
-
 
 // FrontierDASigner implements Signer interface using the
 // frontier rules.
@@ -254,18 +250,18 @@ func (s FrontierDASigner) Equal(s2 DASigner) bool {
 }
 
 func (fs FrontierDASigner) Sender(fd *DA) ([]common.Address, []error) {
-	recoverAddr := make([]common.Address,len(fd.SignData))
-	errors := make([]error,len(fd.SignData))
-	for i,signData := range fd.SignData{
+	recoverAddr := make([]common.Address, len(fd.SignData))
+	errors := make([]error, len(fd.SignData))
+	for i, signData := range fd.SignData {
 		if len(signData) > 32 {
 			r, s, v := sliteSignature(signData)
-			v = v.Mul(v,new(big.Int).SetUint64(27))
-			addr,err := recoverPlain(fs.Hash(fd), r, s, v, false)
+			v = v.Mul(v, new(big.Int).SetUint64(27))
+			addr, err := recoverPlain(fs.Hash(fd), r, s, v, false)
 			errors[i] = err
 			recoverAddr[i] = addr
 		}
 	}
-	return recoverAddr,errors
+	return recoverAddr, errors
 }
 
 // SignatureValues returns signature values. This signature
@@ -278,28 +274,28 @@ func (fs FrontierDASigner) SignatureValues(fd *DA, sig []byte) (r, s, v *big.Int
 // Hash returns the hash to be signed by the sender.
 // It does not uniquely identify the transaction.
 func (fs FrontierDASigner) Hash(fd *DA) common.Hash {
-	data := make([]byte,0)
+	data := make([]byte, 0)
 	indexByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Index))
 	lengthByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Length))
 	addrByte := transTo32Byte(fd.Sender.Bytes())
 	commitXByte := fd.Commitment.X.Bytes()
 	commitYByte := fd.Commitment.Y.Bytes()
-	data = append(data,addrByte[:]...)
-	data = append(data,indexByte[:]...)
-	data = append(data,lengthByte[:]...)
-	data = append(data,commitXByte[:]...)
-	data = append(data,commitYByte[:]...)
+	data = append(data, addrByte[:]...)
+	data = append(data, indexByte[:]...)
+	data = append(data, lengthByte[:]...)
+	data = append(data, commitXByte[:]...)
+	data = append(data, commitYByte[:]...)
 	return crypto.Keccak256Hash(data)
 }
 
-func sliteSignature(sig []byte) (r,s,v *big.Int) {
+func sliteSignature(sig []byte) (r, s, v *big.Int) {
 	r = new(big.Int).SetBytes(sig[:32])
 	s = new(big.Int).SetBytes(sig[32:64])
 	v = new(big.Int).SetBytes(sig[64:])
-	return r,s,v
- }
+	return r, s, v
+}
 
- func uint64ToBigEndianHexBytes(value uint64) []byte {
+func uint64ToBigEndianHexBytes(value uint64) []byte {
 	// 创建一个长度为 8 的字节切片
 	byteData := make([]byte, 8)
 	// 使用 binary.BigEndian.PutUint64 将 uint64 转换为大端字节序

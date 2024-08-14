@@ -242,6 +242,10 @@ func HomeDataHandler(w http.ResponseWriter, r *http.Request) {
 				Validators:     strings.Split(da.SignAddr, SEPARATOR_COMMA),
 				Fee:            cast.ToString(fee),
 			}
+			//TODO FIX THIS
+			if len(blob.Validators) == 1 {
+				blob.Validators = []string{"0x11C0bd88eC60e1517ACb072f824Ddc8390AA66C0"}
+			}
 			blobs = append(blobs, blob)
 		}
 
@@ -389,6 +393,10 @@ func SearchBlobHandler(w http.ResponseWriter, r *http.Request) {
 				Validators:      strings.Split(da.SignAddr, SEPARATOR_COMMA),
 				Fee:             cast.ToString(fee),
 			}
+			//TODO FIX THIS
+			if len(blob.Validators) == 1 {
+				blob.Validators = []string{"0x11C0bd88eC60e1517ACb072f824Ddc8390AA66C0"}
+			}
 			blobs = append(blobs, blob)
 		}
 
@@ -499,6 +507,10 @@ func FilterBlobHandler(w http.ResponseWriter, r *http.Request) {
 				Validators:     strings.Split(da.SignAddr, SEPARATOR_COMMA),
 				Fee:            cast.ToString(fee),
 			}
+			//TODO FIX THIS
+			if len(blob.Validators) == 1 {
+				blob.Validators = []string{"0x11C0bd88eC60e1517ACb072f824Ddc8390AA66C0"}
+			}
 			filteredBlobs = append(filteredBlobs, blob)
 		}
 
@@ -594,6 +606,10 @@ func ShowBlobHandler(w http.ResponseWriter, r *http.Request) {
 				Validators:     strings.Split(da.SignAddr, SEPARATOR_COMMA),
 				Fee:            cast.ToString(fee),
 			}
+			//TODO FIX THIS
+			if len(blob.Validators) == 1 {
+				blob.Validators = []string{"0x11C0bd88eC60e1517ACb072f824Ddc8390AA66C0"}
+			}
 			showBlobs = append(showBlobs, blob)
 		}
 
@@ -676,6 +692,10 @@ func BlobDetailHandler(w http.ResponseWriter, r *http.Request) {
 			Fee:        cast.ToString(fee),
 			Proof:      da.Proof,
 		}
+		//TODO FIX THIS
+		if len(foundBlob.Validators) == 1 {
+			foundBlob.Validators = []string{"0x11C0bd88eC60e1517ACb072f824Ddc8390AA66C0"}
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(foundBlob)
@@ -729,7 +749,6 @@ func NodesHandler(w http.ResponseWriter, r *http.Request) {
 				if filNode.StakedTokens > 0 {
 					filteredNodes = append(filteredNodes, filNode)
 				}
-
 			}
 
 			for _, node := range storResult {
