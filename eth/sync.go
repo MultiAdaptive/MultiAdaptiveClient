@@ -581,6 +581,7 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			list := make([]string,len(addrList))
 			for i,addr := range addrList{
 				list[i] = addr.Hex()
+				log.Info("GetSender---------","addr",addr.Hex())
 			}
 			detailFinal.SignAddress = list
 		}

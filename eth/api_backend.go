@@ -118,6 +118,7 @@ func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64
 			goto Mark
 		}
 		b.eth.daPool.Add([]*types.DA{fd},true,false)
+		log.Info("SendDAByParams--------","signData",common.Bytes2Hex(signData))
 		return signData,err
 	}
 }
