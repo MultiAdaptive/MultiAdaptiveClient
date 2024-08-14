@@ -600,7 +600,6 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 				da.SignData = daDetail.SigData
 				da.BlockNum = daDetail.BlockNum
 				da.OutOfTime = daDetail.OutOfTime
-				log.Info("da----","sender",da.Sender.Hex(),"index",da.Index,"length",da.Length,"outoftime",da.OutOfTime.Unix())
 				addrList, errs := cs.handler.daPool.GetSender(da)
 				for _, errDetail := range errs {
 					if errDetail != nil {
@@ -610,7 +609,6 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 				list := make([]string,len(addrList))
 				for i,addr := range addrList{
 					list[i] = addr.Hex()
-					log.Info("GetSender---------","addr",addr.Hex())
 				}
 				da.SignerAddr = list
 				da.OutOfTime = daDetail.OutOfTime

@@ -168,7 +168,6 @@ func (s EIP155DASigner) SignatureValues(fd *DA, sig []byte) (R, S, V *big.Int, e
 // Hash returns the hash to be signed by the sender.
 // It does not uniquely identify the transaction.
 func (s EIP155DASigner) Hash(fd *DA) common.Hash {
-	log.Info("Hash---","chainId",s.chainId.Uint64(),"Index",fd.Index,"fd.Length",fd.Length,"OutOfTime",uint64(fd.OutOfTime.Unix()),"sender",fd.Sender.Hex())
 	data := make([]byte, 0)
 	chainId := transTo32Byte(uint64ToBigEndianHexBytes(s.chainId.Uint64()))
 	indexByte := transTo32Byte(uint64ToBigEndianHexBytes(fd.Index))
