@@ -627,7 +627,7 @@ type RPCDA struct {
 	Data       hexutil.Bytes  `json:"data"`
 	SignHash   []common.Hash  `json:"sign"`
 	TxHash     common.Hash    `json:"txhash"`
-	ExtraData   []byte         `json:"extraData"`
+	ExtraData  hexutil.Bytes  `json:"extraData"`
 }
 
 func NewRPCDA(da *types.DA) *RPCDA {
@@ -647,7 +647,7 @@ func NewRPCDA(da *types.DA) *RPCDA {
 		TxHash:     da.TxHash,
 	}
 	if len(da.ExtraData) > 0 {
-		result.ExtraData = da.ExtraData
+		result.ExtraData = hexutil.Bytes(da.ExtraData)
 	}
 	return result
 }
