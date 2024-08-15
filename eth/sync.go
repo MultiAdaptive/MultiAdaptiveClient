@@ -569,7 +569,6 @@ func (cs *chainSyncer) processBlocks(blocks []*types.Block) error {
 			detailFinal.NameSpaceKey = daDetail.NameSpaceKey
 			detailFinal.Nonce = daDetail.Nonce.Uint64()
 			detailFinal.Index = daDetail.Index.Uint64()
-			log.Info("sync------out of time","outoftime",daDetail.Timestamp.Int64())
 			detailFinal.OutOfTime = time.Unix(daDetail.Timestamp.Int64(),0)
 			detailFinal.SigData = daDetail.Signatures
 			detailFinal.BlockNum = logDetail.BlockNumber

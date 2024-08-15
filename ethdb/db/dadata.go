@@ -84,6 +84,7 @@ func SaveDACommit(db *gorm.DB, da *types.DA, shouldSave bool)  error {
 		if len(da.MetaData) > 0 {
 			wd.MetaData = common.Bytes2Hex(da.MetaData)
 			wd.MetaDataHash = common.BytesToHash(da.MetaData).Hex()
+			log.Info("数据库存了----","MetaData",wd.MetaData,"MetaDataHash",wd.MetaDataHash)
 		}
 		res := db.Create(&wd)
 		return res.Error
