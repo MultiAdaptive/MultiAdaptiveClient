@@ -903,8 +903,9 @@ func (d *DAAPI) GetDAByCommitment(comimt string) (*RPCDA, error) {
 }
 
 func (d *DAAPI) GetDAByExtraData(metaData []byte) (*RPCDA, error)  {
+	log.Info("GetDAByExtraData-----","extraData",common.Bytes2Hex(metaData),"extraData Hash",common.BytesToHash(metaData))
 	fd, err := d.b.GetDAByExtraData(metaData)
-	if err != nil {
+	if err != nil || fd == nil{
 		return nil, err
 	}
 	rpcFd := NewRPCDA(fd)

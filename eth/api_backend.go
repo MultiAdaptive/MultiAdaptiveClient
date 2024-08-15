@@ -210,7 +210,7 @@ func (b *EthAPIBackend) GetDAByCommitment(comimt []byte) (*types.DA, error) {
 func (b *EthAPIBackend) GetDAByExtraData(metaData []byte) (*types.DA, error) {
 	mdHash := common.BytesToHash(metaData)
 	fd,err := b.eth.daPool.Get(mdHash)
-	log.Info("EthAPIBackend-----GetDAByExtraData", "mdHash", mdHash.String())
+	log.Info("EthAPIBackend-----GetDAByExtraData", "metaData",common.Bytes2Hex(metaData),"mdHash", mdHash.String())
 	if fd != nil {
 		return fd,nil
 	}
