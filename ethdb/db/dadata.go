@@ -84,7 +84,6 @@ func SaveDACommit(db *gorm.DB, da *types.DA, shouldSave bool)  error {
 		if len(da.MetaData) > 0 {
 			wd.MetaData = common.Bytes2Hex(da.MetaData)
 			wd.MetaDataHash = common.BytesToHash(da.MetaData).Hex()
-			log.Info("数据库存了----","MetaData",wd.MetaData,"MetaDataHash",wd.MetaDataHash)
 		}
 		res := db.Create(&wd)
 		return res.Error
@@ -207,7 +206,7 @@ func GetDAByCommitment(db *gorm.DB, commitment []byte) (*types.DA, error) {
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
 	var da DA
-	gormdb = db.Limit(1).Find(&da, "commitment = ?", common.Bytes2Hex(digest.Marshal()))
+	gormdb = db.Limit(1).Find(&da, "f_commitment = ?", common.Bytes2Hex(digest.Marshal()))
 	if gormdb.Error != nil {
 		log.Error("can not find DA with given commitment", "commitment", common.Bytes2Hex(commitment), "err", gormdb.Error)
 		return nil, gormdb.Error
@@ -269,7 +268,7 @@ func GetDAByCommitmentHash(db *gorm.DB, cmHash common.Hash) (*types.DA, error) {
 		return nil, errors.New(msg)
 	}
 	var da DA
-	gormdb = db.Limit(1).Find(&da, "commitment_hash = ?", cmHash.Hex())
+	gormdb = db.Limit(1).Find(&da, "f_commitment_hash = ?", cmHash.Hex())
 	if gormdb.Error != nil {
 		log.Error("can not find DA with given commitment_hash", "commitment_hash", cmHash.Hex(), "err", gormdb.Error)
 		return nil, gormdb.Error
@@ -331,7 +330,7 @@ func GetDAByExtraDataHash(db *gorm.DB, mdHash common.Hash) (*types.DA, error) {
 		return nil, errors.New(msg)
 	}
 	var da DA
-	gormdb = db.Limit(1).Find(&da, "meta_data_hash = ?", mdHash.Hex())
+	gormdb = db.Limit(1).Find(&da, "f_meta_data_hash = ?", mdHash.Hex())
 	if gormdb.Error != nil {
 		log.Error("can not find DA with given meta_data_hash", "meta_data_hash", mdHash.Hex(), "err", gormdb.Error)
 		return nil, gormdb.Error
