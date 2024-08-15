@@ -40,8 +40,8 @@ type DA struct {
 	CreateAt        int64  `gorm:"column:f_create_at;not null;comment:创建时间;index:idx_das_create_at" json:"create_at"` // 创建时间
 	NameSpaceKey    string  `gorm:"column:f_name_space_id;not null;comment:命名空间" json:"name_space_key"`
 	State           bool  `gorm:"column:f_state;not null;comment:数据状态;index:idx_state" json:"state"`
-	MetaData        string `gorm:"column:f_meta_data;comment:额外数据" json:"metaData"`
-	MetaDataHash    string `gorm:"column:f_meta_data_hash;comment:额外数据哈希;index:idx_metaData_hash" json:"metaData_hash"`
+	ExtraData        string `gorm:"column:f_meta_data;comment:额外数据" json:"extraData"`
+	ExtraDataHash    string `gorm:"column:f_meta_data_hash;comment:额外数据哈希;index:idx_extraData_hash" json:"extraData_hash"`
 }
 
 func (*DA) TableName() string {
@@ -81,9 +81,9 @@ func SaveDACommit(db *gorm.DB, da *types.DA, shouldSave bool)  error {
 			NameSpaceKey:     da.NameSpaceKey.Hex(),
 			State:            da.State,
 		}
-		if len(da.MetaData) > 0 {
-			wd.MetaData = common.Bytes2Hex(da.MetaData)
-			wd.MetaDataHash = common.BytesToHash(da.MetaData).Hex()
+		if len(da.ExtraData) > 0 {
+			wd.ExtraData = common.Bytes2Hex(da.ExtraData)
+			wd.ExtraDataHash = common.BytesToHash(da.ExtraData).Hex()
 		}
 		res := db.Create(&wd)
 		return res.Error
@@ -123,9 +123,9 @@ func SaveBatchCommitment(db *gorm.DB, das []*types.DA) error {
 			ReceiveAt:       da.ReceiveAt.Format(time.RFC3339),
 			State:            da.State,
 		}
-		if len(da.MetaData) > 0 {
-			wda.MetaData = common.Bytes2Hex(da.MetaData)
-			wda.MetaDataHash = common.BytesToHash(da.MetaData).Hex()
+		if len(da.ExtraData) > 0 {
+			wda.ExtraData = common.Bytes2Hex(da.ExtraData)
+			wda.ExtraDataHash = common.BytesToHash(da.ExtraData).Hex()
 		}
 		wdas = append(wdas, wda)
 	}
@@ -372,8 +372,8 @@ func GetDAByExtraDataHash(db *gorm.DB, mdHash common.Hash) (*types.DA, error) {
 		ReceiveAt:   parsedTime,
 		NameSpaceKey: common.HexToHash(da.NameSpaceKey),
 		State:        da.State,
-		MetaData:     common.Hex2Bytes(da.MetaData),
-		MetaDataHash: common.HexToHash(da.MetaDataHash),
+		ExtraData:     common.Hex2Bytes(da.ExtraData),
+		ExtraDataHash: common.HexToHash(da.ExtraDataHash),
 	}, nil
 }
 

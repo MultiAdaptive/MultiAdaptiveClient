@@ -93,15 +93,15 @@ func (b *EthAPIBackend) BlockByNumberOrHash(ctx context.Context, blockNrOrHash r
 	return nil, errors.New("invalid arguments; neither block nor hash specified")
 }
 
-func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64,metaData []byte) ([]byte,error) {
-	log.Info("SendDAByParams--------","sender",sender.Hex(),"metaData",common.Bytes2Hex(metaData))
+func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64,ExtraData []byte) ([]byte,error) {
+	log.Info("SendDAByParams--------","sender",sender.Hex(),"ExtraData",common.Bytes2Hex(ExtraData))
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
 	fd := types.NewDA(sender, index, length, digest, data, nodeGroupKey, proof, claimedValue)
-	if len(metaData) > 0 {
-		fd.MetaData = metaData
-		dataHash := common.BytesToHash(metaData)
-		fd.MetaDataHash = dataHash
+	if len(ExtraData) > 0 {
+		fd.ExtraData = ExtraData
+		dataHash := common.BytesToHash(ExtraData)
+		fd.ExtraDataHash = dataHash
 	}
 	t := time.Unix(outTimeStamp,0)
 	fd.OutOfTime = t
@@ -207,8 +207,8 @@ func (b *EthAPIBackend) GetDAByCommitment(comimt []byte) (*types.DA, error) {
 	return nil, err
 }
 
-func (b *EthAPIBackend) GetDAByExtraData(metaData []byte) (*types.DA, error) {
-	mdHash := common.BytesToHash(metaData)
+func (b *EthAPIBackend) GetDAByExtraData(ExtraData []byte) (*types.DA, error) {
+	mdHash := common.BytesToHash(ExtraData)
 	fd,err := b.eth.daPool.Get(mdHash)
 	if fd != nil {
 		return fd,nil

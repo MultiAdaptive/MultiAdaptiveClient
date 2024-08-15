@@ -627,7 +627,7 @@ type RPCDA struct {
 	Data       hexutil.Bytes  `json:"data"`
 	SignHash   []common.Hash  `json:"sign"`
 	TxHash     common.Hash    `json:"txhash"`
-	MetaData   []byte         `json:"metaData"`
+	ExtraData   []byte         `json:"extraData"`
 }
 
 func NewRPCDA(da *types.DA) *RPCDA {
@@ -646,8 +646,8 @@ func NewRPCDA(da *types.DA) *RPCDA {
 		SignHash:   signHash,
 		TxHash:     da.TxHash,
 	}
-	if len(da.MetaData) > 0 {
-		result.MetaData = da.MetaData
+	if len(da.ExtraData) > 0 {
+		result.ExtraData = da.ExtraData
 	}
 	return result
 }
@@ -703,7 +703,7 @@ type RPCTransaction struct {
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
-// representation, with the given location metadata set (if available).
+// representation, with the given location ExtraData set (if available).
 func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber uint64, blockTime uint64, index uint64, baseFee *big.Int, config *params.ChainConfig, receipt *types.Receipt) *RPCTransaction {
 	signer := types.MakeSigner(config, new(big.Int).SetUint64(blockNumber), blockTime)
 	from, _ := types.Sender(signer, tx)
@@ -902,8 +902,8 @@ func (d *DAAPI) GetDAByCommitment(comimt string) (*RPCDA, error) {
 	return rpcFd, nil
 }
 
-func (d *DAAPI) GetDAByExtraData(metaData []byte) (*RPCDA, error)  {
-	fd, err := d.b.GetDAByExtraData(metaData)
+func (d *DAAPI) GetDAByExtraData(ExtraData []byte) (*RPCDA, error)  {
+	fd, err := d.b.GetDAByExtraData(ExtraData)
 	if err != nil || fd == nil{
 		return nil, err
 	}
