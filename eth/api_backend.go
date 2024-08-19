@@ -274,11 +274,6 @@ func (b *EthAPIBackend) ExtRPCEnabled() bool {
 	return b.extRPCEnabled
 }
 
-func (b *EthAPIBackend) UnprotectedAllowed() bool {
-	return b.allowUnprotectedTxs
-}
-
-
 func (b *EthAPIBackend) HistoricalRPCService() *rpc.Client {
 	return b.eth.historicalRPCService
 }
