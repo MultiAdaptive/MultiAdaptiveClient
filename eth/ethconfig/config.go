@@ -105,9 +105,9 @@ type Config struct {
 
 	L1ScanHost string //scan l1 host
 
-	L1ScanUser string //scan l1 user
+	L1ScanUser string //scan l1 user for btc
 
-	L1ScanPassword string //scan l1 password
+	L1ScanPassword string //scan l1 password for btc
 
 	Passphrase string
 

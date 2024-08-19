@@ -27,22 +27,10 @@ import (
 var (
 	MainnetGenesisHash = common.HexToHash("0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3")
 	SepoliaGenesisHash = common.HexToHash("0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9")
-	///TODO fix this genesis hash
-	DomiconGenesisHash = common.HexToHash("")
+	MultiAdaptiveGenesisHash = common.HexToHash("0xb5fc3ca666f7e62230c2577d7040f50fca96491796b177a52c3b3c774f15a28d")
 )
 
-const (
-	OPMainnetChainID        = 10
-	OPGoerliChainID         = 420
-	BaseMainnetChainID      = 8453
-	BaseGoerliChainID       = 84531
-	baseSepoliaChainID      = 84532
-	baseGoerliDevnetChainID = 11763071
-	devnetChainID           = 997
-	chaosnetChainID         = 888
-)
-
-// OP Stack chain config
+//chain config
 var (
 	// March 17, 2023 @ 7:00:00 pm UTC
 	OptimismGoerliRegolithTime = uint64(1679079600)
@@ -82,11 +70,11 @@ var (
 		TerminalTotalDifficulty:       MainnetTerminalTotalDifficulty, // 58_750_000_000_000_000_000_000
 		TerminalTotalDifficultyPassed: true,
 		ShanghaiTime:                  newUint64(1681338455),
-		//Ethash:                        new(EthashConfig),
+
 	}
 
-	DomiconnetConfig = &ChainConfig{
-		ChainID:                       big.NewInt(1987),
+	MultiAdaptivenetConfig = &ChainConfig{
+		ChainID:                       big.NewInt(11155111),
 		HomesteadBlock:                big.NewInt(0),
 		DAOForkBlock:                  nil,
 		DAOForkSupport:                false,
@@ -109,7 +97,22 @@ var (
 		VerkleTime:                    nil,
 		TerminalTotalDifficulty:       nil,
 		TerminalTotalDifficultyPassed: true,
-		L1Conf:                        new(L1Config),
+		L1Conf:                        &L1Config{
+			GenesisBlockNumber: 6497156,
+			CommitmentManager: "0x7B0bb33c9eBa22a8B37b4734f140b6864D717046",
+			CommitmentManagerProxy: "0x7B0bb33c9eBa22a8B37b4734f140b6864D717046",
+			NodeManager: "0x843a7AC7fFD1Cc9B45E3712d1894242B9298F2e2",
+			NodeManagerProxy: "0xed592c8F0B13bb8A761BFFb6140720D89552999B",
+			AddressManager: "0x871161D300c4d8c0BaB39092F2835d1Ec8421A84",
+			ChallengeContract: "0xEC65024030b9a4997A36959f396e4a93Bce80198",
+			ChallengeContractProxy: "0xf001499f9d41ab1EfE5cEc352e17d09bF9A3DF1f",
+			ProxyAdmin: "0x2c9F5184c2ce70E951Ed027b9a6A469F7E9bcaBD",
+			SafeProxyFactory: "0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2",
+			SafeSingleton: "0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552",
+			StorageManagement: "0xDaf4F53b85D5c8A2Db6151482Ef3aa0B6A40966F",
+			StorageManagementProxy: "0x44214b40b88BeD3424b2684bE6b102fD3BCA4a09",
+			SystemOwnerSafe: "0x8A810be809646FE6045EdADba4137Dd89a2Fc9D2",
+		},
 	}
 
 	SepoliaChainConfig = &ChainConfig{
@@ -159,8 +162,7 @@ var (
 		VerkleTime:                    nil,
 		TerminalTotalDifficulty:       nil,
 		TerminalTotalDifficultyPassed: true,
-		//Ethash:                        new(EthashConfig),
-		//Clique:                        nil,
+
 	}
 
 	AllDevChainProtocolChanges = &ChainConfig{
@@ -182,36 +184,6 @@ var (
 		TerminalTotalDifficulty:       big.NewInt(0),
 		TerminalTotalDifficultyPassed: true,
 		IsDevMode:                     true,
-	}
-
-	// AllCliqueProtocolChanges contains every protocol change (EIPs) introduced
-	// and accepted by the Ethereum core developers into the Clique consensus.
-	AllCliqueProtocolChanges = &ChainConfig{
-		ChainID:                       big.NewInt(1337),
-		HomesteadBlock:                big.NewInt(0),
-		DAOForkBlock:                  nil,
-		DAOForkSupport:                false,
-		EIP150Block:                   big.NewInt(0),
-		EIP155Block:                   big.NewInt(0),
-		EIP158Block:                   big.NewInt(0),
-		ByzantiumBlock:                big.NewInt(0),
-		ConstantinopleBlock:           big.NewInt(0),
-		PetersburgBlock:               big.NewInt(0),
-		IstanbulBlock:                 big.NewInt(0),
-		MuirGlacierBlock:              big.NewInt(0),
-		BerlinBlock:                   big.NewInt(0),
-		LondonBlock:                   big.NewInt(0),
-		ArrowGlacierBlock:             nil,
-		GrayGlacierBlock:              nil,
-		MergeNetsplitBlock:            nil,
-		ShanghaiTime:                  nil,
-		CancunTime:                    nil,
-		PragueTime:                    nil,
-		VerkleTime:                    nil,
-		TerminalTotalDifficulty:       nil,
-		TerminalTotalDifficultyPassed: false,
-		//Ethash:                        nil,
-		//Clique:                        &CliqueConfig{Period: 0, Epoch: 30000},
 	}
 
 	// TestChainConfig contains every protocol change (EIPs) introduced
@@ -244,35 +216,6 @@ var (
 		//Clique:                        nil,
 	}
 
-	// NonActivatedConfig defines the chain configuration without activating
-	// any protocol change (EIPs).
-	NonActivatedConfig = &ChainConfig{
-		ChainID:                       big.NewInt(1),
-		HomesteadBlock:                nil,
-		DAOForkBlock:                  nil,
-		DAOForkSupport:                false,
-		EIP150Block:                   nil,
-		EIP155Block:                   nil,
-		EIP158Block:                   nil,
-		ByzantiumBlock:                nil,
-		ConstantinopleBlock:           nil,
-		PetersburgBlock:               nil,
-		IstanbulBlock:                 nil,
-		MuirGlacierBlock:              nil,
-		BerlinBlock:                   nil,
-		LondonBlock:                   nil,
-		ArrowGlacierBlock:             nil,
-		GrayGlacierBlock:              nil,
-		MergeNetsplitBlock:            nil,
-		ShanghaiTime:                  nil,
-		CancunTime:                    nil,
-		PragueTime:                    nil,
-		VerkleTime:                    nil,
-		TerminalTotalDifficulty:       nil,
-		TerminalTotalDifficultyPassed: false,
-		//Ethash:                        new(EthashConfig),
-		//Clique:                        nil,
-	}
 	TestRules = TestChainConfig.Rules(new(big.Int), false, 0)
 )
 

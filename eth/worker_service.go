@@ -20,7 +20,7 @@ import (
 
 const (
 	confirmationBlockNum = 6 //6区块确认
-	CUSTOM_CONTENT_TYPE  = "MultiAaptiveCM;charset=utf-8"
+	CUSTOM_CONTENT_TYPE  = "MultiAdaptiveCM;charset=utf-8"
 )
 
 var SatoshiToBitcoin = float64(100000000)

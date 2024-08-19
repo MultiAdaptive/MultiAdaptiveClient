@@ -139,9 +139,9 @@ var (
 		Category: flags.EthCategory,
 	}
 
-	DomiconFlag = &cli.BoolFlag{
-		Name:     "domicon",
-		Usage:    "domicon network: ",
+	MtaFlag = &cli.BoolFlag{
+		Name:     "multiAdaptive",
+		Usage:    "multiAdaptive network: ",
 		Category: flags.EthCategory,
 	}
 
@@ -192,23 +192,6 @@ var (
 		Usage:    "private key to the btc",
 		Category: flags.EthCategory,
 	}
-	// Dev mode
-	DeveloperFlag = &cli.BoolFlag{
-		Name:     "dev",
-		Usage:    "Ephemeral proof-of-authority network with a pre-funded developer account, mining enabled",
-		Category: flags.DevCategory,
-	}
-	DeveloperPeriodFlag = &cli.Uint64Flag{
-		Name:     "dev.period",
-		Usage:    "Block period to use in developer mode (0 = mine only if transaction pending)",
-		Category: flags.DevCategory,
-	}
-	DeveloperGasLimitFlag = &cli.Uint64Flag{
-		Name:     "dev.gaslimit",
-		Usage:    "Initial block gas limit",
-		Value:    11500000,
-		Category: flags.DevCategory,
-	}
 
 	IdentityFlag = &cli.StringFlag{
 		Name:     "identity",
@@ -220,11 +203,6 @@ var (
 		Usage:    "Document Root for HTTPClient file scheme",
 		Value:    flags.DirectoryString(flags.HomeDir()),
 		Category: flags.APICategory,
-	}
-	ExitWhenSyncedFlag = &cli.BoolFlag{
-		Name:     "exitwhensynced",
-		Usage:    "Exits after block synchronisation completes",
-		Category: flags.EthCategory,
 	}
 
 	// Dump command options.
@@ -424,9 +402,9 @@ var (
 		Category: flags.PerfCategory,
 		Value:    ethconfig.Defaults.FilterLogCacheSize,
 	}
-	FDLimitFlag = &cli.IntFlag{
-		Name:     "fdlimit",
-		Usage:    "Raise the open file descriptor resource limit (default = system fd limit)",
+	DALimitFlag = &cli.IntFlag{
+		Name:     "dalimit",
+		Usage:    "Raise the open file descriptor resource limit (default = system DA limit)",
 		Category: flags.PerfCategory,
 	}
 	CryptoKZGFlag = &cli.StringFlag{
@@ -440,11 +418,6 @@ var (
 	EtherbaseFlag = &cli.StringFlag{
 		Name:     "etherbase",
 		Usage:    "0x prefixed public address for block mining rewards",
-		Category: flags.MinerCategory,
-	}
-	MinerExtraDataFlag = &cli.StringFlag{
-		Name:     "miner.extradata",
-		Usage:    "Block extra data set by the miner (default = client version)",
 		Category: flags.MinerCategory,
 	}
 
@@ -834,7 +807,7 @@ var (
 		SepoliaFlag,
 	}
 	// NetworkFlags is the flag group of all built-in supported networks.
-	NetworkFlags = append([]cli.Flag{MainnetFlag, DomiconFlag}, TestnetFlags...)
+	NetworkFlags = append([]cli.Flag{MainnetFlag, MtaFlag}, TestnetFlags...)
 
 	// DatabaseFlags is the flag group of all database flags.
 	DatabaseFlags = []cli.Flag{
@@ -855,8 +828,8 @@ func MakeDataDir(ctx *cli.Context) string {
 		if ctx.Bool(SepoliaFlag.Name) {
 			return filepath.Join(path, "sepolia")
 		}
-		if ctx.IsSet(DomiconFlag.Name) {
-			return filepath.Join(path, ctx.String(DomiconFlag.Name))
+		if ctx.IsSet(MtaFlag.Name) {
+			return filepath.Join(path, ctx.String(MtaFlag.Name))
 		}
 		return path
 	}
@@ -1261,15 +1234,6 @@ func SetP2PConfig(ctx *cli.Context, cfg *p2p.Config) {
 		}
 		cfg.NetRestrict = list
 	}
-
-	if ctx.Bool(DeveloperFlag.Name) {
-		// --dev mode can't use p2p networking.
-		cfg.MaxPeers = 0
-		cfg.ListenAddr = ""
-		cfg.NoDial = true
-		cfg.NoDiscovery = true
-		cfg.DiscoveryV5 = false
-	}
 }
 
 // SetNodeConfig applies node-related command line flags to the config.
@@ -1297,9 +1261,7 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 	if ctx.IsSet(KeyStoreDirFlag.Name) {
 		cfg.KeyStoreDir = ctx.String(KeyStoreDirFlag.Name)
 	}
-	if ctx.IsSet(DeveloperFlag.Name) {
-		cfg.UseLightweightKDF = true
-	}
+
 	if ctx.IsSet(LightKDFFlag.Name) {
 		cfg.UseLightweightKDF = ctx.Bool(LightKDFFlag.Name)
 	}
@@ -1346,12 +1308,10 @@ func SetDataDir(ctx *cli.Context, cfg *node.Config) {
 	switch {
 	case ctx.IsSet(DataDirFlag.Name):
 		cfg.DataDir = ctx.String(DataDirFlag.Name)
-	case ctx.Bool(DeveloperFlag.Name):
-		cfg.DataDir = "" // unless explicitly requested, use memory databases
 	case ctx.Bool(SepoliaFlag.Name) && cfg.DataDir == node.DefaultDataDir():
 		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "sepolia")
-	case ctx.IsSet(DomiconFlag.Name) && cfg.DataDir == node.DefaultDataDir():
-		cfg.DataDir = filepath.Join(node.DefaultDataDir(), ctx.String(DomiconFlag.Name))
+	case ctx.IsSet(MtaFlag.Name) && cfg.DataDir == node.DefaultDataDir():
+		cfg.DataDir = filepath.Join(node.DefaultDataDir(), ctx.String(MtaFlag.Name))
 	}
 }
 
@@ -1429,9 +1389,9 @@ func CheckExclusive(ctx *cli.Context, args ...interface{}) {
 // SetEthConfig applies eth-related command line flags to the config.
 func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	// Avoid conflicting network flags
-	CheckExclusive(ctx, MainnetFlag, DeveloperFlag, SepoliaFlag, DomiconFlag)
+	CheckExclusive(ctx, MainnetFlag, SepoliaFlag, MtaFlag)
 	CheckExclusive(ctx, LightServeFlag, SyncModeFlag, "light")
-	CheckExclusive(ctx, DeveloperFlag, ExternalSignerFlag) // Can't use both ephemeral unlocked and external signer
+	//CheckExclusive(ctx, DeveloperFlag, ExternalSignerFlag) // Can't use both ephemeral unlocked and external signer
 
 	// Set configurations from CLI flags
 	setEtherbase(ctx, cfg)
@@ -1468,7 +1428,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	if ctx.IsSet(CacheFlag.Name) || ctx.IsSet(CacheDatabaseFlag.Name) {
 		cfg.DatabaseCache = ctx.Int(CacheFlag.Name) * ctx.Int(CacheDatabaseFlag.Name) / 100
 	}
-	cfg.DatabaseHandles = MakeDatabaseHandles(ctx.Int(FDLimitFlag.Name))
+	cfg.DatabaseHandles = MakeDatabaseHandles(ctx.Int(DALimitFlag.Name))
 	if ctx.IsSet(AncientFlag.Name) {
 		cfg.DatabaseFreezer = ctx.String(AncientFlag.Name)
 	}
@@ -1550,13 +1510,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		cfg.Genesis = core.DefaultGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.MainnetGenesisHash)
 
-	case ctx.Bool(DomiconFlag.Name):
-		if !ctx.IsSet(NetworkIdFlag.Name) {
-			cfg.NetworkId = 1988
-		}
-		cfg.Genesis = core.DefaultDomicionGenesisBlock()
-		SetDNSDiscoveryDefaults(cfg, params.DomiconGenesisHash)
-
 	case ctx.Bool(SepoliaFlag.Name):
 		if !ctx.IsSet(NetworkIdFlag.Name) {
 			cfg.NetworkId = 11155111
@@ -1564,72 +1517,13 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		cfg.Genesis = core.DefaultSepoliaGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.SepoliaGenesisHash)
 
-	case ctx.Bool(DeveloperFlag.Name):
-
-		if !ctx.IsSet(NetworkIdFlag.Name) {
-			cfg.NetworkId = 1337
-		}
-		cfg.SyncMode = downloader.FullSync
-		// Create new developer account or reuse existing one
-		var (
-			developer  accounts.Account
-			passphrase string
-			err        error
-		)
-		if list := MakePasswordList(ctx); len(list) > 0 {
-			// Just take the first value. Although the function returns a possible multiple values and
-			// some usages iterate through them as attempts, that doesn't make sense in this setting,
-			// when we're definitely concerned with only one account.
-			passphrase = list[0]
-		}
-
-		// Unlock the developer account by local keystore.
-		var ks *keystore.KeyStore
-		if keystores := stack.AccountManager().Backends(keystore.KeyStoreType); len(keystores) > 0 {
-			ks = keystores[0].(*keystore.KeyStore)
-		}
-		if ks == nil {
-			Fatalf("Keystore is not available")
-		}
-
-		// Figure out the dev account address.
-		// setEtherbase has been called above, configuring the miner address from command line flags.
-		if cfg.Etherbase != (common.Address{}) {
-			developer = accounts.Account{Address: cfg.Etherbase}
-		} else if accs := ks.Accounts(); len(accs) > 0 {
-			developer = ks.Accounts()[0]
-		} else {
-			developer, err = ks.NewAccount(passphrase)
-			if err != nil {
-				Fatalf("Failed to create developer account: %v", err)
-			}
-		}
-		// Make sure the address is configured as fee recipient, otherwise
-		// the miner will fail to start.
-		cfg.Etherbase = developer.Address
-
-		if err := ks.Unlock(developer, passphrase); err != nil {
-			Fatalf("Failed to unlock developer account: %v", err)
-		}
-		log.Info("Using developer account", "address", developer.Address)
-
-		// Create a new developer genesis block or reuse existing one
-		cfg.Genesis = core.DeveloperGenesisBlock(ctx.Uint64(DeveloperGasLimitFlag.Name), developer.Address)
-		if ctx.IsSet(DataDirFlag.Name) {
-			chaindb := tryMakeReadOnlyDatabase(ctx, stack)
-			if rawdb.ReadCanonicalHash(chaindb, 0) != (common.Hash{}) {
-				cfg.Genesis = nil // fallback to db content
-			}
-			chaindb.Close()
-		}
-
-	case ctx.IsSet(DomiconFlag.Name):
+	case ctx.IsSet(MtaFlag.Name):
 		genesis := MakeGenesis(ctx)
 		if !ctx.IsSet(NetworkIdFlag.Name) {
 			cfg.NetworkId = genesis.Config.ChainID.Uint64()
 		}
-		cfg.Genesis = genesis
-
+		cfg.Genesis = core.DefaultMultiAdaptiveGenesisBlock()
+		SetDNSDiscoveryDefaults(cfg, params.MultiAdaptiveGenesisHash)
 		var (
 			account    accounts.Account
 			passphrase string
@@ -1805,7 +1699,7 @@ func SplitTagsFlag(tagsFlag string) map[string]string {
 func MakeChainDatabase(ctx *cli.Context, stack *node.Node, readonly bool) ethdb.Database {
 	var (
 		cache   = ctx.Int(CacheFlag.Name) * ctx.Int(CacheDatabaseFlag.Name) / 100
-		handles = MakeDatabaseHandles(ctx.Int(FDLimitFlag.Name))
+		handles = MakeDatabaseHandles(ctx.Int(DALimitFlag.Name))
 
 		err     error
 		chainDb ethdb.Database
@@ -1882,12 +1776,10 @@ func MakeGenesis(ctx *cli.Context) *core.Genesis {
 	case ctx.Bool(SepoliaFlag.Name):
 		genesis = core.DefaultSepoliaGenesisBlock()
 
-	case ctx.IsSet(DomiconFlag.Name):
+	case ctx.IsSet(MtaFlag.Name):
 		genesis = core.DefaultMultiAdaptGenesisBlock()
 		//TODO should fix this
 		return genesis
-	case ctx.Bool(DeveloperFlag.Name):
-		Fatalf("Developer chains are ephemeral")
 	}
 	return genesis
 }

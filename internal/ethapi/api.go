@@ -32,7 +32,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/consensus/misc/eip1559"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -802,21 +801,6 @@ func effectiveGasPrice(tx *types.Transaction, baseFee *big.Int) *big.Int {
 	return fee
 }
 
-// NewRPCPendingTransaction returns a pending transaction that will serialize to the RPC representation
-func NewRPCPendingTransaction(tx *types.Transaction, current *types.Header, config *params.ChainConfig) *RPCTransaction {
-	var (
-		baseFee     *big.Int
-		blockNumber = uint64(0)
-		blockTime   = uint64(0)
-	)
-	if current != nil {
-		baseFee = eip1559.CalcBaseFee(config, current, current.Time+1)
-		blockNumber = current.Number.Uint64()
-		blockTime = current.Time
-	}
-	return newRPCTransaction(tx, common.Hash{}, blockNumber, blockTime, 0, baseFee, config, nil)
-}
-
 // newRPCTransactionFromBlockIndex returns a transaction that will serialize to the RPC representation.
 func newRPCTransactionFromBlockIndex(ctx context.Context, b *types.Block, index uint64, config *params.ChainConfig, backend Backend) *RPCTransaction {
 	txs := b.Transactions()
@@ -995,98 +979,6 @@ func (s *TransactionAPI) GetRawTransactionByBlockHashAndIndex(ctx context.Contex
 	return nil
 }
 
-// marshalReceipt marshals a transaction receipt into a JSON object.
-func marshalReceipt(receipt *types.Receipt, blockHash common.Hash, blockNumber uint64, signer types.Signer, tx *types.Transaction, txIndex int, chainConfig *params.ChainConfig) map[string]interface{} {
-	from, _ := types.Sender(signer, tx)
-
-	fields := map[string]interface{}{
-		"blockHash":         blockHash,
-		"blockNumber":       hexutil.Uint64(blockNumber),
-		"transactionHash":   tx.Hash(),
-		"transactionIndex":  hexutil.Uint64(txIndex),
-		"from":              from,
-		"to":                tx.To(),
-		"gasUsed":           hexutil.Uint64(receipt.GasUsed),
-		"cumulativeGasUsed": hexutil.Uint64(receipt.CumulativeGasUsed),
-		"contractAddress":   nil,
-		"logs":              receipt.Logs,
-		"logsBloom":         receipt.Bloom,
-		"type":              hexutil.Uint(tx.Type()),
-		"effectiveGasPrice": (*hexutil.Big)(receipt.EffectiveGasPrice),
-	}
-
-	if tx.IsDepositTx() && receipt.DepositNonce != nil {
-		fields["depositNonce"] = hexutil.Uint64(*receipt.DepositNonce)
-		if receipt.DepositReceiptVersion != nil {
-			fields["depositReceiptVersion"] = hexutil.Uint64(*receipt.DepositReceiptVersion)
-		}
-	}
-	// Assign receipt status or post state.
-	if len(receipt.PostState) > 0 {
-		fields["root"] = hexutil.Bytes(receipt.PostState)
-	} else {
-		fields["status"] = hexutil.Uint(receipt.Status)
-	}
-	if receipt.Logs == nil {
-		fields["logs"] = []*types.Log{}
-	}
-
-	if tx.Type() == types.BlobTxType {
-		fields["blobGasUsed"] = hexutil.Uint64(receipt.BlobGasUsed)
-		fields["blobGasPrice"] = (*hexutil.Big)(receipt.BlobGasPrice)
-	}
-
-	// If the ContractAddress is 20 0x0 bytes, assume it is not a contract creation
-	if receipt.ContractAddress != (common.Address{}) {
-		fields["contractAddress"] = receipt.ContractAddress
-	}
-	return fields
-}
-
-//// sign is a helper function that signs a transaction with the private key of the given address.
-//func (s *TransactionAPI) sign(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
-//	// Look up the wallet containing the requested signer
-//	account := accounts.Account{Address: addr}
-//
-//	wallet, err := s.b.AccountManager().Find(account)
-//	if err != nil {
-//		return nil, err
-//	}
-//	// Request the wallet to sign the transaction
-//	return wallet.SignTx(account, tx, s.b.ChainConfig().ChainID)
-//}
-
-
-//// Sign calculates an ECDSA signature for:
-//// keccak256("\x19Ethereum Signed Message:\n" + len(message) + message).
-////
-//// Note, the produced signature conforms to the secp256k1 curve R, S and V values,
-//// where the V value will be 27 or 28 for legacy reasons.
-////
-//// The account associated with addr must be unlocked.
-////
-//// https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_sign
-//func (s *TransactionAPI) Sign(addr common.Address, data hexutil.Bytes) (hexutil.Bytes, error) {
-//	// Look up the wallet containing the requested signer
-//	account := accounts.Account{Address: addr}
-//
-//	wallet, err := s.b.AccountManager().Find(account)
-//	if err != nil {
-//		return nil, err
-//	}
-//	// Sign the requested hash with the wallet
-//	signature, err := wallet.SignText(account, data)
-//	if err == nil {
-//		signature[64] += 27 // Transform V from 0/1 to 27/28 according to the yellow paper
-//	}
-//	return signature, err
-//}
-//
-//// SignTransactionResult represents a RLP encoded signed transaction.
-//type SignTransactionResult struct {
-//	Raw hexutil.Bytes      `json:"raw"`
-//	Tx  *types.Transaction `json:"tx"`
-//}
 
 
 // DebugAPI is the collection of Ethereum APIs exposed over the debugging
