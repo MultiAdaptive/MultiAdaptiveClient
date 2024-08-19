@@ -556,7 +556,7 @@ func DefaultSepoliaGenesisBlock() *Genesis {
 
 func DefaultMultiAdaptGenesisBlock() *Genesis {
 	return &Genesis{
-		Config:     params.SepoliaChainConfig,
+		Config:     params.MultiAdaptivenetConfig,
 		Nonce:      0,
 		ExtraData:  []byte("MultiAdapt!"),
 		GasLimit:   0x1c9c380,

@@ -1775,11 +1775,8 @@ func MakeGenesis(ctx *cli.Context) *core.Genesis {
 		genesis = core.DefaultGenesisBlock()
 	case ctx.Bool(SepoliaFlag.Name):
 		genesis = core.DefaultSepoliaGenesisBlock()
-
 	case ctx.IsSet(MtaFlag.Name):
 		genesis = core.DefaultMultiAdaptGenesisBlock()
-		//TODO should fix this
-		return genesis
 	}
 	return genesis
 }
