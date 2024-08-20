@@ -60,6 +60,7 @@ type chainSyncer struct {
 	handler   *handler
 	db        *gorm.DB
 	nodeType  string
+	queryTimes uint
 	address   common.Address
 	chainName string
 	chain     *core.BlockChain
@@ -114,6 +115,7 @@ func newEthereumChainSync(
 		handler:   handler,
 		ethClient: ethClient,
 		db:        sqlDb,
+		queryTimes:  0,
 		nodeType:  nodeType,
 		address:   address,
 		chainName: chainName,
@@ -433,8 +435,6 @@ func (cs *chainSyncer) doEthereumSync() error {
 			}
 			db.Commit(db.Tx)
 		case false:
-			//没回滚继续同步
-			//cs.startSyncWithNum(uint64(org.BlockNum+1))
 		}
 		log.Info("chainSyncer---startSyncWithNum---","org num",org.NumberU64() + 1)
 		cs.startSyncWithNum(org.NumberU64() + 1)
@@ -471,6 +471,24 @@ func (cs *chainSyncer) startSyncWithNum(num uint64) error {
 				}
 				cs.processBlocks([]*types.Block{block})
 			}
+
+			if cs.handler.peers.len() > 2 && cs.queryTimes <= 5 {
+				cs.queryTimes++
+				das,err := db.GetAllDAWithOutState(cs.db)
+				if err == nil || len(das) > 0{
+					for _,da := range das{
+						outTime := da.ReceiveAt.Add(14*24*time.Hour)
+						outOfData := outTime.Before(time.Now())
+						if outOfData {
+							da, err := cs.handler.daPool.GetDAByCommit(da.Commitment.Marshal())
+							if err == nil && da == nil {
+								db.UpDataDACommit(cs.db,da)
+							}
+						}
+					}
+				}
+			}
+
 		case <-cs.ctx.Done():
 			return nil
 		}

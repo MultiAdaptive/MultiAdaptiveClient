@@ -42,7 +42,7 @@ type DA struct {
 	ClaimedValue []byte         `json:"ClaimedValue"`
 	NameSpaceKey  common.Hash   `json:"NameSpaceKey"`
 	State         bool          `json:"State"` //data original state :default is false (have data)
-	ExtraData      []byte         `json:"ExtraData"` //
+	ExtraData      []byte        `json:"ExtraData"` //
 	ExtraDataHash  common.Hash   `json:"ExtraDataHash"`
 }
 

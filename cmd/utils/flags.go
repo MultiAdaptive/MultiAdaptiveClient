@@ -1510,12 +1510,12 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		cfg.Genesis = core.DefaultGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.MainnetGenesisHash)
 
-	case ctx.Bool(SepoliaFlag.Name):
-		if !ctx.IsSet(NetworkIdFlag.Name) {
-			cfg.NetworkId = 11155111
-		}
-		cfg.Genesis = core.DefaultSepoliaGenesisBlock()
-		SetDNSDiscoveryDefaults(cfg, params.SepoliaGenesisHash)
+	//case ctx.Bool(SepoliaFlag.Name):
+	//	if !ctx.IsSet(NetworkIdFlag.Name) {
+	//		cfg.NetworkId = 11155111
+	//	}
+	//	cfg.Genesis = core.DefaultSepoliaGenesisBlock()
+	//	SetDNSDiscoveryDefaults(cfg, params.SepoliaGenesisHash)
 
 	case ctx.IsSet(MtaFlag.Name):
 		genesis := MakeGenesis(ctx)
@@ -1773,70 +1773,12 @@ func MakeGenesis(ctx *cli.Context) *core.Genesis {
 	switch {
 	case ctx.Bool(MainnetFlag.Name):
 		genesis = core.DefaultGenesisBlock()
-	case ctx.Bool(SepoliaFlag.Name):
-		genesis = core.DefaultSepoliaGenesisBlock()
+	//case ctx.Bool(SepoliaFlag.Name):
+	//	genesis = core.DefaultSepoliaGenesisBlock()
 	case ctx.IsSet(MtaFlag.Name):
 		genesis = core.DefaultMultiAdaptGenesisBlock()
 	}
 	return genesis
-}
-
-// MakeChain creates a chain manager from set command line flags.
-func MakeChain(ctx *cli.Context, stack *node.Node, readonly bool) (*core.BlockChain, ethdb.Database) {
-	var (
-		gspec   = MakeGenesis(ctx)
-		chainDb = MakeChainDatabase(ctx, stack, readonly)
-	)
-	_, err := core.LoadChainConfig(chainDb, gspec)
-	if err != nil {
-		Fatalf("%v", err)
-	}
-
-	if gcmode := ctx.String(GCModeFlag.Name); gcmode != "full" && gcmode != "archive" {
-		Fatalf("--%s must be either 'full' or 'archive'", GCModeFlag.Name)
-	}
-	scheme, err := rawdb.ParseStateScheme(ctx.String(StateSchemeFlag.Name), chainDb)
-	if err != nil {
-		Fatalf("%v", err)
-	}
-	cache := &core.CacheConfig{
-		TrieCleanLimit:      ethconfig.Defaults.TrieCleanCache,
-		TrieCleanNoPrefetch: ctx.Bool(CacheNoPrefetchFlag.Name),
-		TrieDirtyLimit:      ethconfig.Defaults.TrieDirtyCache,
-		TrieDirtyDisabled:   ctx.String(GCModeFlag.Name) == "archive",
-		TrieTimeLimit:       ethconfig.Defaults.TrieTimeout,
-		SnapshotLimit:       ethconfig.Defaults.SnapshotCache,
-		Preimages:           ctx.Bool(CachePreimagesFlag.Name),
-		StateScheme:         scheme,
-		StateHistory:        ctx.Uint64(StateHistoryFlag.Name),
-	}
-	if cache.TrieDirtyDisabled && !cache.Preimages {
-		cache.Preimages = true
-		log.Info("Enabling recording of key preimages since archive mode is used")
-	}
-	if !ctx.Bool(SnapshotFlag.Name) {
-		cache.SnapshotLimit = 0 // Disabled
-	}
-	// If we're in readonly, do not bother generating snapshot data.
-	if readonly {
-		cache.SnapshotNoBuild = true
-	}
-
-	if ctx.IsSet(CacheFlag.Name) || ctx.IsSet(CacheTrieFlag.Name) {
-		cache.TrieCleanLimit = ctx.Int(CacheFlag.Name) * ctx.Int(CacheTrieFlag.Name) / 100
-	}
-	if ctx.IsSet(CacheFlag.Name) || ctx.IsSet(CacheGCFlag.Name) {
-		cache.TrieDirtyLimit = ctx.Int(CacheFlag.Name) * ctx.Int(CacheGCFlag.Name) / 100
-	}
-	//vmcfg := vm.Config{EnablePreimageRecording: ctx.Bool(VMEnableDebugFlag.Name)}
-
-	// Disable transaction indexing/unindexing by default.
-	//chain, err := core.NewBlockChain(chainDb, cache, gspec, nil, engine, vmcfg, nil, nil)
-	//if err != nil {
-	//	Fatalf("Can't create BlockChain: %v", err)
-	//}
-	//TODO should fix this
-	return nil, chainDb
 }
 
 // MakeConsolePreloads retrieves the absolute paths for the console JavaScript

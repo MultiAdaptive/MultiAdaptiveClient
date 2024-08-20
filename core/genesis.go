@@ -400,10 +400,9 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 		return g.Config
 	case ghash == params.MainnetGenesisHash:
 		return params.MainnetChainConfig
-	case ghash == params.SepoliaGenesisHash:
-		return params.SepoliaChainConfig
-	//case ghash == params.GoerliGenesisHash:
-	//	return params.GoerliChainConfig
+
+	case ghash == params.MultiAdaptiveGenesisHash:
+		return params.MultiAdaptivenetConfig
 	default:
 		return params.AllEthashProtocolChanges
 	}
@@ -541,18 +540,18 @@ func DefaultMultiAdaptiveGenesisBlock() *Genesis {
 	}
 }
 
-// DefaultSepoliaGenesisBlock returns the Sepolia network genesis block.
-func DefaultSepoliaGenesisBlock() *Genesis {
-	return &Genesis{
-		Config:     params.SepoliaChainConfig,
-		Nonce:      0,
-		ExtraData:  []byte("Sepolia, Athens, Attica, Greece!"),
-		GasLimit:   0x1c9c380,
-		Difficulty: big.NewInt(0x20000),
-		Timestamp:  1633267481,
-		Alloc:      decodePrealloc(sepoliaAllocData),
-	}
-}
+//// DefaultSepoliaGenesisBlock returns the Sepolia network genesis block.
+//func DefaultSepoliaGenesisBlock() *Genesis {
+//	return &Genesis{
+//		Config:     params.SepoliaChainConfig,
+//		Nonce:      0,
+//		ExtraData:  []byte("Sepolia, Athens, Attica, Greece!"),
+//		GasLimit:   0x1c9c380,
+//		Difficulty: big.NewInt(0x20000),
+//		Timestamp:  1633267481,
+//		Alloc:      decodePrealloc(sepoliaAllocData),
+//	}
+//}
 
 func DefaultMultiAdaptGenesisBlock() *Genesis {
 	return &Genesis{

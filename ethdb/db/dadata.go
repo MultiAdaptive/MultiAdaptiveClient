@@ -39,7 +39,7 @@ type DA struct {
 	OutOfTime       string `gorm:"column:f_out_time;not null;comment:失效时间" json:"out_of_time"`
 	CreateAt        int64  `gorm:"column:f_create_at;not null;comment:创建时间;index:idx_das_create_at" json:"create_at"` // 创建时间
 	NameSpaceKey    string  `gorm:"column:f_name_space_id;not null;comment:命名空间" json:"name_space_key"`
-	State           bool  `gorm:"column:f_state;not null;comment:数据状态;index:idx_state" json:"state"`
+	State           bool  `gorm:"column:f_state;not null;comment:数据状态;index:idx_state" json:"state"` //data original state :default is false (have data)
 	ExtraData        string `gorm:"column:f_meta_data;comment:额外数据" json:"extraData"`
 	ExtraDataHash    string `gorm:"column:f_meta_data_hash;comment:额外数据哈希;index:idx_extraData_hash" json:"extraData_hash"`
 }
@@ -90,6 +90,19 @@ func SaveDACommit(db *gorm.DB, da *types.DA, shouldSave bool)  error {
 	}
 	return  nil
 }
+
+func UpDataDACommit(db *gorm.DB, da *types.DA) error {
+	// 更新SyncInfo表格的值
+	cmHash := common.Bytes2Hex(da.Commitment.Marshal())
+	result := db.Model(&DA{}).Where("f_commitment_hash = ?", cmHash).Updates(DA{Data: common.Bytes2Hex(da.Data),State: false})
+	if result.Error != nil {
+		// 更新失败，回滚事务并返回错误
+		db.Rollback()
+		return result.Error
+	}
+	return nil
+}
+
 
 func SaveBatchCommitment(db *gorm.DB, das []*types.DA) error {
 	wdas := make([]DA, 0)
@@ -483,6 +496,40 @@ func GetAllDARecords(db *gorm.DB) ([]*types.DA, error) {
 			TxHash:     common.HexToHash(da.TxHash),
 			Commitment: digest,
 			ReceiveAt:  parsedTime,
+		})
+	}
+	return das, nil
+}
+
+func UpdataDAWithData(db *gorm.DB,)  {
+
+}
+
+
+func GetAllDAWithOutState(db *gorm.DB) ([]*types.DA, error) {
+	var daRecords []DA
+	tx := db.Where("f_state= 1")
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	var das []*types.DA
+	for _, da := range daRecords {
+		var digest kzg.Digest
+		str, _ := hex.DecodeString(da.Commitment)
+		digest.SetBytes(str)
+		parsedTime, err := time.Parse(time.RFC3339, da.ReceiveAt)
+		if err != nil {
+			fmt.Println("Error parsing time:", err)
+		}
+		das = append(das, &types.DA{
+			Commitment:  digest,
+			BlockNum:    uint64(da.BlockNum),
+			TxHash:      common.HexToHash(da.TxHash),
+			ReceiveAt:   parsedTime,
+			NameSpaceKey: common.HexToHash(da.NameSpaceKey),
+			ExtraData:    common.Hex2Bytes(da.ExtraData)   ,
+			State:        da.State,
 		})
 	}
 	return das, nil
