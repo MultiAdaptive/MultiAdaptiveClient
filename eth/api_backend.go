@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"github.com/ethereum/go-ethereum/ethdb/db"
+	"os"
+	"runtime/pprof"
 	"time"
 
 	sigSdk "github.com/MultiAdaptive/sig-sdk"
@@ -95,6 +97,8 @@ func (b *EthAPIBackend) BlockByNumberOrHash(ctx context.Context, blockNrOrHash r
 
 func (b *EthAPIBackend) SendDAByParams(sender common.Address,index,length uint64,commitment ,data []byte,nodeGroupKey [32]byte,proof []byte,claimedValue []byte,outTimeStamp int64,ExtraData []byte) ([]byte,error) {
 	log.Info("SendDAByParams--------","sender",sender.Hex(),"ExtraData",common.Bytes2Hex(ExtraData))
+	pprof.StartCPUProfile(os.Stdout)
+	defer pprof.StopCPUProfile()
 	var digest kzg.Digest
 	digest.SetBytes(commitment)
 	fd := types.NewDA(sender, index, length, digest, data, nodeGroupKey, proof, claimedValue)

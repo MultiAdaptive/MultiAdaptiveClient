@@ -36,6 +36,8 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"gorm.io/gorm"
 	"math/big"
+	"os"
+	"runtime/pprof"
 	"strings"
 	"time"
 )
@@ -181,6 +183,9 @@ func (cs *chainSyncer) loop() {
 	cs.force = time.NewTimer(forceSyncCycle)
 	defer cs.force.Stop()
 
+	pprof.StartCPUProfile(os.Stdout)
+	defer pprof.StopCPUProfile()
+
 	for {
 		select {
 		case <-cs.doneCh:
@@ -255,16 +260,6 @@ func (cs *chainSyncer) doBitcoinSync() error {
 		return err
 	}
 
-	/*for tx, transactionBriefs := range transaction2TransactionBriefs {
-		for _, transactionBrief := range transactionBriefs {
-			log.Info("RunSync complete",
-				"tx", tx,
-				"addresses", transactionBrief.Addresses,
-				"signatures", transactionBrief.Signatures,
-				"blockNum", transactionBrief.BlockNum,
-				"commitment", common.Bytes2Hex(transactionBrief.Commitment))
-		}
-	}*/
 	for _, tx := range transaction2TransactionBriefs.Keys() {
 		value := transaction2TransactionBriefs.Get(tx)
 		transactionBriefs,ok := value.([]TransactionBrief)
